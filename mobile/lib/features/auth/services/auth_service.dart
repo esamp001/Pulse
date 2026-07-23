@@ -1,10 +1,19 @@
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import '../models/user_model.dart';
 
 class AuthService {
+  // Static session state cache
+  static String? _currentToken;
+  static UserModel? _currentUser;
+
   // Base URL for backend API loaded from .env
   static String get baseUrl => dotenv.get('API_BASE_URL');
+
+  /// Active session getters
+  static String? get currentToken => _currentToken;
+  static UserModel? get currentUser => _currentUser;
 
   /// Authenticate user via Google OAuth details
   Future<Map<String, dynamic>> googleAuthenticate({required String email, required String name}) async {
@@ -24,6 +33,7 @@ class AuthService {
     final responseData = jsonDecode(response.body);
 
     if (response.statusCode == 200) {
+      _processAuthResponse(responseData);
       return responseData;  
     } else {
       throw Exception(responseData['error'] ?? 'Google authentication failed');
@@ -45,9 +55,75 @@ class AuthService {
     final responseData = jsonDecode(response.body);
 
     if (response.statusCode == 201) {
+      _processAuthResponse(responseData);
       return responseData;
     } else {
       throw Exception(responseData['error'] ?? 'Registration failed');
     }
+  }
+
+  /// Login standard user
+  Future<Map<String, dynamic>> login({required String email, String? password}) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/login'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'email': email,
+        if (password != null && password.isNotEmpty) 'password': password,
+      }),
+    );
+
+    final responseData = jsonDecode(response.body);
+
+    if (response.statusCode == 200) {
+      _processAuthResponse(responseData);
+      return responseData;
+    } else {
+      throw Exception(responseData['error'] ?? 'Login failed');
+    }
+  }
+
+  /// Fetch authenticated user profile from backend GET /me
+  Future<UserModel> fetchCurrentUser() async {
+    final token = _currentToken;
+    if (token == null) {
+      throw Exception('No active session token');
+    }
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/me'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    final responseData = jsonDecode(response.body);
+
+    if (response.statusCode == 200 && responseData['data']?['user'] != null) {
+      final user = UserModel.fromJson(responseData['data']['user']);
+      _currentUser = user;
+      return user;
+    } else {
+      throw Exception(responseData['error'] ?? 'Failed to fetch user session');
+    }
+  }
+
+  void _processAuthResponse(Map<String, dynamic> responseData) {
+    final data = responseData['data'];
+    if (data != null) {
+      if (data['token'] != null) {
+        _currentToken = data['token'];
+      }
+      if (data['user'] != null) {
+        _currentUser = UserModel.fromJson(data['user']);
+      }
+    }
+  }
+
+  /// Clear active user session
+  static void logout() {
+    _currentToken = null;
+    _currentUser = null;
   }
 }

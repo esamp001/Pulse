@@ -74,3 +74,12 @@ Authenticates an existing user and returns a JWT token.
 - `wins`: INT (Default: 0)
 - `losses`: INT (Default: 0)
 - `created_at` / `updated_at`: TIMESTAMPTZ
+
+---
+
+## 4. Authorization & Role Model
+
+- **Unified Account Structure**: There are no static global roles (e.g. `PLAYER` vs `SCORER`) stored in the `users` database table. All users share the standard user account schema.
+- **Contextual/Match-Level Authorization**: A user can play as a **Player** in one match and be assigned as a neutral **Scorer** in another match.
+- **Permission Enforcement**: Backend routes enforce permissions at the resource level by evaluating the authenticated user (`req.user.id`) against match-specific fields (`match.scorer_id`, `match.player1_id`, `match.player2_id`).
+

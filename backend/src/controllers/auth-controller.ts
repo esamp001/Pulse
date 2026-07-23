@@ -89,6 +89,25 @@ class AuthController {
       res.status(400).json({ error: error.message || 'Google authentication failed' });
     }
   };
+
+  getMe = async (req: any, res: Response): Promise<void> => {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const user = await this.authService.getProfile(userId);
+
+      res.status(200).json({
+        message: 'User profile retrieved successfully',
+        data: { user },
+      });
+    } catch (error: any) {
+      res.status(404).json({ error: error.message || 'User profile not found' });
+    }
+  };
 }
 
 export default AuthController;

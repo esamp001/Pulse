@@ -37,7 +37,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimaryColor = PulseColors.getTextPrimary(isDark);
+    final textSecondaryColor = PulseColors.getTextSecondary(isDark);
+    final accentLinkColor = isDark ? PulseColors.secondary : PulseColors.primary;
+
     return Scaffold(
+      backgroundColor: PulseColors.getBackground(isDark),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -53,23 +59,23 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: PulseLogo(size: 90),
                   ),
                   const SizedBox(height: 13),
-                  const Text(
+                  Text(
                     'PULSE',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 3.0,
-                      color: PulseColors.textPrimary,
+                      color: textPrimaryColor,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Turn casual games into verified matches',
+                  Text(
+                    'Turn casual games into competitive matches',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 14,
-                      color: PulseColors.textSecondary,
+                      color: textSecondaryColor,
                     ),
                   ),
                   const SizedBox(height: 40),
@@ -78,10 +84,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(
+                    style: TextStyle(color: textPrimaryColor),
+                    decoration: InputDecoration(
                       labelText: 'Email Address',
                       hintText: 'player@example.com',
-                      prefixIcon: Icon(Icons.email_outlined),
+                      prefixIcon: const Icon(Icons.email_outlined),
+                      fillColor: PulseColors.getSurface(isDark),
                     ),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
@@ -99,10 +107,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   TextFormField(
                     controller: _passwordController,
                     obscureText: !_isPasswordVisible,
+                    style: TextStyle(color: textPrimaryColor),
                     decoration: InputDecoration(
                       labelText: 'Password',
                       hintText: '••••••••',
                       prefixIcon: const Icon(Icons.lock_outline),
+                      fillColor: PulseColors.getSurface(isDark),
                       suffixIcon: IconButton(
                         icon: Icon(
                           _isPasswordVisible
@@ -135,9 +145,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: () {
                         // TODO: Implement forgot password flow
                       },
-                      child: const Text(
+                      child: Text(
                         'Forgot Password?',
-                        style: TextStyle(color: PulseColors.textSecondary),
+                        style: TextStyle(color: textSecondaryColor),
                       ),
                     ),
                   ),
@@ -154,9 +164,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text(
+                      Text(
                         "Don't have an account? ",
-                        style: TextStyle(color: PulseColors.textSecondary),
+                        style: TextStyle(color: textSecondaryColor),
                       ),
                       GestureDetector(
                         onTap: () {
@@ -167,10 +177,10 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           );
                         },
-                        child: const Text(
+                        child: Text(
                           'Sign Up',
                           style: TextStyle(
-                            color: PulseColors.primary,
+                            color: accentLinkColor,
                             fontWeight: FontWeight.bold,
                           ),
                         ),

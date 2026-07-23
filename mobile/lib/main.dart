@@ -3,6 +3,9 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'core/theme/pulse_theme.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
 
+/// Global Theme Mode Notifier for Pulse App
+final ValueNotifier<ThemeMode> themeModeNotifier = ValueNotifier<ThemeMode>(ThemeMode.light);
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: '.env');
@@ -14,11 +17,19 @@ class PulseApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Pulse',
-      debugShowCheckedModeBanner: false,
-      theme: PulseTheme.lightTheme,
-      home: const LoginScreen(),
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: themeModeNotifier,
+      builder: (context, currentMode, child) {
+        return MaterialApp(
+          title: 'Pulse',
+          debugShowCheckedModeBanner: false,
+          themeAnimationDuration: Duration.zero,
+          theme: PulseTheme.lightTheme,
+          darkTheme: PulseTheme.darkTheme,
+          themeMode: currentMode,
+          home: const LoginScreen(),
+        );
+      },
     );
   }
 }

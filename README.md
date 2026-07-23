@@ -33,7 +33,14 @@ Players cannot edit scores.
 - End match
 - Submit winner
 
+## Role & Authorization Model (Contextual Roles)
+
+- **No Static Account Roles**: Every account in Pulse is a generic **User**. There are no separate "Player" or "Scorer" user account types in the database.
+- **Dynamic Per-Match Roles**: A user can participate as a **Player** in Match A, and be invited to officiate as the **Scorer** in Match B.
+- **Contextual Authorization**: Authorization checks (e.g., verifying who can record points) are enforced at the resource level by comparing the authenticated user's ID (`req.user.id`) against the match assignment (`match.scorer_id`).
+
 ---
+
 
 # MVP Match Flow
 

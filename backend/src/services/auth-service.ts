@@ -71,6 +71,15 @@ class AuthService {
     return { user: userWithoutPassword, token };
   }
 
+  async getProfile(userId: string): Promise<Omit<User, 'password_hash'>> {
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+    const { password_hash, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+  }
+
   private generateToken(userId: string): string {
     return jwt.sign({ userId }, config.jwtSecret, {
       expiresIn: config.jwtExpiresIn as jwt.SignOptions['expiresIn'],

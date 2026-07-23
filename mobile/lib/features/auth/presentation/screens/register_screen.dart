@@ -3,6 +3,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import '../../../../core/theme/pulse_colors.dart';
 import '../../../../core/widgets/pulse_logo.dart';
 import '../../../home/presentation/screens/home_screen.dart';
+import '../../models/user_model.dart';
 import '../../services/auth_service.dart';
 import 'login_screen.dart';
 
@@ -66,12 +67,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (!mounted) return;
 
       final userData = result['data']['user'];
+      final user = UserModel.fromJson(userData);
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (context) => HomeScreen(
-            userName: userData['name'] ?? 'User',
-            userEmail: userData['email'] ?? email,
+            user: user,
           ),
         ),
       );
@@ -101,10 +102,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimaryColor = PulseColors.getTextPrimary(isDark);
+    final textSecondaryColor = PulseColors.getTextSecondary(isDark);
+    final surfaceColor = PulseColors.getSurface(isDark);
+    final borderTileColor = PulseColors.getBorder(isDark);
+    final accentLinkColor = isDark ? PulseColors.secondary : PulseColors.primary;
+
     return Scaffold(
+      backgroundColor: PulseColors.getBackground(isDark),
       appBar: AppBar(
+        backgroundColor: PulseColors.getBackground(isDark),
+        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back, color: textPrimaryColor),
           onPressed: () {
             Navigator.pop(context);
           },
@@ -125,22 +136,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     child: PulseLogo(size: 70),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
+                  Text(
                     'Create Account',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w900,
-                      color: PulseColors.textPrimary,
+                      color: textPrimaryColor,
                     ),
                   ),
                   const SizedBox(height: 6),
-                  const Text(
+                  Text(
                     'Join Pulse to track and verify your matches',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 14,
-                      color: PulseColors.textSecondary,
+                      color: textSecondaryColor,
                     ),
                   ),
                   const SizedBox(height: 32),
@@ -151,23 +162,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     onPressed: _handleGoogleSignUp,
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      side: const BorderSide(color: PulseColors.border),
+                      side: BorderSide(color: borderTileColor),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      backgroundColor: PulseColors.surface,
+                      backgroundColor: surfaceColor,
                     ),
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.g_mobiledata_rounded,
                       size: 28,
-                      color: PulseColors.primary,
+                      color: accentLinkColor,
                     ),
-                    label: const Text(
+                    label: Text(
                       'Sign up with Google',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
-                        color: PulseColors.textPrimary,
+                        color: textPrimaryColor,
                       ),
                     ),
                   ),
@@ -178,44 +189,44 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     onPressed: _handleAppleSignUp,
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      side: const BorderSide(color: PulseColors.border),
+                      side: BorderSide(color: borderTileColor),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      backgroundColor: PulseColors.surface,
+                      backgroundColor: surfaceColor,
                     ),
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.apple,
                       size: 24,
-                      color: PulseColors.textPrimary,
+                      color: textPrimaryColor,
                     ),
-                    label: const Text(
+                    label: Text(
                       'Sign up with Apple',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
-                        color: PulseColors.textPrimary,
+                        color: textPrimaryColor,
                       ),
                     ),
                   ),
                   const SizedBox(height: 28),
 
                   // Divider with "OR" text
-                  const Row(
+                  Row(
                     children: [
-                      Expanded(child: Divider(color: PulseColors.border)),
+                      Expanded(child: Divider(color: borderTileColor)),
                       Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 12.0),
+                        padding: const EdgeInsets.symmetric(horizontal: 12.0),
                         child: Text(
                           'OR EMAIL',
                           style: TextStyle(
-                            color: PulseColors.textSecondary,
+                            color: textSecondaryColor,
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
-                      Expanded(child: Divider(color: PulseColors.border)),
+                      Expanded(child: Divider(color: borderTileColor)),
                     ],
                   ),
                   const SizedBox(height: 28),
@@ -225,10 +236,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   TextFormField(
                     controller: _nameController,
                     keyboardType: TextInputType.name,
-                    decoration: const InputDecoration(
+                    style: TextStyle(color: textPrimaryColor),
+                    decoration: InputDecoration(
                       labelText: 'Full Name',
                       hintText: 'John Doe',
-                      prefixIcon: Icon(Icons.person_outline),
+                      prefixIcon: const Icon(Icons.person_outline),
+                      fillColor: surfaceColor,
                     ),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
@@ -243,10 +256,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(
+                    style: TextStyle(color: textPrimaryColor),
+                    decoration: InputDecoration(
                       labelText: 'Email Address',
                       hintText: 'player@example.com',
-                      prefixIcon: Icon(Icons.email_outlined),
+                      prefixIcon: const Icon(Icons.email_outlined),
+                      fillColor: surfaceColor,
                     ),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
@@ -264,10 +279,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   TextFormField(
                     controller: _passwordController,
                     obscureText: !_isPasswordVisible,
+                    style: TextStyle(color: textPrimaryColor),
                     decoration: InputDecoration(
                       labelText: 'Password',
                       hintText: '••••••••',
                       prefixIcon: const Icon(Icons.lock_outline),
+                      fillColor: surfaceColor,
                       suffixIcon: IconButton(
                         icon: Icon(
                           _isPasswordVisible
@@ -295,8 +312,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                   // Submit Register Button
                   ElevatedButton(
-                    onPressed: _handleRegister,
-                    child: const Text('CREATE ACCOUNT'),
+                    onPressed: _isLoading ? null : _handleRegister,
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Text('CREATE ACCOUNT'),
                   ),
                   const SizedBox(height: 24),
 
@@ -304,9 +327,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text(
+                      Text(
                         'Already have an account? ',
-                        style: TextStyle(color: PulseColors.textSecondary),
+                        style: TextStyle(color: textSecondaryColor),
                       ),
                       GestureDetector(
                         onTap: () {
@@ -317,10 +340,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ),
                           );
                         },
-                        child: const Text(
+                        child: Text(
                           'Log In',
                           style: TextStyle(
-                            color: PulseColors.primary,
+                            color: accentLinkColor,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
