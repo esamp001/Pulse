@@ -1,11 +1,23 @@
+# Dependency and Build directories
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+
+# Environment variable files (secrets)
+.env
+.env.*
+!.env.example
+
+# OS & Editor files
+.DS_Store
+.vscode/
+.idea/
+
 # Miscellaneous
 *.class
 *.lock
 *.log
-*.pyc
-*.swp
-.buildlog/
-.history
 
 
 
