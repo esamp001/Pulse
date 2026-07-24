@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/theme/pulse_colors.dart';
-import '../../../../core/widgets/pulse_logo.dart';
+import '../../../../core/widgets/rally_text_logo.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -17,21 +18,57 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isPasswordVisible = false;
 
   @override
+  void initState() {
+    super.initState();
+    _loadSavedEmail();
+  }
+
+  /// Load email address saved from previous login session
+  Future<void> _loadSavedEmail() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedEmail = prefs.getString('saved_email');
+      if (savedEmail != null && savedEmail.isNotEmpty) {
+        setState(() {
+          _emailController.text = savedEmail;
+        });
+      }
+    } catch (_) {
+      // Ignore storage errors on startup
+    }
+  }
+
+  /// Persist email address to local device storage
+  Future<void> _saveEmail(String email) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('saved_email', email);
+    } catch (_) {
+      // Ignore storage write errors
+    }
+  }
+
+  @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
-  void _handleLogin() {
+  void _handleLogin() async {
     if (_formKey.currentState!.validate()) {
+      final email = _emailController.text.trim();
+      await _saveEmail(email);
+
       // Temporary feedback until connected to backend API
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Logging in with ${_emailController.text}...'),
-          backgroundColor: PulseColors.primary,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Logging in with $email...'),
+            backgroundColor: PulseColors.primary,
+          ),
+        );
+      }
     }
   }
 
@@ -54,31 +91,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // App Branding / Logo Header
+                  const SizedBox(height: 12),
                   const Center(
-                    child: PulseLogo(size: 90),
+                    child: RallyTextLogo(fontSize: 44.0),
                   ),
-                  const SizedBox(height: 13),
-                  Text(
-                    'PULSE',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 3.0,
-                      color: textPrimaryColor,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Turn casual games into competitive matches',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: textSecondaryColor,
-                    ),
-                  ),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 36),
 
                   // Email Field
                   TextFormField(

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../../../../core/theme/pulse_colors.dart';
-import '../../../../core/widgets/pulse_logo.dart';
+import '../../../../core/widgets/rally_text_logo.dart';
 import '../../../home/presentation/screens/home_screen.dart';
 import '../../models/user_model.dart';
 import '../../services/auth_service.dart';
@@ -131,11 +131,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // App Logo & Header
-                  const Center(
-                    child: PulseLogo(size: 70),
-                  ),
                   const SizedBox(height: 12),
+                  const Center(
+                    child: RallyTextLogo(
+                      fontSize: 38.0,
+                      showSubtitle: false,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
                   Text(
                     'Create Account',
                     textAlign: TextAlign.center,
@@ -147,7 +150,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Join Pulse to track and verify your matches',
+                    'Join Rally to track and verify your matches',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 14,

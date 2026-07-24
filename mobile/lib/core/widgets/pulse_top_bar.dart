@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../theme/pulse_colors.dart';
-import 'pulse_logo.dart';
 
 /// Reusable Top Bar Component for Pulse App
 ///
@@ -90,8 +89,7 @@ class PulseTopBar extends StatelessWidget implements PreferredSizeWidget {
               ),
             ),
 
-            // Center: Large Pulse Logo
-            const PulseLogo(size: 52.0),
+            // Center: (Logo removed)
 
             // Right: Inbox / Notification Icon
             GestureDetector(

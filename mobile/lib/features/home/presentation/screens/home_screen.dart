@@ -843,7 +843,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Log out of Pulse?',
+                    'Log out of Rally?',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,

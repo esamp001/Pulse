@@ -13,7 +13,7 @@ import 'package:pulse_app/main.dart';
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const PulseApp());
+    await tester.pumpWidget(const RallyApp());
     expect(find.byType(MaterialApp), findsOneWidget);
 
     // Tap the '+' icon and trigger a frame.

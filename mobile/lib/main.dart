@@ -3,17 +3,17 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'core/theme/pulse_theme.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
 
-/// Global Theme Mode Notifier for Pulse App
+/// Global Theme Mode Notifier for Rally App
 final ValueNotifier<ThemeMode> themeModeNotifier = ValueNotifier<ThemeMode>(ThemeMode.light);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: '.env');
-  runApp(const PulseApp());
+  runApp(const RallyApp());
 }
 
-class PulseApp extends StatelessWidget {
-  const PulseApp({super.key});
+class RallyApp extends StatelessWidget {
+  const RallyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +21,7 @@ class PulseApp extends StatelessWidget {
       valueListenable: themeModeNotifier,
       builder: (context, currentMode, child) {
         return MaterialApp(
-          title: 'Pulse',
+          title: 'Rally',
           debugShowCheckedModeBanner: false,
           themeAnimationDuration: Duration.zero,
           theme: PulseTheme.lightTheme,
