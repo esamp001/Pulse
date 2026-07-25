@@ -6,6 +6,9 @@ class UserModel {
   final int rating;
   final int wins;
   final int losses;
+  final bool isOnboarded;
+  final String primarySport;
+  final String? avatarUrl;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -16,6 +19,9 @@ class UserModel {
     this.rating = 1200,
     this.wins = 0,
     this.losses = 0,
+    this.isOnboarded = false,
+    this.primarySport = 'pickleball',
+    this.avatarUrl,
     this.createdAt,
     this.updatedAt,
   });
@@ -35,6 +41,9 @@ class UserModel {
       rating: json['rating'] is int ? json['rating'] as int : int.tryParse('${json['rating']}') ?? 1200,
       wins: json['wins'] is int ? json['wins'] as int : int.tryParse('${json['wins']}') ?? 0,
       losses: json['losses'] is int ? json['losses'] as int : int.tryParse('${json['losses']}') ?? 0,
+      isOnboarded: json['is_onboarded'] as bool? ?? false,
+      primarySport: json['primary_sport'] as String? ?? 'pickleball',
+      avatarUrl: json['avatar_url'] as String?,
       createdAt: json['created_at'] != null ? DateTime.tryParse('${json['created_at']}') : null,
       updatedAt: json['updated_at'] != null ? DateTime.tryParse('${json['updated_at']}') : null,
     );
@@ -48,6 +57,9 @@ class UserModel {
       'rating': rating,
       'wins': wins,
       'losses': losses,
+      'is_onboarded': isOnboarded,
+      'primary_sport': primarySport,
+      'avatar_url': avatarUrl,
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
     };

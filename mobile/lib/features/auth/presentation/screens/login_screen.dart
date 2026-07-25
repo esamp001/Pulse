@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/theme/pulse_colors.dart';
 import '../../../../core/widgets/rally_text_logo.dart';
+import '../../../home/presentation/screens/home_screen.dart';
+import '../../models/user_model.dart';
+import '../../services/auth_service.dart';
+import 'onboarding_screen.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -15,6 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final AuthService _authService = AuthService();
   bool _isPasswordVisible = false;
 
   @override
@@ -58,14 +63,30 @@ class _LoginScreenState extends State<LoginScreen> {
   void _handleLogin() async {
     if (_formKey.currentState!.validate()) {
       final email = _emailController.text.trim();
+      final password = _passwordController.text;
       await _saveEmail(email);
 
-      // Temporary feedback until connected to backend API
-      if (mounted) {
+      try {
+        final result = await _authService.login(email: email, password: password);
+        if (!mounted) return;
+
+        final userData = result['data']['user'];
+        final user = UserModel.fromJson(userData);
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => user.isOnboarded
+                ? HomeScreen(user: user)
+                : OnboardingScreen(user: user),
+          ),
+        );
+      } catch (e) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Logging in with $email...'),
-            backgroundColor: PulseColors.primary,
+            content: Text(e.toString().replaceAll('Exception: ', '')),
+            backgroundColor: PulseColors.error,
           ),
         );
       }

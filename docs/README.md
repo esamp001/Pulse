@@ -16,7 +16,7 @@ This directory contains the complete specification-driven documentation for the 
 - [**Reusable Widgets**](../mobile/lib/core/widgets/) - Shared branding widgets (`PulseLogo`).
 
 ### 🔧 Backend Specifications (Node.js)
-- *Reserved for Node.js + Express + Knex Layered Architecture documentation upon backend phase start.*
+- [**Layered Architecture**](./backend/architecture.md) - Controller → Service → Repository 3-Layer architecture, Knex.js queries, and Cloudflare R2 integration.
 
 ### 📦 Module Specifications
 - **User & Auth Management**: Registration, Login, and Social OAuth UI (Google & Apple Sign-In).

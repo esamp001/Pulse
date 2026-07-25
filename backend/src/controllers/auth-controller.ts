@@ -108,6 +108,32 @@ class AuthController {
       res.status(404).json({ error: error.message || 'User profile not found' });
     }
   };
+
+  onboard = async (req: any, res: Response): Promise<void> => {
+    try {
+      const userId = req.user?.userId;
+      
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const { primary_sport, rating, avatar_url } = req.body;
+
+      const user = await this.authService.completeOnboarding(userId, {
+        primary_sport,
+        rating: rating ? Number(rating) : undefined,
+        avatar_url,
+      });
+
+      res.status(200).json({
+        message: 'Onboarding completed successfully',
+        data: { user },
+      });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || 'Failed to complete onboarding' });
+    }
+  };
 }
 
 export default AuthController;

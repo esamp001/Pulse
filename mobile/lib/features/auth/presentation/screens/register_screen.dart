@@ -3,6 +3,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import '../../../../core/theme/pulse_colors.dart';
 import '../../../../core/widgets/rally_text_logo.dart';
 import '../../../home/presentation/screens/home_screen.dart';
+import 'onboarding_screen.dart';
 import '../../models/user_model.dart';
 import '../../services/auth_service.dart';
 import 'login_screen.dart';
@@ -71,9 +72,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => HomeScreen(
-            user: user,
-          ),
+          builder: (context) => user.isOnboarded
+              ? HomeScreen(user: user)
+              : OnboardingScreen(user: user),
         ),
       );
     } catch (e) {

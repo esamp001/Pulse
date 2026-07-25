@@ -38,9 +38,11 @@ mobile/lib/
 ## ⚙️ Backend Standards (Node.js + TypeScript)
 
 ### 1. Layered Architecture (Controller → Service → Repository)
-- **Controllers**: Handle HTTP requests, payload validation, and HTTP status codes.
-- **Services**: Encapsulate business logic, scoring validation, Elo updates, and event broadcasts.
-- **Repositories**: Execute Knex.js database queries against PostgreSQL. No business logic.
+*See detailed spec in [Backend Architecture Document](./backend/architecture.md).*
+- **Routes**: Map endpoints to controllers (`src/routes/`).
+- **Controllers**: Handle HTTP requests, payload validation (Zod), and HTTP status codes (`src/controllers/`).
+- **Services**: Encapsulate pure business logic, password encryption (bcrypt), JWT generation, and cloud storage integrations (`src/services/`).
+- **Repositories**: Execute Knex.js database queries against PostgreSQL (`src/repositories/`). No business logic. Use generic types `db<T>('table_name')`.
 
 ### 2. Naming Conventions
 - **Files**: `kebab-case.ts` (e.g., `auth-service.ts`, `user-repository.ts`).

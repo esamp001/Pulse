@@ -6,6 +6,9 @@ export interface User {
   rating: number;
   wins: number;
   losses: number;
+  is_onboarded: boolean;
+  primary_sport?: string;
+  avatar_url?: string | null;
   created_at: Date;
   updated_at: Date;
 }

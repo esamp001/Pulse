@@ -1,3 +1,4 @@
+import './config/crypto-polyfill';
 import app from './app';
 import { config } from './config/env';
 

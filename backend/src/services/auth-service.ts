@@ -80,10 +80,14 @@ class AuthService {
     return userWithoutPassword;
   }
 
+  async completeOnboarding(userId: string,payload: { primary_sport?: string; rating?: number; avatar_url?: string }): Promise<Omit<User, 'password_hash'>> {
+    const user = await this.userRepository.updateOnboardingStatus(userId, {is_onboarded: true,...payload});
+    const { password_hash, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+  }
+
   private generateToken(userId: string): string {
-    return jwt.sign({ userId }, config.jwtSecret, {
-      expiresIn: config.jwtExpiresIn as jwt.SignOptions['expiresIn'],
-    });
+    return jwt.sign({ userId }, config.jwtSecret, { expiresIn: config.jwtExpiresIn as jwt.SignOptions['expiresIn'],});
   }
 }
 

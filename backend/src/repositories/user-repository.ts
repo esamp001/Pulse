@@ -21,6 +21,20 @@ class UserRepository {
       .returning('*');
     return user;
   }
+
+  async updateOnboardingStatus(userId: string,data: { is_onboarded: boolean; primary_sport?: string; rating?: number; avatar_url?: string }): Promise<User> {
+
+    const updatePayload: Record<string, any> = {is_onboarded: data.is_onboarded, updated_at: new Date(),
+    };
+    
+    if (data.primary_sport) updatePayload.primary_sport = data.primary_sport;
+    if (data.rating) updatePayload.rating = data.rating;
+    if (data.avatar_url) updatePayload.avatar_url = data.avatar_url;
+
+    const [updatedUser] = await db<User>('users').where({ id: userId }).update(updatePayload).returning('*');
+
+    return updatedUser;
+  }
 }
 
 export default UserRepository;
