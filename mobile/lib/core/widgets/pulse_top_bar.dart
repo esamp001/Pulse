@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import '../theme/pulse_colors.dart';
 
+import 'rally_text_logo.dart';
+
 /// Reusable Top Bar Component for Pulse App
 ///
-/// Features Avatar on the left and Inbox/Notification icon on the right
-/// using SpaceBetween layout alignment.
+/// Features Avatar on the left, central RALLY brand logo, and Inbox notification icon on the right.
 class PulseTopBar extends StatelessWidget implements PreferredSizeWidget {
   final String? userName;
   final String? avatarUrl;
@@ -22,7 +23,7 @@ class PulseTopBar extends StatelessWidget implements PreferredSizeWidget {
   });
 
   @override
-  Size get preferredSize => const Size.fromHeight(72.0);
+  Size get preferredSize => const Size.fromHeight(68.0);
 
   String _getInitials(String name) {
     if (name.trim().isEmpty) return 'P';
@@ -39,17 +40,23 @@ class PulseTopBar extends StatelessWidget implements PreferredSizeWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final backgroundColor = theme.scaffoldBackgroundColor;
-    final surfaceColor = theme.colorScheme.surface;
-    final textPrimaryColor = theme.colorScheme.onSurface;
-    final borderColor = isDark ? PulseColors.darkBorder : PulseColors.border;
+    final headerBgGradient = LinearGradient(
+      colors: isDark
+          ? [PulseColors.darkSurface, const Color(0xFF121B1C)]
+          : [PulseColors.primary, const Color(0xFF1E3C42)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    );
+
+    final iconBgColor = isDark ? PulseColors.darkCard : Colors.white.withValues(alpha: 0.15);
+    final borderColor = isDark ? PulseColors.darkBorder : PulseColors.secondary.withValues(alpha: 0.3);
 
     return SafeArea(
       child: Container(
         height: preferredSize.height,
         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
         decoration: BoxDecoration(
-          color: backgroundColor,
+          gradient: headerBgGradient,
           border: Border(
             bottom: BorderSide(
               color: borderColor,
@@ -61,76 +68,82 @@ class PulseTopBar extends StatelessWidget implements PreferredSizeWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Left: User Avatar
+            // Left: User Avatar Button
             GestureDetector(
               onTap: onAvatarTap,
-              child: Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: surfaceColor,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: borderColor, width: 1.0),
-                    ),
-                    child: Center(
-                      child: Text(
-                        initials,
-                        style: TextStyle(
-                          color: textPrimaryColor,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: iconBgColor,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isDark ? PulseColors.secondary : Colors.white.withValues(alpha: 0.6),
+                    width: 1.5,
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    initials,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
-                ],
+                ),
               ),
             ),
 
-            // Center: (Logo removed)
+            // Center: Brand Logo
+            const RallyTextLogo(
+              fontSize: 20.0,
+              showSubtitle: false,
+            ),
 
-            // Right: Inbox / Notification Icon
+            // Right: Inbox / Notification Icon Button
             GestureDetector(
               onTap: onInboxTap,
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
                   Container(
-                    width: 42,
-                    height: 42,
+                    width: 40,
+                    height: 40,
                     decoration: BoxDecoration(
-                      color: surfaceColor,
+                      color: iconBgColor,
                       shape: BoxShape.circle,
-                      border: Border.all(color: borderColor),
+                      border: Border.all(
+                        color: isDark ? PulseColors.darkBorder : Colors.white.withValues(alpha: 0.3),
+                      ),
                     ),
-                    child: Icon(
+                    child: const Icon(
                       Icons.notifications_none_rounded,
-                      color: textPrimaryColor,
-                      size: 22,
+                      color: Colors.white,
+                      size: 20,
                     ),
                   ),
                   if (unreadCount > 0)
                     Positioned(
-                      top: 0,
-                      right: 0,
+                      top: -2,
+                      right: -2,
                       child: Container(
                         padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           color: PulseColors.accent,
                           shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 1.5),
                         ),
                         constraints: const BoxConstraints(
-                          minWidth: 16,
-                          minHeight: 16,
+                          minWidth: 18,
+                          minHeight: 18,
                         ),
                         child: Text(
                           unreadCount > 9 ? '9+' : '$unreadCount',
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
                           ),
                           textAlign: TextAlign.center,
                         ),

@@ -25,15 +25,15 @@ abstract class PulseColors {
   static const Color warning = Color(0xFFFFB74D);
 
   // Borders & Dividers
-  static const Color border = Color(0xFFD6E5E8);        // Outlines and dividers
-
+  static const Color border = Color(0xFFB4CDD3);        // High contrast outlines and dividers
+  
   // Dark Mode Palette Colors
   static const Color darkBackground = Color(0xFF0F1718);
   static const Color darkSurface = Color(0xFF182426);
   static const Color darkCard = Color(0xFF1D2C2F);
   static const Color darkTextPrimary = Color(0xFFF2F7F8);
   static const Color darkTextSecondary = Color(0xFF91A4A7);
-  static const Color darkBorder = Color(0xFF243538);
+  static const Color darkBorder = Color(0xFF2E4549);
 
   // Dynamic helper methods
   static Color getBackground(bool isDark) => isDark ? darkBackground : background;

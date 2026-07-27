@@ -606,13 +606,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     border: Border.all(
                       color: isDark ? PulseColors.darkBorder : PulseColors.border.withValues(alpha: 0.8),
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
-                        blurRadius: 24,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
                   ),
                   child: Column(
                     children: [

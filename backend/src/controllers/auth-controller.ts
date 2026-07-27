@@ -18,6 +18,11 @@ const googleAuthSchema = z.object({
   name: z.string().min(1, 'Name is required'),
 });
 
+const updatePasswordSchema = z.object({
+  current_password: z.string().optional(),
+  new_password: z.string().min(6, 'Password must be at least 6 characters'),
+});
+
 class AuthController {
   private authService: AuthService;
 
@@ -132,6 +137,35 @@ class AuthController {
       });
     } catch (error: any) {
       res.status(400).json({ error: error.message || 'Failed to complete onboarding' });
+    }
+  };
+
+  updatePassword = async (req: any, res: Response): Promise<void> => {
+    try {
+      const userId = req.user?.userId;
+
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const validation = updatePasswordSchema.safeParse(req.body);
+
+      if (!validation.success) {
+        res.status(400).json({ error: validation.error.errors[0].message });
+        return;
+      }
+
+      const { current_password, new_password } = validation.data;
+      
+      const user = await this.authService.updatePassword(userId, current_password, new_password);
+
+      res.status(200).json({
+        message: 'Password updated successfully',
+        data: { user },
+      });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || 'Failed to update password' });
     }
   };
 }

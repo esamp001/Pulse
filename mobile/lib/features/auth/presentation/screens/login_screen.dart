@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../../../../core/theme/pulse_colors.dart';
 import '../../../../core/widgets/rally_text_logo.dart';
 import '../../../home/presentation/screens/home_screen.dart';
@@ -20,7 +22,13 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final AuthService _authService = AuthService();
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    clientId: kIsWeb ? '254427635301-o7l406affi0gq1j3ae9k63duq0mna3k3.apps.googleusercontent.com' : null,
+    serverClientId: kIsWeb ? null : '254427635301-o7l406affi0gq1j3ae9k63duq0mna3k3.apps.googleusercontent.com',
+    scopes: ['email'],
+  );
   bool _isPasswordVisible = false;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -93,11 +101,58 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _handleGoogleSignIn() async {
+    setState(() => _isLoading = true);
+    try {
+      final googleAccount = await _googleSignIn.signIn();
+      
+      if (googleAccount == null) {
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      final email = googleAccount.email;
+      final name = googleAccount.displayName ?? email.split('@')[0];
+
+      final result = await _authService.googleAuthenticate(
+        email: email,
+        name: name,
+      );
+
+      if (!mounted) return;
+
+      final userData = result['data']['user'];
+      final user = UserModel.fromJson(userData);
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => user.isOnboarded
+              ? HomeScreen(user: user)
+              : OnboardingScreen(user: user),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Google Sign-In failed: ${e.toString().replaceAll('Exception: ', '')}'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textPrimaryColor = PulseColors.getTextPrimary(isDark);
     final textSecondaryColor = PulseColors.getTextSecondary(isDark);
+    final surfaceColor = PulseColors.getSurface(isDark);
+    final borderTileColor = PulseColors.getBorder(isDark);
     final accentLinkColor = isDark ? PulseColors.secondary : PulseColors.primary;
 
     return Scaffold(
@@ -116,7 +171,53 @@ class _LoginScreenState extends State<LoginScreen> {
                   const Center(
                     child: RallyTextLogo(fontSize: 44.0),
                   ),
-                  const SizedBox(height: 36),
+                  const SizedBox(height: 32),
+
+                  // Social Auth Buttons
+                  OutlinedButton.icon(
+                    onPressed: _isLoading ? null : _handleGoogleSignIn,
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      side: BorderSide(color: borderTileColor),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      backgroundColor: surfaceColor,
+                    ),
+                    icon: Icon(
+                      Icons.g_mobiledata_rounded,
+                      size: 28,
+                      color: accentLinkColor,
+                    ),
+                    label: Text(
+                      'Sign in with Google',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: textPrimaryColor,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  Row(
+                    children: [
+                      Expanded(child: Divider(color: borderTileColor)),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                        child: Text(
+                          'OR LOG IN WITH EMAIL',
+                          style: TextStyle(
+                            color: textSecondaryColor,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      Expanded(child: Divider(color: borderTileColor)),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
 
                   // Email Field
                   TextFormField(
@@ -199,8 +300,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 24),
 
                   // Sign Up Navigation Link
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Text(
                         "Don't have an account? ",

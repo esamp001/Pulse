@@ -9,6 +9,7 @@ export interface User {
   is_onboarded: boolean;
   primary_sport?: string;
   avatar_url?: string | null;
+  has_password?: boolean;
   created_at: Date;
   updated_at: Date;
 }

@@ -11,27 +11,43 @@ class UserRepository {
   }
 
   async create(userData: CreateUserData): Promise<User> {
-    const [user] = await db<User>('users')
+    const [user] = (await db<User>('users')
       .insert({
         name: userData.name,
         email: userData.email,
         password_hash: userData.password_hash,
         rating: userData.rating || 1200,
       })
-      .returning('*');
+      .returning(['id', 'name', 'email', 'password_hash', 'rating', 'wins', 'losses', 'is_onboarded', 'primary_sport', 'avatar_url', 'created_at', 'updated_at'])) as User[];
     return user;
   }
 
-  async updateOnboardingStatus(userId: string,data: { is_onboarded: boolean; primary_sport?: string; rating?: number; avatar_url?: string }): Promise<User> {
-
-    const updatePayload: Record<string, any> = {is_onboarded: data.is_onboarded, updated_at: new Date(),
+  async updateOnboardingStatus(userId: string, data: { is_onboarded: boolean; primary_sport?: string; rating?: number; avatar_url?: string }): Promise<User> {
+    const updatePayload: Record<string, any> = {
+      is_onboarded: data.is_onboarded,
+      updated_at: new Date(),
     };
     
     if (data.primary_sport) updatePayload.primary_sport = data.primary_sport;
     if (data.rating) updatePayload.rating = data.rating;
     if (data.avatar_url) updatePayload.avatar_url = data.avatar_url;
 
-    const [updatedUser] = await db<User>('users').where({ id: userId }).update(updatePayload).returning('*');
+    const [updatedUser] = (await db<User>('users')
+      .where({ id: userId })
+      .update(updatePayload)
+      .returning(['id', 'name', 'email', 'password_hash', 'rating', 'wins', 'losses', 'is_onboarded', 'primary_sport', 'avatar_url', 'created_at', 'updated_at'])) as User[];
+
+    return updatedUser;
+  }
+
+  async updatePassword(userId: string, passwordHash: string): Promise<User> {
+    const [updatedUser] = (await db<User>('users')
+      .where({ id: userId })
+      .update({
+        password_hash: passwordHash,
+        updated_at: new Date(),
+      })
+      .returning(['id', 'name', 'email', 'password_hash', 'rating', 'wins', 'losses', 'is_onboarded', 'primary_sport', 'avatar_url', 'created_at', 'updated_at'])) as User[];
 
     return updatedUser;
   }

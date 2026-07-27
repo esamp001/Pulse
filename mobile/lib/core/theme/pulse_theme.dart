@@ -36,7 +36,8 @@ abstract class PulseTheme {
       // Card Theme
       cardTheme: CardThemeData(
         color: PulseColors.surface,
-        elevation: 1,
+        elevation: 0,
+        shadowColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: const BorderSide(color: PulseColors.border, width: 1),
@@ -73,6 +74,8 @@ abstract class PulseTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: PulseColors.primary,
           foregroundColor: Colors.white,
+          elevation: 0,
+          shadowColor: Colors.transparent,
           minimumSize: const Size(double.infinity, 52),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -106,6 +109,7 @@ abstract class PulseTheme {
       appBarTheme: const AppBarTheme(
         backgroundColor: PulseColors.darkBackground,
         elevation: 0,
+        shadowColor: Colors.transparent,
         centerTitle: true,
         titleTextStyle: TextStyle(
           color: PulseColors.darkTextPrimary,
@@ -117,7 +121,8 @@ abstract class PulseTheme {
 
       cardTheme: CardThemeData(
         color: PulseColors.darkSurface,
-        elevation: 1,
+        elevation: 0,
+        shadowColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: const BorderSide(color: PulseColors.darkBorder, width: 1),
@@ -128,6 +133,8 @@ abstract class PulseTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: PulseColors.secondary,
           foregroundColor: Colors.white,
+          elevation: 0,
+          shadowColor: Colors.transparent,
           minimumSize: const Size(double.infinity, 52),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),

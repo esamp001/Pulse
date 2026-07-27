@@ -33,6 +33,9 @@ mobile/lib/
 - **Constructors**: Always prefer `const` constructors wherever possible for optimal rendering performance.
 - **Theme Usage**: Always consume brand colors from `PulseColors` or `Theme.of(context)` rather than hardcoding hex colors inline.
 
+### 4. UI & Styling Rules (Strict Flat Design)
+- **NO DROP SHADOWS (`boxShadow` / `elevation`)**: Do NOT use `boxShadow`, `BoxShadow(...)`, `elevation`, or drop shadows on cards, buttons, dialogs, top app bars, or navigation bars across the mobile app. All containers MUST remain flat with clean borders (`Border.all(...)`, `side: BorderSide(...)`).
+
 ---
 
 ## ⚙️ Backend Standards (Node.js + TypeScript)

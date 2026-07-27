@@ -144,6 +144,38 @@ class AuthService {
     }
   }
 
+  /// Update or set user password
+  Future<UserModel> updatePassword({ String? currentPassword, required String newPassword, }) async {
+    final token = _currentToken;
+    
+    if (token == null) {
+      throw Exception('No active session token');
+    }
+
+    final response = await http.put(
+      Uri.parse('$baseUrl/password'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        if (currentPassword != null && currentPassword.isNotEmpty)
+          'current_password': currentPassword,
+        'new_password': newPassword,
+      }),
+    );
+
+    final responseData = jsonDecode(response.body);
+
+    if (response.statusCode == 200 && responseData['data']?['user'] != null) {
+      final user = UserModel.fromJson(responseData['data']['user']);
+      _currentUser = user;
+      return user;
+    } else {
+      throw Exception(responseData['error'] ?? 'Failed to update password');
+    }
+  }
+
   /// Upload user avatar image bytes via Cloudflare R2 presigned URL
   Future<String?> uploadAvatarImage(List<int> imageBytes, {String mimeType = 'image/jpeg'}) async {
     final token = _currentToken;

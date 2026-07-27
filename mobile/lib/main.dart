@@ -4,7 +4,7 @@ import 'core/theme/pulse_theme.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
 
 /// Global Theme Mode Notifier for Rally App
-final ValueNotifier<ThemeMode> themeModeNotifier = ValueNotifier<ThemeMode>(ThemeMode.light);
+final ValueNotifier<ThemeMode> themeModeNotifier = ValueNotifier<ThemeMode>(ThemeMode.dark);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

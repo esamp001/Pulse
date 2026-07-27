@@ -21,7 +21,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentBottomNavIndex = 0;
-  int _selectedCategoryIndex = 0; // 0: Start Match, 1: Officiate, 2: Leaderboard
   bool get _isDarkMode => themeModeNotifier.value == ThemeMode.dark;
   UserModel? _user;
   bool _isLoadingUser = false;
@@ -118,8 +117,12 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  /// Nike Run Club Inspired Home Screen Content
+  /// Modern Minimalist Bento Grid Home Screen Content
   Widget _buildHomeContent(String firstName) {
+    final ratingText = _user?.formattedRating ?? '1,200 ELO';
+    final recordText = _user?.recordText ?? '0W - 0L';
+    final sportText = _user?.formattedSport ?? 'Pickleball';
+
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
@@ -128,89 +131,288 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           // 1. Personalized Greeting Header
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Welcome Back, $firstName!',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w800,
-                  color: PulseColors.getTextPrimary(_isDarkMode),
-                  letterSpacing: -0.6,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            'Welcome back, $firstName',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w900,
+                              color: PulseColors.getTextPrimary(_isDarkMode),
+                              letterSpacing: -0.5,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (_isLoadingUser) ...[
+                          const SizedBox(width: 8),
+                          const SizedBox(
+                            height: 14,
+                            width: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: PulseColors.accent),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Ready for your next verified match?',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: PulseColors.getTextSecondary(_isDarkMode),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
               ),
-              if (_isLoadingUser) ...[
-                const SizedBox(width: 10),
-                const SizedBox(
-                  height: 16,
-                  width: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: PulseColors.accent),
-                ),
-              ],
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
 
-          // 2. Horizontal Sub-Tabs ("Start a Match", "Officiate", "Training Plans")
+          // 2. Athlete Quick Stats Bar (Minimalist Pills)
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
             child: Row(
               children: [
-                _buildSubTab(0, 'Start a Match'),
-                const SizedBox(width: 20),
-                _buildSubTab(1, 'Officiate'),
-                const SizedBox(width: 20),
-                _buildSubTab(2, 'Leaderboard'),
+                _buildStatPill(Icons.emoji_events_rounded, ratingText, PulseColors.accent),
+                const SizedBox(width: 8),
+                _buildStatPill(Icons.bolt_rounded, recordText, const Color(0xFF4CAF50)),
+                const SizedBox(width: 8),
+                _buildStatPill(Icons.sports_tennis_rounded, sportText, const Color(0xFFFF9800)),
               ],
             ),
           ),
           const SizedBox(height: 20),
 
-          // 3. Featured Horizontal Image Card (Flat Minimalist Overlay)
+          // 3. Featured Hero Action Card ("COMPETE NOW")
+          InkWell(
+            onTap: _onCompeteNowPressed,
+            borderRadius: BorderRadius.circular(24),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: _isDarkMode
+                      ? [const Color(0xFF1E2E32), const Color(0xFF121B1D)]
+                      : [PulseColors.primary, const Color(0xFF152A2E)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: _isDarkMode ? PulseColors.accent.withValues(alpha: 0.5) : PulseColors.secondary.withValues(alpha: 0.5),
+                  width: 1.8,
+                ),
+              ),
+              child: Row(
+                children: [
+                  // Hero Icon Container
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: PulseColors.accent.withValues(alpha: 0.2),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: PulseColors.accent, width: 1.5),
+                    ),
+                    child: const Icon(
+                      Icons.bolt_rounded,
+                      color: PulseColors.accent,
+                      size: 26,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+
+                  // Content text
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'START A MATCH',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: PulseColors.accent,
+                            letterSpacing: 1.0,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Compete Now',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                            letterSpacing: -0.3,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Create or join a rated match',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.white.withValues(alpha: 0.7),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+
+                  // Forward Arrow Container Button
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: const BoxDecoration(
+                      color: PulseColors.accent,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.arrow_forward_rounded,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // 4. Section Title: Utility Actions
+          Text(
+            'Utility Actions',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: PulseColors.getTextPrimary(_isDarkMode),
+              letterSpacing: -0.3,
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // 5. Bento Grid Layout (Split Header & Info Panel Card Design)
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 1.15,
+            children: [
+              _buildSplitHeaderCard(
+                imagePath: 'assets/images/scan_qr.png',
+                title: 'Scan QR',
+                subtitle: 'Join match or court room',
+                badgeIcon: Icons.qr_code_scanner_rounded,
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Opening QR Scanner')),
+                  );
+                },
+              ),
+              _buildSplitHeaderCard(
+                imagePath: 'assets/images/find_court.png',
+                title: 'Find Courts',
+                subtitle: 'Locate courts & sessions',
+                badgeIcon: Icons.place_rounded,
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Locating nearby courts...')),
+                  );
+                },
+              ),
+              _buildSplitHeaderCard(
+                imagePath: 'assets/images/officiate.png',
+                title: 'Officiate',
+                subtitle: 'Neutral ref & live scoring',
+                badgeIcon: Icons.gavel_rounded,
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Opening Officiate Mode')),
+                  );
+                },
+              ),
+              _buildSplitHeaderCard(
+                imagePath: 'assets/images/all_balls.png',
+                title: 'Log Practice',
+                subtitle: 'Record unrated drill stats',
+                badgeIcon: Icons.fitness_center_rounded,
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Logging practice session...')),
+                  );
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          // 6. Featured Tournament / Event Banner
           Container(
+            width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: PulseColors.getSurface(_isDarkMode),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: PulseColors.getBorder(_isDarkMode), width: 1.0),
+              border: Border.all(
+                color: PulseColors.getBorder(_isDarkMode),
+                width: 1.8,
+              ),
             ),
             child: Row(
               children: [
-                // Pulse Sports Banner Image
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
-                  child: Image.asset(
-                    'assets/images/pulse_sports_banner.png',
-                    width: 76,
-                    height: 76,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        width: 76,
-                        height: 76,
-                        color: PulseColors.primary,
-                        child: const Icon(Icons.sports_tennis, color: Colors.white, size: 32),
-                      );
-                    },
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: PulseColors.accent.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(
+                    Icons.stars_rounded,
+                    color: PulseColors.accent,
+                    size: 26,
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Official Scored • 8 Weeks Left',
+                        'LOCAL LEAGUES & TOURNAMENTS',
                         style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
                           color: PulseColors.getTextSecondary(_isDarkMode),
+                          letterSpacing: 0.5,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
                       Text(
-                        '10K Ranking Ladder',
+                        '10K Summer Ladder Cup',
                         style: TextStyle(
-                          fontSize: 17,
+                          fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color: PulseColors.getTextPrimary(_isDarkMode),
                         ),
@@ -218,180 +420,112 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                 ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: PulseColors.getTextSecondary(_isDarkMode),
+                ),
               ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // 7. Community Pulse / Nearby Challenges Section
+          Text(
+            'Community Pulse',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: PulseColors.getTextPrimary(_isDarkMode),
+              letterSpacing: -0.3,
             ),
           ),
           const SizedBox(height: 12),
 
-          // Pagination Dots (Nike Style `■ — — —`)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 16,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: PulseColors.getTextPrimary(_isDarkMode),
-                  borderRadius: BorderRadius.circular(2),
-                ),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: PulseColors.getSurface(_isDarkMode),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: PulseColors.getBorder(_isDarkMode),
+                width: 1.8,
               ),
-              const SizedBox(width: 4),
-              Container(
-                width: 8,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: PulseColors.getBorder(_isDarkMode),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(width: 4),
-              Container(
-                width: 8,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: PulseColors.getBorder(_isDarkMode),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(width: 4),
-              Container(
-                width: 8,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: PulseColors.getBorder(_isDarkMode),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 28),
-
-          // 4. Central Hero Section: Vector Tennis Court Lines + Big Circular COMPETE Button
-          Center(
+            ),
             child: Column(
               children: [
-                Container(
-                  width: double.infinity,
-                  height: 230,
-                  decoration: BoxDecoration(
-                    color: PulseColors.getBackground(_isDarkMode),
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // Vector Tennis Court Lines Background
-                      CustomPaint(
-                        size: const Size(double.infinity, 230),
-                        painter: CourtLinePainter(),
-                      ),
-
-                      // Side Options & Big Central COMPETE Button
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 18,
+                      backgroundColor: PulseColors.primary.withValues(alpha: 0.2),
+                      child: const Icon(Icons.people_alt_rounded, size: 18, color: PulseColors.accent),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Left Option Button: Match Specs
-                          GestureDetector(
-                            onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Opening Match Rules & Settings')),
-                              );
-                            },
-                            child: Container(
-                              width: 50,
-                              height: 50,
-                              decoration: BoxDecoration(
-                                color: PulseColors.getSurface(_isDarkMode),
-                                shape: BoxShape.circle,
-                                border: Border.all(color: PulseColors.getBorder(_isDarkMode)),
-                              ),
-                              child: Icon(
-                                Icons.settings_outlined,
-                                color: PulseColors.getTextPrimary(_isDarkMode),
-                                size: 22,
-                              ),
+                          Text(
+                            'Open Doubles Lobby Nearby',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: PulseColors.getTextPrimary(_isDarkMode),
                             ),
                           ),
-                          const SizedBox(width: 20),
-
-                          // Central Circular "COMPETE NOW" Button
-                          GestureDetector(
-                            onTap: _onCompeteNowPressed,
-                            child: Container(
-                              width: 116,
-                              height: 116,
-                              decoration: BoxDecoration(
-                                color: _isDarkMode ? PulseColors.accent : PulseColors.textPrimary,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Center(
-                                child: Text(
-                                  'COMPETE\nNOW',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 1.0,
-                                    height: 1.1,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 20),
-
-                          // Right Option Button: Officiate / QR Scanner
-                          GestureDetector(
-                            onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Scanner / Officiate Mode')),
-                              );
-                            },
-                            child: Container(
-                              width: 50,
-                              height: 50,
-                              decoration: BoxDecoration(
-                                color: PulseColors.getSurface(_isDarkMode),
-                                shape: BoxShape.circle,
-                                border: Border.all(color: PulseColors.getBorder(_isDarkMode)),
-                              ),
-                              child: Icon(
-                                Icons.qr_code_scanner_rounded,
-                                color: PulseColors.getTextPrimary(_isDarkMode),
-                                size: 22,
-                              ),
+                          Text(
+                            'Need 1 player @ BGC Courts • 1.2 km away',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: PulseColors.getTextSecondary(_isDarkMode),
                             ),
                           ),
                         ],
                       ),
-                    ],
-                  ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Joined open lobby invitation!')),
+                        );
+                      },
+                      child: const Text('JOIN', style: TextStyle(fontWeight: FontWeight.bold, color: PulseColors.accent)),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 20),
-
-                // Bottom Pill Button ("Quick Match Setup")
-                ElevatedButton(
-                  onPressed: _onCompeteNowPressed,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: PulseColors.getSurface(_isDarkMode),
-                    foregroundColor: PulseColors.getTextPrimary(_isDarkMode),
-                    elevation: 0,
-                    shadowColor: Colors.transparent,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24),
-                      side: BorderSide(color: PulseColors.getBorder(_isDarkMode)),
+                Divider(height: 20, color: PulseColors.getBorder(_isDarkMode)),
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 18,
+                      backgroundColor: Colors.green.withValues(alpha: 0.2),
+                      child: const Icon(Icons.check_circle_rounded, size: 18, color: Colors.green),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
-                  ),
-                  child: Text(
-                    'Quick Match Setup',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: PulseColors.getTextPrimary(_isDarkMode),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Marcus D. defeated Dave K.',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: PulseColors.getTextPrimary(_isDarkMode),
+                            ),
+                          ),
+                          Text(
+                            'Score: 2-1 (11-9, 8-11, 11-7) • +12 ELO',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: PulseColors.getTextSecondary(_isDarkMode),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ],
             ),
@@ -402,40 +536,166 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildSubTab(int index, String label) {
-    final isSelected = _selectedCategoryIndex == index;
-
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedCategoryIndex = index;
-        });
-      },
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildStatPill(IconData icon, String text, Color accentColor) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: BoxDecoration(
+        color: PulseColors.getSurface(_isDarkMode),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: PulseColors.getBorder(_isDarkMode),
+          width: 1.5,
+        ),
+      ),
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          Icon(icon, size: 14, color: accentColor),
+          const SizedBox(width: 6),
           Text(
-            label,
+            text,
             style: TextStyle(
-              fontSize: 15,
-              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
-              color: isSelected
-                  ? PulseColors.getTextPrimary(_isDarkMode)
-                  : (_isDarkMode ? PulseColors.darkTextSecondary : PulseColors.textDisabled),
-            ),
-          ),
-          const SizedBox(height: 4),
-          if (isSelected)
-            Container(
-              height: 2,
-              width: 24,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
               color: PulseColors.getTextPrimary(_isDarkMode),
             ),
+          ),
         ],
       ),
     );
   }
+
+  Widget _buildSplitHeaderCard({
+    required String imagePath,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    IconData? badgeIcon,
+  }) {
+    final surfaceColor = PulseColors.getSurface(_isDarkMode);
+    final textPrimary = PulseColors.getTextPrimary(_isDarkMode);
+    final textSecondary = PulseColors.getTextSecondary(_isDarkMode);
+    final borderColor = PulseColors.getBorder(_isDarkMode);
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        decoration: BoxDecoration(
+          color: surfaceColor,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: borderColor,
+            width: 1.8,
+          ),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // 1. Top Featured Image Header (58% height)
+              Expanded(
+                flex: 58,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // Background Image
+                    Image.asset(
+                      imagePath,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: PulseColors.getCard(_isDarkMode),
+                          child: const Center(
+                            child: Icon(Icons.image_not_supported_rounded, color: PulseColors.textDisabled),
+                          ),
+                        );
+                      },
+                    ),
+
+                    // Subtle Bottom Gradient Transition into Bottom Info Panel
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.transparent,
+                            Colors.transparent,
+                            surfaceColor.withValues(alpha: 0.35),
+                            surfaceColor,
+                          ],
+                          stops: const [0.0, 0.65, 0.88, 1.0],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                      ),
+                    ),
+
+                    // Top Right Icon Badge (Consistent Brand Palette)
+                    if (badgeIcon != null)
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: PulseColors.accent,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.35),
+                              width: 1.0,
+                            ),
+                          ),
+                          child: Icon(badgeIcon, color: Colors.white, size: 14),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+
+              // 2. Bottom Info Panel (42% height)
+              Expanded(
+                flex: 42,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w900,
+                          color: textPrimary,
+                          letterSpacing: -0.2,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                          color: textSecondary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+
 
   Widget _buildPlaceholderTab(String title) {
     return Center(
@@ -878,111 +1138,535 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _showPasswordSetupModal(BuildContext context) {
+    final currentPasswordController = TextEditingController();
+    final newPasswordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+
+    bool obscureCurrent = true;
+    bool obscureNew = true;
+    bool obscureConfirm = true;
+    bool isSubmitting = false;
+
+    final isSocialUser = _user?.authProvider != null && _user!.authProvider != 'email';
+    final hasExistingPassword = _user?.hasPassword ?? (!isSocialUser);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (modalContext) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Container(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+                top: 20,
+                left: 20,
+                right: 20,
+              ),
+              decoration: BoxDecoration(
+                color: PulseColors.getSurface(_isDarkMode),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                border: Border.all(
+                  color: PulseColors.getBorder(_isDarkMode),
+                  width: 1.5,
+                ),
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Handle Bar
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: PulseColors.getTextSecondary(_isDarkMode).withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Modal Header
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: PulseColors.accent.withValues(alpha: 0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            hasExistingPassword ? Icons.lock_reset_rounded : Icons.enhanced_encryption_rounded,
+                            color: PulseColors.accent,
+                            size: 22,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                hasExistingPassword ? 'Change Password' : 'Create Rally Password',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                  color: PulseColors.getTextPrimary(_isDarkMode),
+                                ),
+                              ),
+                              Text(
+                                hasExistingPassword
+                                    ? 'Update your password for security'
+                                    : 'Set up a password for direct email sign-in',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: PulseColors.getTextSecondary(_isDarkMode),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.close_rounded, color: PulseColors.getTextSecondary(_isDarkMode)),
+                          onPressed: isSubmitting ? null : () => Navigator.pop(modalContext),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Social Account Connection Info Pill (If Social Login)
+                    if (isSocialUser) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: PulseColors.getBackground(_isDarkMode),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: PulseColors.getBorder(_isDarkMode)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.g_mobiledata_rounded, color: PulseColors.accent, size: 24),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Connected via Social Auth (${_user?.email ?? ''})',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: PulseColors.getTextPrimary(_isDarkMode),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // 1. Current Password Field (ONLY shown if user already has a password)
+                    if (hasExistingPassword) ...[
+                      Text(
+                        'Current Password',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: PulseColors.getTextPrimary(_isDarkMode),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: currentPasswordController,
+                        obscureText: obscureCurrent,
+                        enabled: !isSubmitting,
+                        style: TextStyle(color: PulseColors.getTextPrimary(_isDarkMode)),
+                        decoration: InputDecoration(
+                          hintText: 'Enter current password',
+                          hintStyle: TextStyle(color: PulseColors.getTextSecondary(_isDarkMode).withValues(alpha: 0.6)),
+                          prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              obscureCurrent ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                              size: 20,
+                            ),
+                            onPressed: () => setModalState(() => obscureCurrent = !obscureCurrent),
+                          ),
+                          filled: true,
+                          fillColor: PulseColors.getBackground(_isDarkMode),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide(color: PulseColors.getBorder(_isDarkMode)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // 2. New Password Field
+                    Text(
+                      hasExistingPassword ? 'New Password' : 'Create Password',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: PulseColors.getTextPrimary(_isDarkMode),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: newPasswordController,
+                      obscureText: obscureNew,
+                      enabled: !isSubmitting,
+                      style: TextStyle(color: PulseColors.getTextPrimary(_isDarkMode)),
+                      decoration: InputDecoration(
+                        hintText: 'Enter new password (min. 6 chars)',
+                        hintStyle: TextStyle(color: PulseColors.getTextSecondary(_isDarkMode).withValues(alpha: 0.6)),
+                        prefixIcon: const Icon(Icons.key_rounded, size: 20),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            obscureNew ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                            size: 20,
+                          ),
+                          onPressed: () => setModalState(() => obscureNew = !obscureNew),
+                        ),
+                        filled: true,
+                        fillColor: PulseColors.getBackground(_isDarkMode),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(color: PulseColors.getBorder(_isDarkMode)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // 3. Confirm New Password Field
+                    Text(
+                      'Confirm Password',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: PulseColors.getTextPrimary(_isDarkMode),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: confirmPasswordController,
+                      obscureText: obscureConfirm,
+                      enabled: !isSubmitting,
+                      style: TextStyle(color: PulseColors.getTextPrimary(_isDarkMode)),
+                      decoration: InputDecoration(
+                        hintText: 'Re-enter password',
+                        hintStyle: TextStyle(color: PulseColors.getTextSecondary(_isDarkMode).withValues(alpha: 0.6)),
+                        prefixIcon: const Icon(Icons.check_circle_outline_rounded, size: 20),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            obscureConfirm ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                            size: 20,
+                          ),
+                          onPressed: () => setModalState(() => obscureConfirm = !obscureConfirm),
+                        ),
+                        filled: true,
+                        fillColor: PulseColors.getBackground(_isDarkMode),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(color: PulseColors.getBorder(_isDarkMode)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Submit Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: isSubmitting
+                            ? null
+                            : () async {
+                                final currentPass = currentPasswordController.text.trim();
+                                final newPass = newPasswordController.text.trim();
+                                final confirmPass = confirmPasswordController.text.trim();
+
+                                if (hasExistingPassword && currentPass.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Please enter your current password')),
+                                  );
+                                  return;
+                                }
+
+                                if (newPass.length < 6) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Password must be at least 6 characters long')),
+                                  );
+                                  return;
+                                }
+
+                                if (newPass != confirmPass) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Passwords do not match')),
+                                  );
+                                  return;
+                                }
+
+                                final messenger = ScaffoldMessenger.of(context);
+                                final navigator = Navigator.of(modalContext);
+                                setModalState(() => isSubmitting = true);
+
+                                try {
+                                  final updatedUser = await _authService.updatePassword(
+                                    currentPassword: hasExistingPassword ? currentPass : null,
+                                    newPassword: newPass,
+                                  );
+
+                                  if (mounted) {
+                                    setState(() => _user = updatedUser);
+                                    navigator.pop();
+                                    messenger.showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          hasExistingPassword
+                                              ? 'Password updated successfully!'
+                                              : 'Rally password created! You can now log in with email/password.',
+                                        ),
+                                        backgroundColor: const Color(0xFF4CAF50),
+                                      ),
+                                    );
+                                  }
+                                } catch (e) {
+                                  setModalState(() => isSubmitting = false);
+                                  if (mounted) {
+                                    messenger.showSnackBar(
+                                      SnackBar(
+                                        content: Text(e.toString().replaceAll('Exception: ', '')),
+                                        backgroundColor: Colors.redAccent,
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: PulseColors.accent,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: isSubmitting
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Text(
+                                hasExistingPassword ? 'Update Password' : 'Create Password',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   Widget _buildProfileTab() {
     final fullName = _user?.name ?? 'Ellejun Apresto Sampaga';
     final email = _user?.email ?? 'ellejunsampaga@gmail.com';
     final initials = _user?.firstName != null && _user!.firstName.isNotEmpty
         ? _user!.firstName[0].toUpperCase()
         : 'E';
+    final ratingText = _user?.formattedRating ?? '1,200 ELO';
+    final recordText = _user?.recordText ?? '5W-1L';
+    final sportText = _user?.formattedSport ?? 'Pickleball';
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.all(20.0),
+      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
       child: Column(
         children: [
-          // Profile Header Card (Horizontal Pill Layout)
+          // 1. Prominent Hero Avatar & User Info Card
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-            decoration: BoxDecoration(
-              color: PulseColors.getBackground(_isDarkMode),
-              borderRadius: BorderRadius.circular(32),
-              border: Border.all(color: PulseColors.getBorder(_isDarkMode)),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: PulseColors.getSurface(_isDarkMode),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: PulseColors.getBorder(_isDarkMode), width: 1.0),
-                  ),
-                  child: Center(
-                    child: Text(
-                      initials,
-                      style: TextStyle(
-                        color: PulseColors.getTextPrimary(_isDarkMode),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        fullName,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          color: PulseColors.getTextPrimary(_isDarkMode),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        email,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: PulseColors.getTextSecondary(_isDarkMode),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Athlete Quick Stats
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+            padding: const EdgeInsets.all(24.0),
             decoration: BoxDecoration(
               color: PulseColors.getSurface(_isDarkMode),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: PulseColors.getBorder(_isDarkMode)),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: PulseColors.getBorder(_isDarkMode),
+                width: 1.8,
+              ),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+            child: Column(
               children: [
-                _buildDrawerStatItem('ELO', _user != null ? '${_user!.rating}' : '1,200'),
-                Container(width: 1, height: 24, color: PulseColors.getBorder(_isDarkMode)),
-                _buildDrawerStatItem('RECORD', _user != null ? '${_user!.wins}W-${_user!.losses}L' : '0W-0L'),
-                Container(width: 1, height: 28, color: PulseColors.getBorder(_isDarkMode)),
-                _buildDrawerStatItem('WIN RATE', '100%'),
+                // Prominent Centered Avatar with Camera Edit Badge
+                Stack(
+                  children: [
+                    Container(
+                      width: 96,
+                      height: 96,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [PulseColors.accent, PulseColors.secondary],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: PulseColors.accent,
+                          width: 2.5,
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(3.0),
+                        child: CircleAvatar(
+                          backgroundColor: PulseColors.getCard(_isDarkMode),
+                          child: Text(
+                            initials,
+                            style: TextStyle(
+                              color: PulseColors.getTextPrimary(_isDarkMode),
+                              fontSize: 36,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: InkWell(
+                        onTap: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Profile photo upload feature')),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          padding: const EdgeInsets.all(7),
+                          decoration: BoxDecoration(
+                            color: PulseColors.accent,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 1.8),
+                          ),
+                          child: const Icon(
+                            Icons.camera_alt_rounded,
+                            color: Colors.white,
+                            size: 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+
+                // User Full Name & Handle/Email
+                Text(
+                  fullName,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    color: PulseColors.getTextPrimary(_isDarkMode),
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  email,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: PulseColors.getTextSecondary(_isDarkMode),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Athlete Status Badges
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  alignment: WrapAlignment.center,
+                  children: [
+                    _buildStatPill(Icons.emoji_events_rounded, ratingText, PulseColors.accent),
+                    _buildStatPill(Icons.bolt_rounded, recordText, const Color(0xFF4CAF50)),
+                    _buildStatPill(Icons.sports_tennis_rounded, sportText, const Color(0xFFFF9800)),
+                  ],
+                ),
               ],
             ),
           ),
           const SizedBox(height: 20),
 
-          // Dark Mode Toggle Switch
+          // 2. Settings & Security Section Title
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Account & Settings',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: PulseColors.getTextPrimary(_isDarkMode),
+                letterSpacing: -0.3,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // 3. Password Setup Tile (Interactive Modal Launcher)
+          _buildDrawerMenuItem(
+            icon: Icons.lock_reset_rounded,
+            title: 'Password & Security Setup',
+            subtitle: 'Setup or update account password',
+            onTap: () => _showPasswordSetupModal(context),
+          ),
+
+          // 4. Other Settings Menu Items
+          _buildDrawerMenuItem(
+            icon: Icons.person_outline_rounded,
+            title: 'Edit Profile Information',
+            subtitle: 'Name, bio & preferred court',
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Opening Profile Editor')),
+              );
+            },
+          ),
+          _buildDrawerMenuItem(
+            icon: Icons.sports_tennis_rounded,
+            title: 'Sport Preferences',
+            subtitle: 'Pickleball & Tennis match rules',
+            onTap: () {},
+          ),
+          _buildDrawerMenuItem(
+            icon: Icons.notifications_none_rounded,
+            title: 'Notifications & Alerts',
+            subtitle: 'Match invites & rating updates',
+            onTap: () {},
+          ),
+
+          // 5. Dark Mode Theme Setting
           Container(
-            margin: const EdgeInsets.only(bottom: 8.0),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            margin: const EdgeInsets.only(bottom: 10.0),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
               color: PulseColors.getSurface(_isDarkMode),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: PulseColors.getBorder(_isDarkMode)),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: PulseColors.getBorder(_isDarkMode), width: 1.8),
             ),
             child: Row(
               children: [
@@ -994,19 +1678,19 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   child: Icon(
                     _isDarkMode ? Icons.nights_stay_rounded : Icons.wb_sunny_outlined,
-                    size: 18,
+                    size: 20,
                     color: _isDarkMode ? PulseColors.secondary : PulseColors.primary,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Dark Mode',
+                        'Dark Mode Theme',
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: PulseColors.getTextPrimary(_isDarkMode),
                         ),
@@ -1014,7 +1698,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       Text(
                         _isDarkMode ? 'Dark theme active' : 'Light theme active',
                         style: TextStyle(
-                          fontSize: 10,
+                          fontSize: 11,
                           color: PulseColors.getTextSecondary(_isDarkMode),
                         ),
                       ),
@@ -1031,59 +1715,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
-
-          // Quick Settings Menu Items
-          _buildDrawerMenuItem(
-            icon: Icons.person_outline_rounded,
-            title: 'Edit Profile',
-            subtitle: 'Update details & photo',
-            onTap: () {},
-          ),
-          _buildDrawerMenuItem(
-            icon: Icons.sports_tennis_rounded,
-            title: 'Sport Preferences',
-            subtitle: 'Pickleball & Tennis rules',
-            onTap: () {},
-          ),
-          _buildDrawerMenuItem(
-            icon: Icons.notifications_none_rounded,
-            title: 'Notifications',
-            subtitle: 'Match invites & scores',
-            onTap: () {},
-          ),
-          _buildDrawerMenuItem(
-            icon: Icons.help_outline_rounded,
-            title: 'Help & Rules',
-            subtitle: 'Scoring guides & support',
-            onTap: () {},
-          ),
-          const SizedBox(height: 16),
-
-          // Bottom Modern Log Out Section
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ElevatedButton.icon(
-              onPressed: () => _showLogoutConfirmationDialog(context),
-              icon: const Icon(Icons.logout_rounded, size: 18),
-              label: const Text(
-                'Log Out',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: PulseColors.error.withValues(alpha: 0.08),
-                foregroundColor: PulseColors.error,
-                elevation: 0,
-                shadowColor: Colors.transparent,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ),
+          const SizedBox(height: 24),
         ],
       ),
     );

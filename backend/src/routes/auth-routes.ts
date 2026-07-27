@@ -10,5 +10,6 @@ router.post('/login', authController.login);
 router.post('/google', authController.googleAuth);
 router.get('/me', authenticateToken, authController.getMe);
 router.patch('/onboard', authenticateToken, authController.onboard);
+router.put('/password', authenticateToken, authController.updatePassword);
 
 export default router;

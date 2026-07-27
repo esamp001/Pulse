@@ -62,6 +62,10 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/images/find_court.png
+    - assets/images/all_balls.png
+    - assets/images/officiate.png
+    - assets/images/scan_qr.png
     - .env
   # assets:
   #   - images/a_dot_burr.jpeg
