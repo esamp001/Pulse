@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../main.dart';
 import '../theme/pulse_colors.dart';
-
 import 'rally_text_logo.dart';
 
 /// Reusable Top Bar Component for Pulse App
@@ -10,6 +10,7 @@ class PulseTopBar extends StatelessWidget implements PreferredSizeWidget {
   final String? userName;
   final String? avatarUrl;
   final int unreadCount;
+  final bool? isDarkMode;
   final VoidCallback? onAvatarTap;
   final VoidCallback? onInboxTap;
 
@@ -18,6 +19,7 @@ class PulseTopBar extends StatelessWidget implements PreferredSizeWidget {
     this.userName,
     this.avatarUrl,
     this.unreadCount = 0,
+    this.isDarkMode,
     this.onAvatarTap,
     this.onInboxTap,
   });
@@ -37,26 +39,22 @@ class PulseTopBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     final initials = userName != null ? _getInitials(userName!) : 'E';
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = isDarkMode ??
+        (themeModeNotifier.value == ThemeMode.dark ||
+            Theme.of(context).brightness == Brightness.dark);
 
-    final headerBgGradient = LinearGradient(
-      colors: isDark
-          ? [PulseColors.darkSurface, const Color(0xFF121B1C)]
-          : [PulseColors.primary, const Color(0xFF1E3C42)],
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-    );
-
-    final iconBgColor = isDark ? PulseColors.darkCard : Colors.white.withValues(alpha: 0.15);
-    final borderColor = isDark ? PulseColors.darkBorder : PulseColors.secondary.withValues(alpha: 0.3);
+    final headerBgColor = PulseColors.getSurface(isDark);
+    final iconBgColor = isDark ? PulseColors.darkCard : PulseColors.background;
+    final borderColor = PulseColors.getBorder(isDark);
+    final iconColor = isDark ? Colors.white : PulseColors.primary;
+    final avatarTextColor = isDark ? Colors.white : PulseColors.primary;
 
     return SafeArea(
       child: Container(
         height: preferredSize.height,
         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
         decoration: BoxDecoration(
-          gradient: headerBgGradient,
+          color: headerBgColor,
           border: Border(
             bottom: BorderSide(
               color: borderColor,
@@ -78,15 +76,15 @@ class PulseTopBar extends StatelessWidget implements PreferredSizeWidget {
                   color: iconBgColor,
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: isDark ? PulseColors.secondary : Colors.white.withValues(alpha: 0.6),
+                    color: isDark ? PulseColors.accent : PulseColors.primary.withValues(alpha: 0.4),
                     width: 1.5,
                   ),
                 ),
                 child: Center(
                   child: Text(
                     initials,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: avatarTextColor,
                       fontSize: 14,
                       fontWeight: FontWeight.w800,
                     ),
@@ -114,12 +112,13 @@ class PulseTopBar extends StatelessWidget implements PreferredSizeWidget {
                       color: iconBgColor,
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: isDark ? PulseColors.darkBorder : Colors.white.withValues(alpha: 0.3),
+                        color: borderColor,
+                        width: 1.0,
                       ),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.notifications_none_rounded,
-                      color: Colors.white,
+                      color: iconColor,
                       size: 20,
                     ),
                   ),
@@ -132,7 +131,7 @@ class PulseTopBar extends StatelessWidget implements PreferredSizeWidget {
                         decoration: BoxDecoration(
                           color: PulseColors.accent,
                           shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 1.5),
+                          border: Border.all(color: headerBgColor, width: 1.5),
                         ),
                         constraints: const BoxConstraints(
                           minWidth: 18,
@@ -158,3 +157,4 @@ class PulseTopBar extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 }
+

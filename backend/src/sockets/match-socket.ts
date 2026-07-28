@@ -1,0 +1,71 @@
+import { Server, Socket } from 'socket.io';
+
+export function initMatchSockets(io: Server): void {
+  io.on('connection', (socket: Socket) => {
+    console.log(`Socket connected: ${socket.id}`);
+
+    // Join match room
+    socket.on('join_match', (data: { matchId: string; userId?: string; role?: string }) => {
+      const room = `match:${data.matchId}`;
+      socket.join(room);
+      
+      io.to(room).emit('user_joined_match', {
+        userId: data.userId,
+        role: data.role,
+        timestamp: new Date().toISOString(),
+      });
+    });
+
+    // Leave match room
+    socket.on('leave_match', (data: { matchId: string }) => {
+      const room = `match:${data.matchId}`;
+      socket.leave(room);
+    });
+
+    // Scorer starts match (READY -> LIVE)
+    socket.on('start_match', (data: { matchId: string }) => {
+      const room = `match:${data.matchId}`;
+      
+      io.to(room).emit('match_status_changed', {
+        matchId: data.matchId,
+        status: 'LIVE',
+        timestamp: new Date().toISOString(),
+      });
+    });
+
+    // Scorer records a point for Player 1 or Player 2
+    socket.on('record_point', (data: { matchId: string; player: 'P1' | 'P2'; p1Score: number; p2Score: number; currentSet: number; setScores?: string }) => {
+      const room = `match:${data.matchId}`;
+
+      io.to(room).emit('score_updated', {
+        matchId: data.matchId,
+        player: data.player,
+        p1Score: data.p1Score,
+        p2Score: data.p2Score,
+        currentSet: data.currentSet,
+        setScores: data.setScores || '',
+        action: 'POINT',
+        timestamp: new Date().toISOString(),
+      });
+    });
+
+    // Scorer undos last point
+    socket.on('undo_point', (data: { matchId: string; p1Score: number; p2Score: number; currentSet: number; setScores?: string }) => {
+      const room = `match:${data.matchId}`;
+
+      io.to(room).emit('score_updated', {
+        matchId: data.matchId,
+        p1Score: data.p1Score,
+        p2Score: data.p2Score,
+        currentSet: data.currentSet,
+        setScores: data.setScores || '',
+        action: 'UNDO',
+        timestamp: new Date().toISOString(),
+      });
+    });
+
+    socket.on('disconnect', () => {
+      console.log(`Socket disconnected: ${socket.id}`);
+    });
+  });
+}

@@ -261,6 +261,32 @@ class MatchService {
     const updatedWithDetails = await this.matchRepository.findByIdWithDetails(matchId);
     return updatedWithDetails!;
   }
+
+  async updateMatchStatus(
+    matchId: string,
+    requesterId: string,
+    status: MatchStatus
+  ): Promise<MatchWithDetails> {
+    const match = await this.matchRepository.findById(matchId);
+    if (!match) {
+      throw new Error('Match not found');
+    }
+
+    // Allow creator, player 1, or assigned scorer to update match status
+    const isParticipant =
+      match.creator_id === requesterId ||
+      match.player1_id === requesterId ||
+      match.scorer_id === requesterId;
+
+    if (!isParticipant) {
+      throw new Error('Only match participants or the scorer can update match status');
+    }
+
+    await this.matchRepository.updateParticipants(matchId, { status });
+    const updatedWithDetails = await this.matchRepository.findByIdWithDetails(matchId);
+    return updatedWithDetails!;
+  }
 }
 
 export default MatchService;
+

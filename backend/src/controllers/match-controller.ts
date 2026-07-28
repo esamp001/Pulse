@@ -223,6 +223,34 @@ class MatchController {
       res.status(400).json({ error: error.message || 'Failed to kick participant' });
     }
   };
+
+  updateStatus = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized user' });
+        return;
+      }
+
+      const { id } = req.params;
+      const { status } = req.body;
+
+      if (!status || !['WAITING', 'READY', 'LIVE', 'FINISHED', 'CONFIRMED'].includes(status)) {
+        res.status(400).json({ error: 'Invalid match status' });
+        return;
+      }
+
+      const match = await this.matchService.updateMatchStatus(id, userId, status);
+
+      res.status(200).json({
+        message: `Match status updated to ${status}`,
+        data: match,
+      });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || 'Failed to update match status' });
+    }
+  };
 }
 
 export default MatchController;
+

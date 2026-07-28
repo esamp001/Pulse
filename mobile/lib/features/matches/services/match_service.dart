@@ -279,4 +279,34 @@ class MatchService {
       throw Exception(responseData['error'] ?? 'Failed to kick participant');
     }
   }
+
+  /// Update match status (e.g. READY -> LIVE, LIVE -> FINISHED)
+  Future<MatchModel> updateMatchStatus({
+    required String matchId,
+    required String status,
+  }) async {
+    final token = AuthService.currentToken;
+    if (token == null) {
+      throw Exception('Authentication token missing. Please log in again.');
+    }
+
+    final response = await http.patch(
+      Uri.parse('$_matchesUrl/$matchId/status'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'status': status,
+      }),
+    );
+
+    final responseData = jsonDecode(response.body);
+    if (response.statusCode == 200) {
+      return MatchModel.fromJson(responseData['data']);
+    } else {
+      throw Exception(responseData['error'] ?? 'Failed to update match status');
+    }
+  }
 }
+

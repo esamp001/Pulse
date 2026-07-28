@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/pulse_colors.dart';
 import '../../../../core/widgets/pulse_top_bar.dart';
 import '../../../../core/widgets/pulse_bottom_nav_bar.dart';
+import '../../../../core/widgets/pulse_widget_card.dart';
 import '../../../../main.dart';
+
 import '../../../auth/models/user_model.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
 import '../../../auth/services/auth_service.dart';
@@ -277,7 +279,9 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: PulseTopBar(
         userName: displayName,
         unreadCount: 2,
+        isDarkMode: _isDarkMode,
         onAvatarTap: _openAvatarSideModal,
+
         onInboxTap: () {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -341,8 +345,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         Flexible(
                           child: Text(
-                            'Welcome back, $firstName 👋',
+                            'Welcome back, $firstName',
                             style: TextStyle(
+
                               fontSize: 24,
                               fontWeight: FontWeight.w900,
                               color: PulseColors.getTextPrimary(_isDarkMode),
@@ -411,108 +416,58 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 20),
 
           // 3. Dynamic Featured Hero Action Card ("COMPETE NOW" vs "RETURN TO ROOM")
-          InkWell(
+          PulseWidgetCard(
+            title: _activeMatch == null ? 'Compete Now' : 'Active Match Lobby',
+            subtitle: _activeMatch == null
+                ? 'Create or join a rated match'
+                : '${_activeMatch!.sportDisplayName} • ${_activeMatch!.status == 'READY' ? 'Ready to play' : 'Waiting for participants'}',
+            pillText: _activeMatch == null ? 'RATED' : 'LIVE ROOM',
             onTap: _onCompeteNowPressed,
-            borderRadius: BorderRadius.circular(24),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: _isDarkMode
-                      ? [const Color(0xFF1E2E32), const Color(0xFF121B1D)]
-                      : [PulseColors.primary, const Color(0xFF152A2E)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: _isDarkMode
-                      ? PulseColors.accent.withValues(alpha: 0.5)
-                      : PulseColors.secondary.withValues(alpha: 0.5),
-                  width: 1.8,
-                ),
-              ),
+            isDarkMode: _isDarkMode,
+            customContent: Padding(
+              padding: const EdgeInsets.only(top: 10.0),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Hero Icon Container
                   Container(
-                    width: 48,
-                    height: 48,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                     decoration: BoxDecoration(
-                      color: PulseColors.accent.withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: PulseColors.accent, width: 1.5),
+                      color: PulseColors.primary,
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                    child: Icon(
-                      _activeMatch == null ? Icons.bolt_rounded : Icons.meeting_room_rounded,
-                      color: PulseColors.accent,
-                      size: 26,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-
-                  // Content text
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          _activeMatch == null ? 'START A MATCH' : 'ACTIVE MATCH LOBBY',
+                          _activeMatch == null ? 'START A MATCH' : 'RETURN TO ROOM',
                           style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                            color: PulseColors.accent,
-                            letterSpacing: 1.0,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _activeMatch == null ? 'Compete Now' : 'Return to Room',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
                             color: Colors.white,
-                            letterSpacing: -0.3,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.8,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
-                        Builder(
-                          builder: (context) {
-                            final activeMatch = _activeMatch;
-                            return Text(
-                              activeMatch == null
-                                  ? 'Create or join a rated match'
-                                  : '${activeMatch.sportDisplayName} • ${activeMatch.status == 'READY' ? 'Ready to start' : 'Waiting for participants'}',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.white.withValues(alpha: 0.7),
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            );
-                          },
+                        const SizedBox(width: 8),
+                        const Icon(
+                          Icons.arrow_forward_rounded,
+                          color: Colors.white,
+                          size: 16,
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(
+                    height: 52,
+                    child: Image.asset(
+                      'assets/images/find_court.png',
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) => const Icon(
+                        Icons.bolt_rounded,
+                        size: 40,
+                        color: PulseColors.accent,
+                      ),
 
-                  // Action Arrow Button Container
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: const BoxDecoration(
-                      color: PulseColors.accent,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.arrow_forward_rounded,
-                      color: Colors.white,
-                      size: 18,
                     ),
                   ),
                 ],
@@ -533,7 +488,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 12),
 
-          // 5. Bento Grid Layout (Split Header & Info Panel Card Design)
+          // 5. Bento Grid Layout (Ultra-Modern Widget-Style Cards via PulseWidgetCard)
           GridView.count(
             crossAxisCount: 2,
             shrinkWrap: true,
@@ -542,44 +497,56 @@ class _HomeScreenState extends State<HomeScreen> {
             mainAxisSpacing: 12,
             childAspectRatio: 1.15,
             children: [
-              _buildSplitHeaderCard(
+              // 1. Scan QR -> Soft Lilac / Purple Pastel (Card 1)
+              PulseWidgetCard(
                 imagePath: 'assets/images/scan_qr.png',
                 title: 'Scan QR',
-                subtitle: 'Join match or court room',
-                badgeIcon: Icons.qr_code_scanner_rounded,
+                subtitle: 'Join Room',
+                pillText: 'FAST',
+                backgroundColor: const Color(0xFFF3E5F5),
+                isDarkMode: _isDarkMode,
                 onTap: () {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Opening QR Scanner')),
                   );
                 },
               ),
-              _buildSplitHeaderCard(
+              // 2. Find Courts -> Soft Powder Blue Pastel (Card 2)
+              PulseWidgetCard(
                 imagePath: 'assets/images/find_court.png',
                 title: 'Find Courts',
-                subtitle: 'Locate courts & sessions',
-                badgeIcon: Icons.place_rounded,
+                subtitle: 'Locate Courts',
+                pillText: 'NEARBY',
+                backgroundColor: const Color(0xFFD6E9FE),
+                isDarkMode: _isDarkMode,
                 onTap: () {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Locating nearby courts...')),
                   );
                 },
               ),
-              _buildSplitHeaderCard(
+              // 3. Officiate -> Soft Warm Coral / Peach Pastel (Card 3)
+              PulseWidgetCard(
                 imagePath: 'assets/images/officiate.png',
                 title: 'Officiate',
-                subtitle: 'Neutral ref & live scoring',
-                badgeIcon: Icons.gavel_rounded,
+                subtitle: 'Neutral Ref',
+                pillText: 'LIVE',
+                backgroundColor: const Color(0xFFFFE0D6),
+                isDarkMode: _isDarkMode,
                 onTap: () {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Opening Officiate Mode')),
                   );
                 },
               ),
-              _buildSplitHeaderCard(
+              // 4. Log Practice -> Soft Butter Yellow Pastel (Card 4)
+              PulseWidgetCard(
                 imagePath: 'assets/images/all_balls.png',
                 title: 'Log Practice',
-                subtitle: 'Record unrated drill stats',
-                badgeIcon: Icons.fitness_center_rounded,
+                subtitle: 'Unrated Drills',
+                pillText: 'DRILLS',
+                backgroundColor: const Color(0xFFF9EAB8),
+                isDarkMode: _isDarkMode,
                 onTap: () {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -590,6 +557,9 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
+
+
+
           const SizedBox(height: 24),
 
           // 6. Featured Tournament / Event Banner
@@ -808,138 +778,9 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildSplitHeaderCard({
-    required String imagePath,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-    IconData? badgeIcon,
-  }) {
-    final surfaceColor = PulseColors.getSurface(_isDarkMode);
-    final textPrimary = PulseColors.getTextPrimary(_isDarkMode);
-    final textSecondary = PulseColors.getTextSecondary(_isDarkMode);
-    final borderColor = PulseColors.getBorder(_isDarkMode);
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        decoration: BoxDecoration(
-          color: surfaceColor,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: borderColor, width: 1.8),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // 1. Top Featured Image Header (58% height)
-              Expanded(
-                flex: 58,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    // Background Image
-                    Image.asset(
-                      imagePath,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color: PulseColors.getCard(_isDarkMode),
-                          child: const Center(
-                            child: Icon(
-                              Icons.image_not_supported_rounded,
-                              color: PulseColors.textDisabled,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
 
-                    // Subtle Bottom Gradient Transition into Bottom Info Panel
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Colors.transparent,
-                            Colors.transparent,
-                            surfaceColor.withValues(alpha: 0.35),
-                            surfaceColor,
-                          ],
-                          stops: const [0.0, 0.65, 0.88, 1.0],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                        ),
-                      ),
-                    ),
 
-                    // Top Right Icon Badge (Consistent Brand Palette)
-                    if (badgeIcon != null)
-                      Positioned(
-                        top: 8,
-                        right: 8,
-                        child: Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: PulseColors.accent,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.35),
-                              width: 1.0,
-                            ),
-                          ),
-                          child: Icon(badgeIcon, color: Colors.white, size: 14),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-
-              // 2. Bottom Info Panel (42% height)
-              Expanded(
-                flex: 42,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12.0,
-                    vertical: 8.0,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w900,
-                          color: textPrimary,
-                          letterSpacing: -0.2,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitle,
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                          color: textSecondary,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
   Widget _buildPlaceholderTab(String title) {
     return Center(

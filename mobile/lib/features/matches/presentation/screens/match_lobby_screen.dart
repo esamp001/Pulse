@@ -7,6 +7,8 @@ import '../../../auth/services/auth_service.dart';
 import '../../models/match_model.dart';
 import '../../services/match_service.dart';
 import '../widgets/invite_user_modal.dart';
+import 'scorer_screen.dart';
+
 
 class MatchLobbyScreen extends StatefulWidget {
   final MatchModel match;
@@ -662,17 +664,16 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
 
             const SizedBox(height: 36),
 
-            // Action Button: Start Match
+            // Action Button: Start / Open Scorer Match
             SizedBox(
               width: double.infinity,
               height: 52,
               child: ElevatedButton(
-                onPressed: isReady
+                onPressed: isReady || _match.status == 'LIVE'
                     ? () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Starting Live Match Session!'),
-                            backgroundColor: PulseColors.primary,
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => ScorerScreen(match: _match),
                           ),
                         );
                       }
@@ -687,12 +688,24 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                     side: BorderSide(
-                      color: isReady ? PulseColors.primary : PulseColors.getBorder(_isDarkMode),
+                      color: isReady || _match.status == 'LIVE'
+                          ? PulseColors.primary
+                          : PulseColors.getBorder(_isDarkMode),
                     ),
                   ),
                 ),
                 child: Text(
-                  isReady ? 'Start Match' : 'Waiting for Participants...',
+                  currentUserId == _match.scorerId
+                      ? (_match.status == 'LIVE'
+                          ? 'Open Scorer Controls'
+                          : isReady
+                              ? 'Start Match (Scorer)'
+                              : 'Waiting for Participants...')
+                      : (_match.status == 'LIVE'
+                          ? 'View Live Scoreboard'
+                          : isReady
+                              ? 'View Live Scoreboard'
+                              : 'Waiting for Participants...'),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -701,6 +714,8 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
               ),
             ),
             const SizedBox(height: 12),
+
+
           ],
         ),
       ),
