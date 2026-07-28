@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/pulse_colors.dart';
 import '../../../../core/widgets/pulse_top_bar.dart';
@@ -9,6 +10,7 @@ import '../../../auth/services/auth_service.dart';
 import '../../../matches/models/match_model.dart';
 import '../../../matches/presentation/screens/create_match_screen.dart';
 import '../../../matches/presentation/screens/match_lobby_screen.dart';
+import '../../../matches/presentation/widgets/match_invitation_snackbar.dart';
 import '../../../matches/services/match_service.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -26,6 +28,8 @@ class _HomeScreenState extends State<HomeScreen> {
   UserModel? _user;
   bool _isLoadingUser = false;
   MatchModel? _activeMatch;
+  Timer? _pollTimer;
+  String? _dismissedInvitationMatchId;
   final AuthService _authService = AuthService();
   final MatchService _matchService = MatchService();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
@@ -38,6 +42,85 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_user == null && AuthService.currentToken != null) {
       _loadCurrentUserProfile();
     }
+    _fetchActiveMatch();
+    _startPollingActiveMatch();
+  }
+
+  void _startPollingActiveMatch() {
+    _pollTimer?.cancel();
+    _pollTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (mounted) {
+        _fetchActiveMatch();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
+  }
+
+  bool get _isInvitationPending {
+    if (_activeMatch == null) return false;
+    final currentUserId = _user?.id ?? AuthService.currentUser?.id;
+    if (currentUserId == null) return false;
+    if (_activeMatch!.id == _dismissedInvitationMatchId) return false;
+    if (_activeMatch!.creatorId == currentUserId) return false;
+
+    final isPlayer2 = _activeMatch!.player2Id == currentUserId && !_activeMatch!.player2Accepted;
+    final isScorer = _activeMatch!.scorerId == currentUserId && !_activeMatch!.scorerAccepted;
+
+    return isPlayer2 || isScorer;
+  }
+
+  String get _invitedUserRoleLabel {
+    final currentUserId = _user?.id ?? AuthService.currentUser?.id;
+    if (_activeMatch?.scorerId == currentUserId) {
+      return 'Neutral Scorer';
+    }
+    return 'Player 2 (Opponent)';
+  }
+
+  Future<void> _acceptMatchInvitation() async {
+    if (_activeMatch == null) return;
+    final matchToJoin = _activeMatch!;
+    setState(() {
+      _dismissedInvitationMatchId = matchToJoin.id;
+    });
+    try {
+      final updatedMatch = await _matchService.acceptInvitation(matchToJoin.id);
+      if (mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => MatchLobbyScreen(match: updatedMatch),
+          ),
+        ).then((_) => _fetchActiveMatch());
+      }
+    } catch (_) {
+      _fetchActiveMatch();
+    }
+  }
+
+  Future<void> _declineMatchInvitation() async {
+    if (_activeMatch == null) return;
+    final matchId = _activeMatch!.id;
+    setState(() {
+      _dismissedInvitationMatchId = matchId;
+      _activeMatch = null;
+    });
+    try {
+      await _matchService.declineInvitation(matchId);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Match invitation declined.'),
+            backgroundColor: PulseColors.primary,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (_) {}
     _fetchActiveMatch();
   }
 
@@ -214,9 +297,22 @@ class _HomeScreenState extends State<HomeScreen> {
           _buildProfileTab(),
         ],
       ),
-      bottomNavigationBar: PulseBottomNavBar(
-        currentIndex: _currentBottomNavIndex,
-        onTap: _onBottomNavTapped,
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (_isInvitationPending && _activeMatch != null)
+            MatchInvitationSnackbar(
+              match: _activeMatch!,
+              currentUserRoleLabel: _invitedUserRoleLabel,
+              isDarkMode: _isDarkMode,
+              onAccept: _acceptMatchInvitation,
+              onDecline: _declineMatchInvitation,
+            ),
+          PulseBottomNavBar(
+            currentIndex: _currentBottomNavIndex,
+            onTap: _onBottomNavTapped,
+          ),
+        ],
       ),
     );
   }
@@ -1283,8 +1379,11 @@ class _HomeScreenState extends State<HomeScreen> {
       Navigator.pop(context); // Close drawer if open
     }
 
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
       SnackBar(
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -1298,7 +1397,7 @@ class _HomeScreenState extends State<HomeScreen> {
             width: 1.0,
           ),
         ),
-        elevation: 6,
+        elevation: 0,
         content: Row(
           children: [
             Container(
@@ -1343,12 +1442,15 @@ class _HomeScreenState extends State<HomeScreen> {
         action: SnackBarAction(
           label: 'LOG OUT',
           textColor: PulseColors.error,
-          onPressed: () {
-            AuthService.logout();
-            Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (context) => const LoginScreen()),
-              (route) => false,
-            );
+          onPressed: () async {
+            messenger.hideCurrentSnackBar();
+            await AuthService.logout();
+            if (mounted) {
+              navigator.pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
+                (route) => false,
+              );
+            }
           },
         ),
       ),

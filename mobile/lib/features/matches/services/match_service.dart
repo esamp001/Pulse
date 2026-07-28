@@ -207,4 +207,76 @@ class MatchService {
       throw Exception(responseData['error'] ?? 'Failed to exit match room');
     }
   }
+
+  /// Accept match invitation
+  Future<MatchModel> acceptInvitation(String matchId) async {
+    final token = AuthService.currentToken;
+    if (token == null) {
+      throw Exception('Authentication token missing. Please log in again.');
+    }
+
+    final response = await http.patch(
+      Uri.parse('$_matchesUrl/$matchId/accept'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    final responseData = jsonDecode(response.body);
+    if (response.statusCode == 200) {
+      return MatchModel.fromJson(responseData['data']);
+    } else {
+      throw Exception(responseData['error'] ?? 'Failed to accept invitation');
+    }
+  }
+
+  /// Decline match invitation
+  Future<MatchModel> declineInvitation(String matchId) async {
+    final token = AuthService.currentToken;
+    if (token == null) {
+      throw Exception('Authentication token missing. Please log in again.');
+    }
+
+    final response = await http.patch(
+      Uri.parse('$_matchesUrl/$matchId/decline'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    final responseData = jsonDecode(response.body);
+    if (response.statusCode == 200) {
+      return MatchModel.fromJson(responseData['data']);
+    } else {
+      throw Exception(responseData['error'] ?? 'Failed to decline invitation');
+    }
+  }
+
+  /// Kick participant (player2 or scorer) from match room
+  Future<MatchModel> kickParticipant({
+    required String matchId,
+    required String role,
+  }) async {
+    final token = AuthService.currentToken;
+    if (token == null) {
+      throw Exception('Authentication token missing. Please log in again.');
+    }
+
+    final response = await http.delete(
+      Uri.parse('$_matchesUrl/$matchId/participants/$role'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    final responseData = jsonDecode(response.body);
+    if (response.statusCode == 200) {
+      return MatchModel.fromJson(responseData['data']);
+    } else {
+      throw Exception(responseData['error'] ?? 'Failed to kick participant');
+    }
+  }
 }

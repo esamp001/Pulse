@@ -54,7 +54,9 @@ class MatchModel {
   final String creatorId;
   final String player1Id;
   final String? player2Id;
+  final bool player2Accepted;
   final String? scorerId;
+  final bool scorerAccepted;
   final String sport; // 'pickleball', 'tennis', 'table_tennis'
   final String venueName;
   final String? location;
@@ -73,7 +75,9 @@ class MatchModel {
     required this.creatorId,
     required this.player1Id,
     this.player2Id,
+    this.player2Accepted = false,
     this.scorerId,
+    this.scorerAccepted = false,
     required this.sport,
     required this.venueName,
     this.location,
@@ -107,7 +111,9 @@ class MatchModel {
       creatorId: json['creator_id'] as String? ?? '',
       player1Id: json['player1_id'] as String? ?? '',
       player2Id: json['player2_id'] as String?,
+      player2Accepted: json['player2_accepted'] as bool? ?? false,
       scorerId: json['scorer_id'] as String?,
+      scorerAccepted: json['scorer_accepted'] as bool? ?? false,
       sport: json['sport'] as String? ?? 'pickleball',
       venueName: json['venue_name'] as String? ?? '',
       location: json['location'] as String?,
@@ -134,7 +140,9 @@ class MatchModel {
       'creator_id': creatorId,
       'player1_id': player1Id,
       'player2_id': player2Id,
+      'player2_accepted': player2Accepted,
       'scorer_id': scorerId,
+      'scorer_accepted': scorerAccepted,
       'sport': sport,
       'venue_name': venueName,
       'location': location,

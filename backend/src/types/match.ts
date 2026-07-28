@@ -6,7 +6,9 @@ export interface Match {
   creator_id: string;
   player1_id: string;
   player2_id?: string | null;
+  player2_accepted: boolean;
   scorer_id?: string | null;
+  scorer_accepted: boolean;
   sport: SportType;
   venue_name: string;
   location?: string | null;

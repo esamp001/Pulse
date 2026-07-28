@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import '../models/user_model.dart';
-import 'package:flutter/foundation.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService {
   // Static session state cache
@@ -122,6 +122,7 @@ class AuthService {
 
   /// Complete first-time user onboarding
   Future<UserModel> completeOnboarding({
+    String? name,
     required String primarySport,
     required int rating,
     String? avatarUrl,
@@ -138,6 +139,7 @@ class AuthService {
         'Authorization': 'Bearer $token',
       },
       body: jsonEncode({
+        if (name != null && name.isNotEmpty) 'name': name,
         'primary_sport': primarySport.toLowerCase(),
         'rating': rating,
         if (avatarUrl != null && avatarUrl.isNotEmpty) 'avatar_url': avatarUrl,
@@ -251,9 +253,15 @@ class AuthService {
     }
   }
 
-  /// Clear active user session
-  static void logout() {
+  /// Clear active user session & sign out Google OAuth
+  static Future<void> logout() async {
     _currentToken = null;
     _currentUser = null;
+    try {
+      final googleSignIn = GoogleSignIn();
+      if (await googleSignIn.isSignedIn()) {
+        await googleSignIn.signOut();
+      }
+    } catch (_) {}
   }
 }

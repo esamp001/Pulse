@@ -69,11 +69,11 @@ class MatchService {
       return { action: 'cancelled' };
     } else if (match.player2_id === userId) {
       // Player 2 leaving clears slot and reverts status to WAITING
-      await this.matchRepository.updateParticipants(matchId, { player2_id: null, status: 'WAITING' });
+      await this.matchRepository.updateParticipants(matchId, { player2_id: null, player2_accepted: false, status: 'WAITING' });
       return { action: 'left' };
     } else if (match.scorer_id === userId) {
       // Scorer leaving clears slot and reverts status to WAITING
-      await this.matchRepository.updateParticipants(matchId, { scorer_id: null, status: 'WAITING' });
+      await this.matchRepository.updateParticipants(matchId, { scorer_id: null, scorer_accepted: false, status: 'WAITING' });
       return { action: 'left' };
     } else {
       throw new Error('You are not a participant of this match room');
@@ -113,29 +113,102 @@ class MatchService {
     }
 
     let nextPlayer2Id = match.player2_id;
+    let nextPlayer2Accepted = match.player2_accepted;
     let nextScorerId = match.scorer_id;
+    let nextScorerAccepted = match.scorer_accepted;
 
     if (role === 'player2') {
       if (targetUserId === match.scorer_id) {
         throw new Error('User is already assigned as the Scorer');
       }
       nextPlayer2Id = targetUserId;
+      nextPlayer2Accepted = false; // Pending acceptance
     } else if (role === 'scorer') {
       if (targetUserId === match.player2_id) {
         throw new Error('User is already assigned as Player 2');
       }
       nextScorerId = targetUserId;
+      nextScorerAccepted = false; // Pending acceptance
+    }
+
+    // Status remains WAITING until BOTH accept
+    await this.matchRepository.updateParticipants(matchId, {
+      player2_id: nextPlayer2Id,
+      player2_accepted: nextPlayer2Accepted,
+      scorer_id: nextScorerId,
+      scorer_accepted: nextScorerAccepted,
+      status: 'WAITING',
+    });
+
+    const updatedWithDetails = await this.matchRepository.findByIdWithDetails(matchId);
+    return updatedWithDetails!;
+  }
+
+  async acceptInvitation(matchId: string, userId: string): Promise<MatchWithDetails> {
+    const match = await this.matchRepository.findById(matchId);
+    if (!match) {
+      throw new Error('Match not found');
+    }
+
+    let nextPlayer2Accepted = match.player2_accepted;
+    let nextScorerAccepted = match.scorer_accepted;
+
+    if (match.player2_id === userId) {
+      nextPlayer2Accepted = true;
+    } else if (match.scorer_id === userId) {
+      nextScorerAccepted = true;
+    } else {
+      throw new Error('You are not an invited participant in this match');
     }
 
     let nextStatus: MatchStatus = match.status;
-    if (nextPlayer2Id && nextScorerId && match.status === 'WAITING') {
+    if (
+      match.player2_id &&
+      nextPlayer2Accepted &&
+      match.scorer_id &&
+      nextScorerAccepted &&
+      match.status === 'WAITING'
+    ) {
       nextStatus = 'READY';
     }
 
     await this.matchRepository.updateParticipants(matchId, {
-      player2_id: nextPlayer2Id,
-      scorer_id: nextScorerId,
+      player2_accepted: nextPlayer2Accepted,
+      scorer_accepted: nextScorerAccepted,
       status: nextStatus,
+    });
+
+    const updatedWithDetails = await this.matchRepository.findByIdWithDetails(matchId);
+    return updatedWithDetails!;
+  }
+
+  async declineInvitation(matchId: string, userId: string): Promise<MatchWithDetails> {
+    const match = await this.matchRepository.findById(matchId);
+    if (!match) {
+      throw new Error('Match not found');
+    }
+
+    let nextPlayer2Id = match.player2_id;
+    let nextPlayer2Accepted = match.player2_accepted;
+    let nextScorerId = match.scorer_id;
+    let nextScorerAccepted = match.scorer_accepted;
+
+    if (match.player2_id === userId) {
+      nextPlayer2Id = null;
+      nextPlayer2Accepted = false;
+    } else if (match.scorer_id === userId) {
+      nextScorerId = null;
+      nextScorerAccepted = false;
+    } else {
+      throw new Error('You are not an invited participant in this match');
+    }
+
+    await this.matchRepository.updateParticipants(matchId, {
+      player2_id: nextPlayer2Id,
+      player2_accepted: nextPlayer2Accepted,
+      scorer_id: nextScorerId,
+      scorer_accepted: nextScorerAccepted,
+      status: 'WAITING',
     });
 
     const updatedWithDetails = await this.matchRepository.findByIdWithDetails(matchId);
@@ -148,6 +221,45 @@ class MatchService {
 
   async getUserMatches(userId: string): Promise<Match[]> {
     return this.matchRepository.findByUserId(userId);
+  }
+
+  async kickParticipant(
+    matchId: string,
+    requesterId: string,
+    role: 'player2' | 'scorer'
+  ): Promise<MatchWithDetails> {
+    const match = await this.matchRepository.findById(matchId);
+    if (!match) {
+      throw new Error('Match not found');
+    }
+
+    if (match.creator_id !== requesterId && match.player1_id !== requesterId) {
+      throw new Error('Only the match host can kick participants');
+    }
+
+    let nextPlayer2Id = match.player2_id;
+    let nextPlayer2Accepted = match.player2_accepted;
+    let nextScorerId = match.scorer_id;
+    let nextScorerAccepted = match.scorer_accepted;
+
+    if (role === 'player2') {
+      nextPlayer2Id = null;
+      nextPlayer2Accepted = false;
+    } else if (role === 'scorer') {
+      nextScorerId = null;
+      nextScorerAccepted = false;
+    }
+
+    await this.matchRepository.updateParticipants(matchId, {
+      player2_id: nextPlayer2Id,
+      player2_accepted: nextPlayer2Accepted,
+      scorer_id: nextScorerId,
+      scorer_accepted: nextScorerAccepted,
+      status: 'WAITING',
+    });
+
+    const updatedWithDetails = await this.matchRepository.findByIdWithDetails(matchId);
+    return updatedWithDetails!;
   }
 }
 

@@ -180,6 +180,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     setState(() => _isLoading = true);
     try {
       final updatedUser = await _authService.completeOnboarding(
+        name: _nameController.text.trim(),
         primarySport: _selectedSport,
         rating: _selectedRating,
         avatarUrl: _uploadedAvatarUrl,

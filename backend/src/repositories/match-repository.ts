@@ -12,7 +12,9 @@ export interface CreateMatchParams {
 
 export interface UpdateMatchParticipantsParams {
   player2_id?: string | null;
+  player2_accepted?: boolean;
   scorer_id?: string | null;
+  scorer_accepted?: boolean;
   status?: MatchStatus;
 }
 
@@ -61,7 +63,9 @@ class MatchRepository {
     };
 
     if (params.player2_id !== undefined) updatePayload.player2_id = params.player2_id;
+    if (params.player2_accepted !== undefined) updatePayload.player2_accepted = params.player2_accepted;
     if (params.scorer_id !== undefined) updatePayload.scorer_id = params.scorer_id;
+    if (params.scorer_accepted !== undefined) updatePayload.scorer_accepted = params.scorer_accepted;
     if (params.status !== undefined) updatePayload.status = params.status;
 
     const [updatedMatch] = (await db<Match>('matches')

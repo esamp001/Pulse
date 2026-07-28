@@ -256,9 +256,131 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
     }
   }
 
+  void _handleKickParticipant(String role, String participantName) {
+    final roleTitle = role == 'player2' ? 'Player 2 (Opponent)' : 'Neutral Scorer';
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: PulseColors.getSurface(_isDarkMode),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(
+              color: PulseColors.getBorder(_isDarkMode),
+              width: 1.0,
+            ),
+          ),
+          elevation: 0,
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: PulseColors.error.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.person_remove_rounded,
+                  color: PulseColors.error,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'Kick $roleTitle',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: PulseColors.getTextPrimary(_isDarkMode),
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            'Are you sure you want to remove $participantName from the match lobby?',
+            style: TextStyle(
+              fontSize: 14,
+              color: PulseColors.getTextSecondary(_isDarkMode),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  color: PulseColors.getTextSecondary(_isDarkMode),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final messenger = ScaffoldMessenger.of(context);
+                Navigator.of(dialogContext).pop();
+                setState(() => _isAssigning = true);
+                try {
+                  final updatedMatch = await _matchService.kickParticipant(
+                    matchId: _match.id,
+                    role: role,
+                  );
+                  if (mounted) {
+                    setState(() {
+                      _match = updatedMatch;
+                    });
+                    await _refreshMatchDetails(silent: true);
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: Text('$participantName removed from match lobby'),
+                        backgroundColor: PulseColors.primary,
+                        duration: const Duration(seconds: 2),
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: Text(e.toString().replaceAll('Exception: ', '')),
+                        backgroundColor: PulseColors.error,
+                      ),
+                    );
+                  }
+                } finally {
+                  if (mounted) {
+                    setState(() => _isAssigning = false);
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: PulseColors.error,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: const Text(
+                'Kick Participant',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isReady = _match.status == 'READY' || (_match.player2Id != null && _match.scorerId != null);
+    final currentUserId = AuthService.currentUser?.id;
+    final isCurrentUserHost = _match.creatorId == currentUserId || _match.player1Id == currentUserId;
+
+    final isReady = _match.status == 'READY' ||
+        (_match.player2Id != null &&
+         _match.player2Accepted &&
+         _match.scorerId != null &&
+         _match.scorerAccepted);
 
     // Soft status colors (Gentle Amber / Teal)
     final statusColor = isReady
@@ -496,7 +618,7 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
             _buildParticipantCard(
               title: 'PLAYER 1 (HOST)',
               participant: _match.player1,
-              isHost: true,
+              isHostCard: true,
               roleKey: 'player1',
             ),
 
@@ -507,8 +629,10 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                 ? _buildParticipantCard(
                     title: 'PLAYER 2 (OPPONENT)',
                     participant: _match.player2,
-                    isHost: false,
+                    isHostCard: false,
                     roleKey: 'player2',
+                    canKick: isCurrentUserHost,
+                    onKick: () => _handleKickParticipant('player2', _match.player2?.name ?? 'Player 2'),
                   )
                 : _buildEmptySlotCard(
                     title: 'PLAYER 2 (OPPONENT)',
@@ -524,8 +648,10 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                 ? _buildParticipantCard(
                     title: 'NEUTRAL SCORER',
                     participant: _match.scorer,
-                    isHost: false,
+                    isHostCard: false,
                     roleKey: 'scorer',
+                    canKick: isCurrentUserHost,
+                    onKick: () => _handleKickParticipant('scorer', _match.scorer?.name ?? 'Scorer'),
                   )
                 : _buildEmptySlotCard(
                     title: 'NEUTRAL SCORER',
@@ -584,13 +710,20 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
   Widget _buildParticipantCard({
     required String title,
     required MatchParticipantModel? participant,
-    required bool isHost,
+    required bool isHostCard,
     required String roleKey,
+    bool canKick = false,
+    VoidCallback? onKick,
   }) {
     final displayName = participant?.name ?? 'Assigned User';
     final ratingText = '${participant?.rating ?? 1200} ELO';
     final initials = participant?.initials ?? '?';
     final avatarUrl = participant?.avatarUrl;
+
+    final bool isAccepted = isHostCard ||
+        (roleKey == 'player2' ? _match.player2Accepted : _match.scorerAccepted);
+    final statusColor = isAccepted ? const Color(0xFF4CAF50) : PulseColors.warning;
+    final statusText = isAccepted ? 'Joined' : 'Pending';
 
     return Container(
       width: double.infinity,
@@ -608,7 +741,7 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
           // Avatar representation (Network image or initials avatar)
           CircleAvatar(
             radius: 24,
-            backgroundColor: isHost
+            backgroundColor: isHostCard
                 ? PulseColors.accent.withValues(alpha: 0.2)
                 : PulseColors.primary.withValues(alpha: 0.2),
             backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
@@ -616,7 +749,7 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                 ? Text(
                     initials,
                     style: TextStyle(
-                      color: isHost ? PulseColors.accent : PulseColors.primary,
+                      color: isHostCard ? PulseColors.accent : PulseColors.primary,
                       fontWeight: FontWeight.bold,
                       fontSize: 18,
                     ),
@@ -641,7 +774,7 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                         letterSpacing: 0.8,
                       ),
                     ),
-                    if (isHost) ...[
+                    if (isHostCard) ...[
                       const SizedBox(width: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
@@ -697,20 +830,35 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                   Container(
                     width: 8,
                     height: 8,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF4CAF50),
+                    decoration: BoxDecoration(
+                      color: statusColor,
                       shape: BoxShape.circle,
                     ),
                   ),
                   const SizedBox(width: 4),
-                  const Text(
-                    'Joined',
-                    style: TextStyle(fontSize: 11, color: Color(0xFF4CAF50), fontWeight: FontWeight.w600),
+                  Text(
+                    statusText,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: statusColor,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),
             ],
           ),
+
+          if (canKick && onKick != null) ...[
+            const SizedBox(width: 8),
+            IconButton(
+              icon: const Icon(Icons.person_remove_rounded, size: 20, color: PulseColors.error),
+              tooltip: 'Kick participant',
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              onPressed: onKick,
+            ),
+          ],
         ],
       ),
     );

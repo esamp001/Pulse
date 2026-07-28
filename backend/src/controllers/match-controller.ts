@@ -158,6 +158,71 @@ class MatchController {
       res.status(400).json({ error: error.message || 'Failed to exit match room' });
     }
   };
+
+  acceptInvitation = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized user' });
+        return;
+      }
+
+      const { id } = req.params;
+      const match = await this.matchService.acceptInvitation(id, userId);
+
+      res.status(200).json({
+        message: 'Match invitation accepted successfully',
+        data: match,
+      });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || 'Failed to accept match invitation' });
+    }
+  };
+
+  declineInvitation = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized user' });
+        return;
+      }
+
+      const { id } = req.params;
+      const match = await this.matchService.declineInvitation(id, userId);
+
+      res.status(200).json({
+        message: 'Match invitation declined successfully',
+        data: match,
+      });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || 'Failed to decline match invitation' });
+    }
+  };
+
+  kickParticipant = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized user' });
+        return;
+      }
+
+      const { id, role } = req.params;
+      if (role !== 'player2' && role !== 'scorer') {
+        res.status(400).json({ error: 'Role must be player2 or scorer' });
+        return;
+      }
+
+      const match = await this.matchService.kickParticipant(id, userId, role as 'player2' | 'scorer');
+
+      res.status(200).json({
+        message: 'Participant kicked successfully',
+        data: match,
+      });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || 'Failed to kick participant' });
+    }
+  };
 }
 
 export default MatchController;

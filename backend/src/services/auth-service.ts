@@ -81,7 +81,7 @@ class AuthService {
     return this.formatUserResponse(user);
   }
 
-  async completeOnboarding(userId: string, payload: { primary_sport?: string; rating?: number; avatar_url?: string }): Promise<ReturnType<AuthService['formatUserResponse']>> {
+  async completeOnboarding(userId: string, payload: { name?: string; primary_sport?: string; rating?: number; avatar_url?: string }): Promise<ReturnType<AuthService['formatUserResponse']>> {
     const user = await this.userRepository.updateOnboardingStatus(userId, { is_onboarded: true, ...payload });
     return this.formatUserResponse(user);
   }
