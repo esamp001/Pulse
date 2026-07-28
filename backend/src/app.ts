@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import authRoutes from './routes/auth-routes';
 import uploadRoutes from './routes/upload-routes';
+import matchRoutes from './routes/match-routes';
 
 const app = express();
 
@@ -12,6 +13,7 @@ app.use(express.json());
 // API Routes
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/upload', uploadRoutes);
+app.use('/api/v1/matches', matchRoutes);
 
 // Healthcheck Route
 app.get('/health', (req, res) => {

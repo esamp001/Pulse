@@ -1,0 +1,151 @@
+/// Participant summary inside a match (Player 1, Player 2, or Scorer)
+class MatchParticipantModel {
+  final String id;
+  final String name;
+  final String email;
+  final int rating;
+  final String? avatarUrl;
+  final String? primarySport;
+
+  MatchParticipantModel({
+    required this.id,
+    required this.name,
+    required this.email,
+    required this.rating,
+    this.avatarUrl,
+    this.primarySport,
+  });
+
+  String get initials {
+    if (name.isEmpty) return '?';
+    final parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    }
+    return name[0].toUpperCase();
+  }
+
+  factory MatchParticipantModel.fromJson(Map<String, dynamic> json) {
+    return MatchParticipantModel(
+      id: json['id'] as String? ?? '',
+      name: json['name'] as String? ?? 'Anonymous',
+      email: json['email'] as String? ?? '',
+      rating: json['rating'] is int ? json['rating'] as int : int.tryParse('${json['rating']}') ?? 1200,
+      avatarUrl: json['avatar_url'] as String?,
+      primarySport: json['primary_sport'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'email': email,
+      'rating': rating,
+      'avatar_url': avatarUrl,
+      'primary_sport': primarySport,
+    };
+  }
+}
+
+/// Match Data Model representing a match record from PostgreSQL `matches` table
+class MatchModel {
+  final String id;
+  final String creatorId;
+  final String player1Id;
+  final String? player2Id;
+  final String? scorerId;
+  final String sport; // 'pickleball', 'tennis', 'table_tennis'
+  final String venueName;
+  final String? location;
+  final DateTime scheduledAt;
+  final String status; // 'WAITING', 'READY', 'LIVE', 'FINISHED', 'CONFIRMED'
+  final String? winnerId;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
+  final MatchParticipantModel? player1;
+  final MatchParticipantModel? player2;
+  final MatchParticipantModel? scorer;
+
+  MatchModel({
+    required this.id,
+    required this.creatorId,
+    required this.player1Id,
+    this.player2Id,
+    this.scorerId,
+    required this.sport,
+    required this.venueName,
+    this.location,
+    required this.scheduledAt,
+    required this.status,
+    this.winnerId,
+    this.createdAt,
+    this.updatedAt,
+    this.player1,
+    this.player2,
+    this.scorer,
+  });
+
+  /// Display helper for human-readable sport title
+  String get sportDisplayName {
+    switch (sport.toLowerCase()) {
+      case 'pickleball':
+        return 'Pickleball';
+      case 'tennis':
+        return 'Tennis';
+      case 'table_tennis':
+        return 'Table Tennis';
+      default:
+        return sport;
+    }
+  }
+
+  factory MatchModel.fromJson(Map<String, dynamic> json) {
+    return MatchModel(
+      id: json['id'] as String? ?? '',
+      creatorId: json['creator_id'] as String? ?? '',
+      player1Id: json['player1_id'] as String? ?? '',
+      player2Id: json['player2_id'] as String?,
+      scorerId: json['scorer_id'] as String?,
+      sport: json['sport'] as String? ?? 'pickleball',
+      venueName: json['venue_name'] as String? ?? '',
+      location: json['location'] as String?,
+      scheduledAt: DateTime.tryParse('${json['scheduled_at']}') ?? DateTime.now(),
+      status: json['status'] as String? ?? 'WAITING',
+      winnerId: json['winner_id'] as String?,
+      createdAt: json['created_at'] != null ? DateTime.tryParse('${json['created_at']}') : null,
+      updatedAt: json['updated_at'] != null ? DateTime.tryParse('${json['updated_at']}') : null,
+      player1: json['player1'] != null && json['player1'] is Map<String, dynamic>
+          ? MatchParticipantModel.fromJson(json['player1'] as Map<String, dynamic>)
+          : null,
+      player2: json['player2'] != null && json['player2'] is Map<String, dynamic>
+          ? MatchParticipantModel.fromJson(json['player2'] as Map<String, dynamic>)
+          : null,
+      scorer: json['scorer'] != null && json['scorer'] is Map<String, dynamic>
+          ? MatchParticipantModel.fromJson(json['scorer'] as Map<String, dynamic>)
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'creator_id': creatorId,
+      'player1_id': player1Id,
+      'player2_id': player2Id,
+      'scorer_id': scorerId,
+      'sport': sport,
+      'venue_name': venueName,
+      'location': location,
+      'scheduled_at': scheduledAt.toIso8601String(),
+      'status': status,
+      'winner_id': winnerId,
+      'created_at': createdAt?.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
+      if (player1 != null) 'player1': player1!.toJson(),
+      if (player2 != null) 'player2': player2!.toJson(),
+      if (scorer != null) 'scorer': scorer!.toJson(),
+    };
+  }
+}

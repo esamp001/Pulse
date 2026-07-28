@@ -6,14 +6,15 @@ import '../../../../main.dart';
 import '../../../auth/models/user_model.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
 import '../../../auth/services/auth_service.dart';
+import '../../../matches/models/match_model.dart';
+import '../../../matches/presentation/screens/create_match_screen.dart';
+import '../../../matches/presentation/screens/match_lobby_screen.dart';
+import '../../../matches/services/match_service.dart';
 
 class HomeScreen extends StatefulWidget {
   final UserModel? user;
 
-  const HomeScreen({
-    super.key,
-    this.user,
-  });
+  const HomeScreen({super.key, this.user});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -24,7 +25,9 @@ class _HomeScreenState extends State<HomeScreen> {
   bool get _isDarkMode => themeModeNotifier.value == ThemeMode.dark;
   UserModel? _user;
   bool _isLoadingUser = false;
+  MatchModel? _activeMatch;
   final AuthService _authService = AuthService();
+  final MatchService _matchService = MatchService();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
@@ -35,11 +38,25 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_user == null && AuthService.currentToken != null) {
       _loadCurrentUserProfile();
     }
+    _fetchActiveMatch();
   }
 
+  // fetches active match and updates the state if there is an active match 
+  Future<void> _fetchActiveMatch() async {
+    try {
+      final match = await _matchService.getActiveMatch();
+      if (mounted) {
+        setState(() {
+          _activeMatch = match;
+        });
+      }
+    } catch (_) {}
+  }
+
+  // loads current user profile
   Future<void> _loadCurrentUserProfile() async {
     setState(() => _isLoadingUser = true);
-    
+
     try {
       final fetchedUser = await _authService.fetchCurrentUser();
       if (mounted) {
@@ -69,14 +86,101 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _onCompeteNowPressed() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Starting match creation wizard...'),
-        backgroundColor: PulseColors.primary,
-        duration: Duration(seconds: 2),
-      ),
-    );
+  void _onCompeteNowPressed() async {
+    await _fetchActiveMatch();
+
+    if (!mounted) return;
+
+    if (_activeMatch != null) {
+      final activeMatch = _activeMatch!;
+      showDialog(
+        context: context,
+        builder: (dialogContext) {
+          return AlertDialog(
+            backgroundColor: PulseColors.getSurface(_isDarkMode),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(color: PulseColors.getBorder(_isDarkMode)),
+            ),
+            title: Row(
+              children: [
+                const Icon(Icons.info_outline_rounded, color: PulseColors.accent),
+                const SizedBox(width: 8),
+                Text(
+                  'Active Room Exists',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: PulseColors.getTextPrimary(_isDarkMode),
+                  ),
+                ),
+              ],
+            ),
+            content: Text(
+              'You currently have an active match lobby (${activeMatch.sportDisplayName}). Only 1 active room is allowed at a time.',
+              style: TextStyle(
+                fontSize: 14,
+                color: PulseColors.getTextSecondary(_isDarkMode),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () async {
+                  final navigator = Navigator.of(context);
+                  final messenger = ScaffoldMessenger.of(context);
+                  Navigator.of(dialogContext).pop();
+                  try {
+                    await _matchService.exitMatch(activeMatch.id);
+                    if (mounted) {
+                      setState(() => _activeMatch = null);
+                      navigator.push(
+                        MaterialPageRoute(
+                          builder: (context) => const CreateMatchScreen(),
+                        ),
+                      ).then((_) => _fetchActiveMatch());
+                    }
+                  } catch (e) {
+                    messenger.showSnackBar(
+                      SnackBar(
+                        content: Text(e.toString().replaceAll('Exception: ', '')),
+                        backgroundColor: PulseColors.error,
+                      ),
+                    );
+                  }
+                },
+                child: const Text(
+                  'Exit Active Room',
+                  style: TextStyle(color: PulseColors.error, fontWeight: FontWeight.bold),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(dialogContext).pop();
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => MatchLobbyScreen(match: activeMatch),
+                    ),
+                  ).then((_) => _fetchActiveMatch());
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: PulseColors.primary,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shadowColor: Colors.transparent,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                child: const Text('Return to Room'),
+              ),
+            ],
+          );
+        },
+      );
+    } else {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => const CreateMatchScreen(),
+        ),
+      ).then((_) => _fetchActiveMatch());
+    }
   }
 
   @override
@@ -141,7 +245,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         Flexible(
                           child: Text(
-                            'Welcome back, $firstName',
+                            'Welcome back, $firstName 👋',
                             style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.w900,
@@ -157,7 +261,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           const SizedBox(
                             height: 14,
                             width: 14,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: PulseColors.accent),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: PulseColors.accent,
+                            ),
                           ),
                         ],
                       ],
@@ -185,17 +292,29 @@ class _HomeScreenState extends State<HomeScreen> {
             physics: const BouncingScrollPhysics(),
             child: Row(
               children: [
-                _buildStatPill(Icons.emoji_events_rounded, ratingText, PulseColors.accent),
+                _buildStatPill(
+                  Icons.emoji_events_rounded,
+                  ratingText,
+                  PulseColors.accent,
+                ),
                 const SizedBox(width: 8),
-                _buildStatPill(Icons.bolt_rounded, recordText, const Color(0xFF4CAF50)),
+                _buildStatPill(
+                  Icons.bolt_rounded,
+                  recordText,
+                  const Color(0xFF4CAF50),
+                ),
                 const SizedBox(width: 8),
-                _buildStatPill(Icons.sports_tennis_rounded, sportText, const Color(0xFFFF9800)),
+                _buildStatPill(
+                  Icons.sports_tennis_rounded,
+                  sportText,
+                  const Color(0xFFFF9800),
+                ),
               ],
             ),
           ),
           const SizedBox(height: 20),
 
-          // 3. Featured Hero Action Card ("COMPETE NOW")
+          // 3. Dynamic Featured Hero Action Card ("COMPETE NOW" vs "RETURN TO ROOM")
           InkWell(
             onTap: _onCompeteNowPressed,
             borderRadius: BorderRadius.circular(24),
@@ -212,7 +331,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
-                  color: _isDarkMode ? PulseColors.accent.withValues(alpha: 0.5) : PulseColors.secondary.withValues(alpha: 0.5),
+                  color: _isDarkMode
+                      ? PulseColors.accent.withValues(alpha: 0.5)
+                      : PulseColors.secondary.withValues(alpha: 0.5),
                   width: 1.8,
                 ),
               ),
@@ -227,8 +348,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       shape: BoxShape.circle,
                       border: Border.all(color: PulseColors.accent, width: 1.5),
                     ),
-                    child: const Icon(
-                      Icons.bolt_rounded,
+                    child: Icon(
+                      _activeMatch == null ? Icons.bolt_rounded : Icons.meeting_room_rounded,
                       color: PulseColors.accent,
                       size: 26,
                     ),
@@ -240,9 +361,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'START A MATCH',
-                          style: TextStyle(
+                        Text(
+                          _activeMatch == null ? 'START A MATCH' : 'ACTIVE MATCH LOBBY',
+                          style: const TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w800,
                             color: PulseColors.accent,
@@ -252,9 +373,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 4),
-                        const Text(
-                          'Compete Now',
-                          style: TextStyle(
+                        Text(
+                          _activeMatch == null ? 'Compete Now' : 'Return to Room',
+                          style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w900,
                             color: Colors.white,
@@ -263,22 +384,28 @@ class _HomeScreenState extends State<HomeScreen> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Create or join a rated match',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.white.withValues(alpha: 0.7),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        Builder(
+                          builder: (context) {
+                            final activeMatch = _activeMatch;
+                            return Text(
+                              activeMatch == null
+                                  ? 'Create or join a rated match'
+                                  : '${activeMatch.sportDisplayName} • ${activeMatch.status == 'READY' ? 'Ready to start' : 'Waiting for participants'}',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.white.withValues(alpha: 0.7),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            );
+                          },
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(width: 8),
 
-                  // Forward Arrow Container Button
+                  // Action Arrow Button Container
                   Container(
                     width: 36,
                     height: 36,
@@ -359,7 +486,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 badgeIcon: Icons.fitness_center_rounded,
                 onTap: () {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Logging practice session...')),
+                    const SnackBar(
+                      content: Text('Logging practice session...'),
+                    ),
                   );
                 },
               ),
@@ -458,8 +587,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   children: [
                     CircleAvatar(
                       radius: 18,
-                      backgroundColor: PulseColors.primary.withValues(alpha: 0.2),
-                      child: const Icon(Icons.people_alt_rounded, size: 18, color: PulseColors.accent),
+                      backgroundColor: PulseColors.primary.withValues(
+                        alpha: 0.2,
+                      ),
+                      child: const Icon(
+                        Icons.people_alt_rounded,
+                        size: 18,
+                        color: PulseColors.accent,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -487,10 +622,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     TextButton(
                       onPressed: () {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Joined open lobby invitation!')),
+                          const SnackBar(
+                            content: Text('Joined open lobby invitation!'),
+                          ),
                         );
                       },
-                      child: const Text('JOIN', style: TextStyle(fontWeight: FontWeight.bold, color: PulseColors.accent)),
+                      child: const Text(
+                        'JOIN',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: PulseColors.accent,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -500,7 +643,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     CircleAvatar(
                       radius: 18,
                       backgroundColor: Colors.green.withValues(alpha: 0.2),
-                      child: const Icon(Icons.check_circle_rounded, size: 18, color: Colors.green),
+                      child: const Icon(
+                        Icons.check_circle_rounded,
+                        size: 18,
+                        color: Colors.green,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -584,10 +731,7 @@ class _HomeScreenState extends State<HomeScreen> {
         decoration: BoxDecoration(
           color: surfaceColor,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: borderColor,
-            width: 1.8,
-          ),
+          border: Border.all(color: borderColor, width: 1.8),
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(18),
@@ -608,7 +752,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         return Container(
                           color: PulseColors.getCard(_isDarkMode),
                           child: const Center(
-                            child: Icon(Icons.image_not_supported_rounded, color: PulseColors.textDisabled),
+                            child: Icon(
+                              Icons.image_not_supported_rounded,
+                              color: PulseColors.textDisabled,
+                            ),
                           ),
                         );
                       },
@@ -657,7 +804,10 @@ class _HomeScreenState extends State<HomeScreen> {
               Expanded(
                 flex: 42,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12.0,
+                    vertical: 8.0,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -695,14 +845,16 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-
-
   Widget _buildPlaceholderTab(String title) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.construction_rounded, size: 48, color: PulseColors.accent.withValues(alpha: 0.7)),
+          Icon(
+            Icons.construction_rounded,
+            size: 48,
+            color: PulseColors.accent.withValues(alpha: 0.7),
+          ),
           const SizedBox(height: 16),
           Text(
             title,
@@ -740,7 +892,10 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             // Top Bar of Side Modal: Title & Close Button
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 8.0,
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -754,7 +909,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   IconButton(
-                    icon: Icon(Icons.close_rounded, color: PulseColors.getTextPrimary(_isDarkMode), size: 22),
+                    icon: Icon(
+                      Icons.close_rounded,
+                      color: PulseColors.getTextPrimary(_isDarkMode),
+                      size: 22,
+                    ),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ],
@@ -771,11 +930,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     // Profile Header Card (Horizontal Pill Layout matching user design)
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0,
+                        vertical: 12.0,
+                      ),
                       decoration: BoxDecoration(
                         color: PulseColors.getBackground(_isDarkMode),
                         borderRadius: BorderRadius.circular(32),
-                        border: Border.all(color: PulseColors.getBorder(_isDarkMode)),
+                        border: Border.all(
+                          color: PulseColors.getBorder(_isDarkMode),
+                        ),
                       ),
                       child: Row(
                         children: [
@@ -786,13 +950,18 @@ class _HomeScreenState extends State<HomeScreen> {
                             decoration: BoxDecoration(
                               color: PulseColors.getSurface(_isDarkMode),
                               shape: BoxShape.circle,
-                              border: Border.all(color: PulseColors.getBorder(_isDarkMode), width: 1.0),
+                              border: Border.all(
+                                color: PulseColors.getBorder(_isDarkMode),
+                                width: 1.0,
+                              ),
                             ),
                             child: Center(
                               child: Text(
                                 initials,
                                 style: TextStyle(
-                                  color: PulseColors.getTextPrimary(_isDarkMode),
+                                  color: PulseColors.getTextPrimary(
+                                    _isDarkMode,
+                                  ),
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -812,7 +981,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                   style: TextStyle(
                                     fontSize: 15,
                                     fontWeight: FontWeight.bold,
-                                    color: PulseColors.getTextPrimary(_isDarkMode),
+                                    color: PulseColors.getTextPrimary(
+                                      _isDarkMode,
+                                    ),
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -822,7 +993,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                   email,
                                   style: TextStyle(
                                     fontSize: 11,
-                                    color: PulseColors.getTextSecondary(_isDarkMode),
+                                    color: PulseColors.getTextSecondary(
+                                      _isDarkMode,
+                                    ),
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -837,19 +1010,40 @@ class _HomeScreenState extends State<HomeScreen> {
 
                     // Athlete Quick Stats
                     Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 12,
+                        horizontal: 8,
+                      ),
                       decoration: BoxDecoration(
                         color: PulseColors.getSurface(_isDarkMode),
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: PulseColors.getBorder(_isDarkMode)),
+                        border: Border.all(
+                          color: PulseColors.getBorder(_isDarkMode),
+                        ),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
-                          _buildDrawerStatItem('ELO', _user != null ? '${_user!.rating}' : '1,200'),
-                          Container(width: 1, height: 24, color: PulseColors.getBorder(_isDarkMode)),
-                          _buildDrawerStatItem('RECORD', _user != null ? '${_user!.wins}W-${_user!.losses}L' : '0W-0L'),
-                          Container(width: 1, height: 28, color: PulseColors.getBorder(_isDarkMode)),
+                          _buildDrawerStatItem(
+                            'ELO',
+                            _user != null ? '${_user!.rating}' : '1,200',
+                          ),
+                          Container(
+                            width: 1,
+                            height: 24,
+                            color: PulseColors.getBorder(_isDarkMode),
+                          ),
+                          _buildDrawerStatItem(
+                            'RECORD',
+                            _user != null
+                                ? '${_user!.wins}W-${_user!.losses}L'
+                                : '0W-0L',
+                          ),
+                          Container(
+                            width: 1,
+                            height: 28,
+                            color: PulseColors.getBorder(_isDarkMode),
+                          ),
                           _buildDrawerStatItem('WIN RATE', '100%'),
                         ],
                       ),
@@ -859,11 +1053,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     // Dark Mode Toggle Switch (Standard Side Drawer Setting)
                     Container(
                       margin: const EdgeInsets.only(bottom: 8.0),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: PulseColors.getSurface(_isDarkMode),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: PulseColors.getBorder(_isDarkMode)),
+                        border: Border.all(
+                          color: PulseColors.getBorder(_isDarkMode),
+                        ),
                       ),
                       child: Row(
                         children: [
@@ -874,9 +1073,13 @@ class _HomeScreenState extends State<HomeScreen> {
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Icon(
-                              _isDarkMode ? Icons.nights_stay_rounded : Icons.wb_sunny_outlined,
+                              _isDarkMode
+                                  ? Icons.nights_stay_rounded
+                                  : Icons.wb_sunny_outlined,
                               size: 18,
-                              color: _isDarkMode ? PulseColors.secondary : PulseColors.primary,
+                              color: _isDarkMode
+                                  ? PulseColors.secondary
+                                  : PulseColors.primary,
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -889,14 +1092,20 @@ class _HomeScreenState extends State<HomeScreen> {
                                   style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
-                                    color: PulseColors.getTextPrimary(_isDarkMode),
+                                    color: PulseColors.getTextPrimary(
+                                      _isDarkMode,
+                                    ),
                                   ),
                                 ),
                                 Text(
-                                  _isDarkMode ? 'Dark theme active' : 'Light theme active',
+                                  _isDarkMode
+                                      ? 'Dark theme active'
+                                      : 'Light theme active',
                                   style: TextStyle(
                                     fontSize: 10,
-                                    color: PulseColors.getTextSecondary(_isDarkMode),
+                                    color: PulseColors.getTextSecondary(
+                                      _isDarkMode,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -906,7 +1115,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             value: _isDarkMode,
                             activeTrackColor: PulseColors.accent,
                             onChanged: (val) {
-                              themeModeNotifier.value = val ? ThemeMode.dark : ThemeMode.light;
+                              themeModeNotifier.value = val
+                                  ? ThemeMode.dark
+                                  : ThemeMode.light;
                             },
                           ),
                         ],
@@ -955,10 +1166,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   icon: const Icon(Icons.logout_rounded, size: 18),
                   label: const Text(
                     'Log Out',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: PulseColors.error.withValues(alpha: 0.08),
@@ -1029,7 +1237,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Icon(
                   icon,
                   size: 18,
-                  color: _isDarkMode ? PulseColors.secondary : PulseColors.primary,
+                  color: _isDarkMode
+                      ? PulseColors.secondary
+                      : PulseColors.primary,
                 ),
               ),
               const SizedBox(width: 14),
@@ -1056,7 +1266,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded, color: PulseColors.border, size: 20),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: PulseColors.border,
+                size: 20,
+              ),
             ],
           ),
         ),
@@ -1079,7 +1293,10 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: PulseColors.getSurface(_isDarkMode),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: BorderSide(color: PulseColors.getBorder(_isDarkMode), width: 1.0),
+          side: BorderSide(
+            color: PulseColors.getBorder(_isDarkMode),
+            width: 1.0,
+          ),
         ),
         elevation: 6,
         content: Row(
@@ -1148,7 +1365,8 @@ class _HomeScreenState extends State<HomeScreen> {
     bool obscureConfirm = true;
     bool isSubmitting = false;
 
-    final isSocialUser = _user?.authProvider != null && _user!.authProvider != 'email';
+    final isSocialUser =
+        _user?.authProvider != null && _user!.authProvider != 'email';
     final hasExistingPassword = _user?.hasPassword ?? (!isSocialUser);
 
     showModalBottomSheet(
@@ -1167,7 +1385,9 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               decoration: BoxDecoration(
                 color: PulseColors.getSurface(_isDarkMode),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(28),
+                ),
                 border: Border.all(
                   color: PulseColors.getBorder(_isDarkMode),
                   width: 1.5,
@@ -1184,7 +1404,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         width: 40,
                         height: 4,
                         decoration: BoxDecoration(
-                          color: PulseColors.getTextSecondary(_isDarkMode).withValues(alpha: 0.3),
+                          color: PulseColors.getTextSecondary(
+                            _isDarkMode,
+                          ).withValues(alpha: 0.3),
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -1201,7 +1423,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
-                            hasExistingPassword ? Icons.lock_reset_rounded : Icons.enhanced_encryption_rounded,
+                            hasExistingPassword
+                                ? Icons.lock_reset_rounded
+                                : Icons.enhanced_encryption_rounded,
                             color: PulseColors.accent,
                             size: 22,
                           ),
@@ -1212,11 +1436,15 @@ class _HomeScreenState extends State<HomeScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                hasExistingPassword ? 'Change Password' : 'Create Rally Password',
+                                hasExistingPassword
+                                    ? 'Change Password'
+                                    : 'Create Rally Password',
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w900,
-                                  color: PulseColors.getTextPrimary(_isDarkMode),
+                                  color: PulseColors.getTextPrimary(
+                                    _isDarkMode,
+                                  ),
                                 ),
                               ),
                               Text(
@@ -1225,15 +1453,22 @@ class _HomeScreenState extends State<HomeScreen> {
                                     : 'Set up a password for direct email sign-in',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: PulseColors.getTextSecondary(_isDarkMode),
+                                  color: PulseColors.getTextSecondary(
+                                    _isDarkMode,
+                                  ),
                                 ),
                               ),
                             ],
                           ),
                         ),
                         IconButton(
-                          icon: Icon(Icons.close_rounded, color: PulseColors.getTextSecondary(_isDarkMode)),
-                          onPressed: isSubmitting ? null : () => Navigator.pop(modalContext),
+                          icon: Icon(
+                            Icons.close_rounded,
+                            color: PulseColors.getTextSecondary(_isDarkMode),
+                          ),
+                          onPressed: isSubmitting
+                              ? null
+                              : () => Navigator.pop(modalContext),
                         ),
                       ],
                     ),
@@ -1242,15 +1477,24 @@ class _HomeScreenState extends State<HomeScreen> {
                     // Social Account Connection Info Pill (If Social Login)
                     if (isSocialUser) ...[
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
                         decoration: BoxDecoration(
                           color: PulseColors.getBackground(_isDarkMode),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: PulseColors.getBorder(_isDarkMode)),
+                          border: Border.all(
+                            color: PulseColors.getBorder(_isDarkMode),
+                          ),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.g_mobiledata_rounded, color: PulseColors.accent, size: 24),
+                            const Icon(
+                              Icons.g_mobiledata_rounded,
+                              color: PulseColors.accent,
+                              size: 24,
+                            ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
@@ -1258,7 +1502,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
-                                  color: PulseColors.getTextPrimary(_isDarkMode),
+                                  color: PulseColors.getTextPrimary(
+                                    _isDarkMode,
+                                  ),
                                 ),
                               ),
                             ),
@@ -1283,23 +1529,38 @@ class _HomeScreenState extends State<HomeScreen> {
                         controller: currentPasswordController,
                         obscureText: obscureCurrent,
                         enabled: !isSubmitting,
-                        style: TextStyle(color: PulseColors.getTextPrimary(_isDarkMode)),
+                        style: TextStyle(
+                          color: PulseColors.getTextPrimary(_isDarkMode),
+                        ),
                         decoration: InputDecoration(
                           hintText: 'Enter current password',
-                          hintStyle: TextStyle(color: PulseColors.getTextSecondary(_isDarkMode).withValues(alpha: 0.6)),
-                          prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20),
+                          hintStyle: TextStyle(
+                            color: PulseColors.getTextSecondary(
+                              _isDarkMode,
+                            ).withValues(alpha: 0.6),
+                          ),
+                          prefixIcon: const Icon(
+                            Icons.lock_outline_rounded,
+                            size: 20,
+                          ),
                           suffixIcon: IconButton(
                             icon: Icon(
-                              obscureCurrent ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                              obscureCurrent
+                                  ? Icons.visibility_off_outlined
+                                  : Icons.visibility_outlined,
                               size: 20,
                             ),
-                            onPressed: () => setModalState(() => obscureCurrent = !obscureCurrent),
+                            onPressed: () => setModalState(
+                              () => obscureCurrent = !obscureCurrent,
+                            ),
                           ),
                           filled: true,
                           fillColor: PulseColors.getBackground(_isDarkMode),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide(color: PulseColors.getBorder(_isDarkMode)),
+                            borderSide: BorderSide(
+                              color: PulseColors.getBorder(_isDarkMode),
+                            ),
                           ),
                         ),
                       ),
@@ -1320,23 +1581,34 @@ class _HomeScreenState extends State<HomeScreen> {
                       controller: newPasswordController,
                       obscureText: obscureNew,
                       enabled: !isSubmitting,
-                      style: TextStyle(color: PulseColors.getTextPrimary(_isDarkMode)),
+                      style: TextStyle(
+                        color: PulseColors.getTextPrimary(_isDarkMode),
+                      ),
                       decoration: InputDecoration(
                         hintText: 'Enter new password (min. 6 chars)',
-                        hintStyle: TextStyle(color: PulseColors.getTextSecondary(_isDarkMode).withValues(alpha: 0.6)),
+                        hintStyle: TextStyle(
+                          color: PulseColors.getTextSecondary(
+                            _isDarkMode,
+                          ).withValues(alpha: 0.6),
+                        ),
                         prefixIcon: const Icon(Icons.key_rounded, size: 20),
                         suffixIcon: IconButton(
                           icon: Icon(
-                            obscureNew ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                            obscureNew
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
                             size: 20,
                           ),
-                          onPressed: () => setModalState(() => obscureNew = !obscureNew),
+                          onPressed: () =>
+                              setModalState(() => obscureNew = !obscureNew),
                         ),
                         filled: true,
                         fillColor: PulseColors.getBackground(_isDarkMode),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide(color: PulseColors.getBorder(_isDarkMode)),
+                          borderSide: BorderSide(
+                            color: PulseColors.getBorder(_isDarkMode),
+                          ),
                         ),
                       ),
                     ),
@@ -1356,23 +1628,38 @@ class _HomeScreenState extends State<HomeScreen> {
                       controller: confirmPasswordController,
                       obscureText: obscureConfirm,
                       enabled: !isSubmitting,
-                      style: TextStyle(color: PulseColors.getTextPrimary(_isDarkMode)),
+                      style: TextStyle(
+                        color: PulseColors.getTextPrimary(_isDarkMode),
+                      ),
                       decoration: InputDecoration(
                         hintText: 'Re-enter password',
-                        hintStyle: TextStyle(color: PulseColors.getTextSecondary(_isDarkMode).withValues(alpha: 0.6)),
-                        prefixIcon: const Icon(Icons.check_circle_outline_rounded, size: 20),
+                        hintStyle: TextStyle(
+                          color: PulseColors.getTextSecondary(
+                            _isDarkMode,
+                          ).withValues(alpha: 0.6),
+                        ),
+                        prefixIcon: const Icon(
+                          Icons.check_circle_outline_rounded,
+                          size: 20,
+                        ),
                         suffixIcon: IconButton(
                           icon: Icon(
-                            obscureConfirm ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                            obscureConfirm
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
                             size: 20,
                           ),
-                          onPressed: () => setModalState(() => obscureConfirm = !obscureConfirm),
+                          onPressed: () => setModalState(
+                            () => obscureConfirm = !obscureConfirm,
+                          ),
                         ),
                         filled: true,
                         fillColor: PulseColors.getBackground(_isDarkMode),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide(color: PulseColors.getBorder(_isDarkMode)),
+                          borderSide: BorderSide(
+                            color: PulseColors.getBorder(_isDarkMode),
+                          ),
                         ),
                       ),
                     ),
@@ -1386,27 +1673,43 @@ class _HomeScreenState extends State<HomeScreen> {
                         onPressed: isSubmitting
                             ? null
                             : () async {
-                                final currentPass = currentPasswordController.text.trim();
-                                final newPass = newPasswordController.text.trim();
-                                final confirmPass = confirmPasswordController.text.trim();
+                                final currentPass = currentPasswordController
+                                    .text
+                                    .trim();
+                                final newPass = newPasswordController.text
+                                    .trim();
+                                final confirmPass = confirmPasswordController
+                                    .text
+                                    .trim();
 
-                                if (hasExistingPassword && currentPass.isEmpty) {
+                                if (hasExistingPassword &&
+                                    currentPass.isEmpty) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Please enter your current password')),
+                                    const SnackBar(
+                                      content: Text(
+                                        'Please enter your current password',
+                                      ),
+                                    ),
                                   );
                                   return;
                                 }
 
                                 if (newPass.length < 6) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Password must be at least 6 characters long')),
+                                    const SnackBar(
+                                      content: Text(
+                                        'Password must be at least 6 characters long',
+                                      ),
+                                    ),
                                   );
                                   return;
                                 }
 
                                 if (newPass != confirmPass) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Passwords do not match')),
+                                    const SnackBar(
+                                      content: Text('Passwords do not match'),
+                                    ),
                                   );
                                   return;
                                 }
@@ -1416,10 +1719,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                 setModalState(() => isSubmitting = true);
 
                                 try {
-                                  final updatedUser = await _authService.updatePassword(
-                                    currentPassword: hasExistingPassword ? currentPass : null,
-                                    newPassword: newPass,
-                                  );
+                                  final updatedUser = await _authService
+                                      .updatePassword(
+                                        currentPassword: hasExistingPassword
+                                            ? currentPass
+                                            : null,
+                                        newPassword: newPass,
+                                      );
 
                                   if (mounted) {
                                     setState(() => _user = updatedUser);
@@ -1431,7 +1737,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                               ? 'Password updated successfully!'
                                               : 'Rally password created! You can now log in with email/password.',
                                         ),
-                                        backgroundColor: const Color(0xFF4CAF50),
+                                        backgroundColor: const Color(
+                                          0xFF4CAF50,
+                                        ),
                                       ),
                                     );
                                   }
@@ -1440,7 +1748,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                   if (mounted) {
                                     messenger.showSnackBar(
                                       SnackBar(
-                                        content: Text(e.toString().replaceAll('Exception: ', '')),
+                                        content: Text(
+                                          e.toString().replaceAll(
+                                            'Exception: ',
+                                            '',
+                                          ),
+                                        ),
                                         backgroundColor: Colors.redAccent,
                                       ),
                                     );
@@ -1464,7 +1777,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               )
                             : Text(
-                                hasExistingPassword ? 'Update Password' : 'Create Password',
+                                hasExistingPassword
+                                    ? 'Update Password'
+                                    : 'Create Password',
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -1550,7 +1865,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: InkWell(
                         onTap: () {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Profile photo upload feature')),
+                            const SnackBar(
+                              content: Text('Profile photo upload feature'),
+                            ),
                           );
                         },
                         borderRadius: BorderRadius.circular(16),
@@ -1602,9 +1919,21 @@ class _HomeScreenState extends State<HomeScreen> {
                   runSpacing: 8,
                   alignment: WrapAlignment.center,
                   children: [
-                    _buildStatPill(Icons.emoji_events_rounded, ratingText, PulseColors.accent),
-                    _buildStatPill(Icons.bolt_rounded, recordText, const Color(0xFF4CAF50)),
-                    _buildStatPill(Icons.sports_tennis_rounded, sportText, const Color(0xFFFF9800)),
+                    _buildStatPill(
+                      Icons.emoji_events_rounded,
+                      ratingText,
+                      PulseColors.accent,
+                    ),
+                    _buildStatPill(
+                      Icons.bolt_rounded,
+                      recordText,
+                      const Color(0xFF4CAF50),
+                    ),
+                    _buildStatPill(
+                      Icons.sports_tennis_rounded,
+                      sportText,
+                      const Color(0xFFFF9800),
+                    ),
                   ],
                 ),
               ],
@@ -1666,7 +1995,10 @@ class _HomeScreenState extends State<HomeScreen> {
             decoration: BoxDecoration(
               color: PulseColors.getSurface(_isDarkMode),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: PulseColors.getBorder(_isDarkMode), width: 1.8),
+              border: Border.all(
+                color: PulseColors.getBorder(_isDarkMode),
+                width: 1.8,
+              ),
             ),
             child: Row(
               children: [
@@ -1677,9 +2009,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
-                    _isDarkMode ? Icons.nights_stay_rounded : Icons.wb_sunny_outlined,
+                    _isDarkMode
+                        ? Icons.nights_stay_rounded
+                        : Icons.wb_sunny_outlined,
                     size: 20,
-                    color: _isDarkMode ? PulseColors.secondary : PulseColors.primary,
+                    color: _isDarkMode
+                        ? PulseColors.secondary
+                        : PulseColors.primary,
                   ),
                 ),
                 const SizedBox(width: 14),
@@ -1696,7 +2032,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       Text(
-                        _isDarkMode ? 'Dark theme active' : 'Light theme active',
+                        _isDarkMode
+                            ? 'Dark theme active'
+                            : 'Light theme active',
                         style: TextStyle(
                           fontSize: 11,
                           color: PulseColors.getTextSecondary(_isDarkMode),
@@ -1709,7 +2047,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   value: _isDarkMode,
                   activeTrackColor: PulseColors.accent,
                   onChanged: (val) {
-                    themeModeNotifier.value = val ? ThemeMode.dark : ThemeMode.light;
+                    themeModeNotifier.value = val
+                        ? ThemeMode.dark
+                        : ThemeMode.light;
                   },
                 ),
               ],
@@ -1798,8 +2138,16 @@ class MainContentCourtPainter extends CustomPainter {
     final serviceTopY = rect.top + (rect.height * 0.22);
     final serviceBottomY = rect.top + (rect.height * 0.66);
 
-    canvas.drawLine(Offset(rect.left, serviceTopY), Offset(rect.right, serviceTopY), paint);
-    canvas.drawLine(Offset(rect.left, serviceBottomY), Offset(rect.right, serviceBottomY), paint);
+    canvas.drawLine(
+      Offset(rect.left, serviceTopY),
+      Offset(rect.right, serviceTopY),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(rect.left, serviceBottomY),
+      Offset(rect.right, serviceBottomY),
+      paint,
+    );
   }
 
   @override

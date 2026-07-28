@@ -51,6 +51,27 @@ class UserRepository {
 
     return updatedUser;
   }
+
+  async searchUsers(query: string, excludeUserId?: string): Promise<Partial<User>[]> {
+    
+    let q = db('users')
+      .select('id', 'name', 'email', 'rating', 'wins', 'losses', 'primary_sport', 'avatar_url');
+
+    if (excludeUserId) {
+      q = q.whereNot({ id: excludeUserId });
+    }
+
+    if (query && query.trim().length > 0) {
+      const searchTerm = `%${query.trim().toLowerCase()}%`;
+      q = q.where((builder) => {
+        builder
+          .whereRaw('LOWER(COALESCE(name, \'\')) LIKE ?', [searchTerm])
+          .orWhereRaw('LOWER(COALESCE(email, \'\')) LIKE ?', [searchTerm]);
+      });
+    }
+
+    return q.limit(20);
+  }
 }
 
 export default UserRepository;

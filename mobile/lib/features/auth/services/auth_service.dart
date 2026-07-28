@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import '../models/user_model.dart';
+import 'package:flutter/foundation.dart';
 
 class AuthService {
   // Static session state cache
@@ -16,32 +17,39 @@ class AuthService {
   static UserModel? get currentUser => _currentUser;
 
   /// Authenticate user via Google OAuth details
-  Future<Map<String, dynamic>> googleAuthenticate({required String email, required String name}) async {
+  Future<Map<String, dynamic>> googleAuthenticate({
+    required String email,
+    required String name,
+  }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/google'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'email': email,
-        'name': name,
-      }),
+      body: jsonEncode({'email': email, 'name': name}),
     );
 
-    if (response.body.startsWith('<!DOCTYPE') || response.body.startsWith('<html')) {
-      throw Exception('Server returned HTML 404/500 instead of JSON. Status: ${response.statusCode}');
+    if (response.body.startsWith('<!DOCTYPE') ||
+        response.body.startsWith('<html')) {
+      throw Exception(
+        'Server returned HTML 404/500 instead of JSON. Status: ${response.statusCode}',
+      );
     }
 
     final responseData = jsonDecode(response.body);
 
     if (response.statusCode == 200) {
       _processAuthResponse(responseData);
-      return responseData;  
+      return responseData;
     } else {
       throw Exception(responseData['error'] ?? 'Google authentication failed');
     }
   }
 
   /// Register standard user
-  Future<Map<String, dynamic>> register({required String name, required String email, String? password}) async {
+  Future<Map<String, dynamic>> register({
+    required String name,
+    required String email,
+    String? password,
+  }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/register'),
       headers: {'Content-Type': 'application/json'},
@@ -63,7 +71,10 @@ class AuthService {
   }
 
   /// Login standard user
-  Future<Map<String, dynamic>> login({required String email, String? password}) async {
+  Future<Map<String, dynamic>> login({
+    required String email,
+    String? password,
+  }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/login'),
       headers: {'Content-Type': 'application/json'},
@@ -145,9 +156,12 @@ class AuthService {
   }
 
   /// Update or set user password
-  Future<UserModel> updatePassword({ String? currentPassword, required String newPassword, }) async {
+  Future<UserModel> updatePassword({
+    String? currentPassword,
+    required String newPassword,
+  }) async {
     final token = _currentToken;
-    
+
     if (token == null) {
       throw Exception('No active session token');
     }
@@ -177,7 +191,10 @@ class AuthService {
   }
 
   /// Upload user avatar image bytes via Cloudflare R2 presigned URL
-  Future<String?> uploadAvatarImage(List<int> imageBytes, {String mimeType = 'image/jpeg'}) async {
+  Future<String?> uploadAvatarImage(
+    List<int> imageBytes, {
+    String mimeType = 'image/jpeg',
+  }) async {
     final token = _currentToken;
     if (token == null) {
       throw Exception('No active session token');
@@ -209,7 +226,9 @@ class AuthService {
       body: imageBytes,
     );
 
-    if (uploadResponse.statusCode == 200 || uploadResponse.statusCode == 204 || uploadResponse.statusCode == 201) {
+    if (uploadResponse.statusCode == 200 ||
+        uploadResponse.statusCode == 204 ||
+        uploadResponse.statusCode == 201) {
       return avatarUrl;
     } else {
       throw Exception('Failed to upload image file to storage');
