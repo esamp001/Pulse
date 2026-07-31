@@ -217,11 +217,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     await _matchService.exitMatch(activeMatch.id);
                     if (mounted) {
                       setState(() => _activeMatch = null);
-                      navigator.push(
+                      final result = await navigator.push(
                         MaterialPageRoute(
                           builder: (context) => const CreateMatchScreen(),
                         ),
-                      ).then((_) => _fetchActiveMatch());
+                      );
+                      if (result == true || result == 'cancelled') {
+                        if (mounted) setState(() => _activeMatch = null);
+                      }
+                      _fetchActiveMatch();
                     }
                   } catch (e) {
                     messenger.showSnackBar(
@@ -238,20 +242,23 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
                   Navigator.of(dialogContext).pop();
-                  Navigator.of(context).push(
+                  final result = await Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (context) => MatchLobbyScreen(match: activeMatch),
                     ),
-                  ).then((_) => _fetchActiveMatch());
+                  );
+                  if (result == true || result == 'cancelled') {
+                    if (mounted) setState(() => _activeMatch = null);
+                  }
+                  _fetchActiveMatch();
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: PulseColors.primary,
                   foregroundColor: Colors.white,
                   elevation: 0,
-                  shadowColor: Colors.transparent,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
                 child: const Text('Return to Room'),
               ),
@@ -260,11 +267,15 @@ class _HomeScreenState extends State<HomeScreen> {
         },
       );
     } else {
-      Navigator.of(context).push(
+      final result = await Navigator.of(context).push(
         MaterialPageRoute(
           builder: (context) => const CreateMatchScreen(),
         ),
-      ).then((_) => _fetchActiveMatch());
+      );
+      if (result == true || result == 'cancelled') {
+        if (mounted) setState(() => _activeMatch = null);
+      }
+      _fetchActiveMatch();
     }
   }
 

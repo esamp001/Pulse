@@ -64,6 +64,20 @@ export function initMatchSockets(io: Server): void {
       });
     });
 
+    // Scorer completes match
+    socket.on('match_completed', (data: { matchId: string; winnerId: string; ratingChange?: number; p1SetsWon?: number; p2SetsWon?: number }) => {
+      const room = `match:${data.matchId}`;
+
+      io.to(room).emit('match_completed', {
+        matchId: data.matchId,
+        winnerId: data.winnerId,
+        ratingChange: data.ratingChange || 25,
+        p1SetsWon: data.p1SetsWon || 0,
+        p2SetsWon: data.p2SetsWon || 0,
+        timestamp: new Date().toISOString(),
+      });
+    });
+
     socket.on('disconnect', () => {
       console.log(`Socket disconnected: ${socket.id}`);
     });

@@ -73,6 +73,21 @@ class UserRepository {
 
     return q.limit(20);
   }
+
+  async updateUserRatingAndStats(userId: string, newRating: number, isWinner: boolean): Promise<void> {
+    const rawQuery = isWinner
+      ? db('users').where({ id: userId }).update({
+          rating: newRating,
+          wins: db.raw('wins + 1'),
+          updated_at: new Date(),
+        })
+      : db('users').where({ id: userId }).update({
+          rating: newRating,
+          losses: db.raw('losses + 1'),
+          updated_at: new Date(),
+        });
+    await rawQuery;
+  }
 }
 
 export default UserRepository;

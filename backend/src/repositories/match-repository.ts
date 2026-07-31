@@ -8,6 +8,9 @@ export interface CreateMatchParams {
   venue_name: string;
   location?: string | null;
   scheduled_at: Date;
+  total_sets?: number;
+  points_to_win_set?: number;
+  win_by_two?: boolean;
 }
 
 export interface UpdateMatchParticipantsParams {
@@ -16,6 +19,7 @@ export interface UpdateMatchParticipantsParams {
   scorer_id?: string | null;
   scorer_accepted?: boolean;
   status?: MatchStatus;
+  winner_id?: string | null;
 }
 
 class MatchRepository {
@@ -28,6 +32,9 @@ class MatchRepository {
         venue_name: data.venue_name,
         location: data.location || null,
         scheduled_at: data.scheduled_at,
+        total_sets: data.total_sets ?? 3,
+        points_to_win_set: data.points_to_win_set ?? 11,
+        win_by_two: data.win_by_two ?? true,
         status: 'WAITING',
       })
       .returning('*')) as Match[];
@@ -67,6 +74,7 @@ class MatchRepository {
     if (params.scorer_id !== undefined) updatePayload.scorer_id = params.scorer_id;
     if (params.scorer_accepted !== undefined) updatePayload.scorer_accepted = params.scorer_accepted;
     if (params.status !== undefined) updatePayload.status = params.status;
+    if (params.winner_id !== undefined) updatePayload.winner_id = params.winner_id;
 
     const [updatedMatch] = (await db<Match>('matches')
       .where({ id })

@@ -598,6 +598,21 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(Icons.tune_rounded, size: 16, color: PulseColors.getTextSecondary(_isDarkMode)),
+                      const SizedBox(width: 6),
+                      Text(
+                        '${_match.setsFormatTitle} (${_match.pointsFormatTitle}, ${_match.winMarginTitle})',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: PulseColors.getTextPrimary(_isDarkMode),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),

@@ -14,6 +14,9 @@ export interface Match {
   location?: string | null;
   scheduled_at: Date;
   status: MatchStatus;
+  total_sets: number;
+  points_to_win_set: number;
+  win_by_two: boolean;
   winner_id?: string | null;
   created_at: Date;
   updated_at: Date;
@@ -24,6 +27,9 @@ export interface CreateMatchDTO {
   venue_name: string;
   location?: string;
   scheduled_at: string; // ISO string from client
+  total_sets?: number;
+  points_to_win_set?: number;
+  win_by_two?: boolean;
 }
 
 export interface MatchParticipant {

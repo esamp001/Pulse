@@ -10,6 +10,9 @@ const createMatchSchema = z.object({
   venue_name: z.string().min(1, 'Venue name is required'),
   location: z.string().optional(),
   scheduled_at: z.string().min(1, 'Scheduled date/time is required'),
+  total_sets: z.number().int().optional(),
+  points_to_win_set: z.number().int().optional(),
+  win_by_two: z.boolean().optional(),
 });
 
 class MatchController {
@@ -248,6 +251,39 @@ class MatchController {
       });
     } catch (error: any) {
       res.status(400).json({ error: error.message || 'Failed to update match status' });
+    }
+  };
+
+  finalizeMatch = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized user' });
+        return;
+      }
+
+      const { id } = req.params;
+      const { winner_id, player1_sets_won, player2_sets_won } = req.body;
+
+      if (!winner_id) {
+        res.status(400).json({ error: 'winner_id is required' });
+        return;
+      }
+
+      const match = await this.matchService.evaluateAndCompleteMatch(
+        id,
+        userId,
+        winner_id,
+        player1_sets_won ?? 0,
+        player2_sets_won ?? 0
+      );
+
+      res.status(200).json({
+        message: 'Match completed and winner declared successfully',
+        data: match,
+      });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || 'Failed to finalize match' });
     }
   };
 }

@@ -12,7 +12,7 @@ When `/ask-mode` is invoked or when advisory mode is requested, follow this inte
 ## 📋 Core Directives
 
 1. **DO NOT MODIFY CODE IMMEDIATELY**: Pause all automated file modifications until requirements and design choices are clarified with the user.
-2. **ASK CLARIFYING QUESTIONS**: Solicit design intent and clarify ambiguity using the `ask_question` tool or structured interactive prompts.
+2. **ASK CLARIFYING QUESTIONS**: Solicit design intent and clarify ambiguity using structured text prompts. Avoid using `ask_question` interactive modals for simple Q&A or informational questions—respond in plain markdown instead unless a multi-choice decision is explicitly required.
 3. **PRESENT CHOICE OPTIONS WITH PROS & CONS**:
    - **Option 1 (Recommended)**: Best practice approach with rationale.
    - **Option 2 (Alternative)**: Viable secondary approach.
@@ -53,8 +53,8 @@ When answering under `/ask-mode`, structure your response as follows:
 2. **Edge Case 2**: Description & mitigation.
 3. **Edge Case 3**: Description & mitigation.
 
-### ❓ Interactive Questions
-[Use ask_question tool or clear choices for user selection]
+### ❓ Follow-up Questions / Next Steps
+[Present clear, numbered questions or next steps in plain markdown text]
 ```
 
 ---

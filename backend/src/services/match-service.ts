@@ -1,6 +1,7 @@
 import MatchRepository from '../repositories/match-repository';
 import UserRepository from '../repositories/user-repository';
 import type { Match, MatchWithDetails, CreateMatchDTO, SportType, MatchStatus } from '../types/match';
+import { calculateElo } from '../utils/elo';
 
 const VALID_SPORTS: SportType[] = ['pickleball', 'tennis', 'table_tennis'];
 
@@ -32,6 +33,18 @@ class MatchService {
       throw new Error('Invalid date/time format for scheduled_at');
     }
 
+    let totalSets = data.total_sets ?? 3;
+    if (![1, 3, 5].includes(totalSets)) {
+      totalSets = 3;
+    }
+
+    let pointsToWinSet = data.points_to_win_set ?? 11;
+    if (pointsToWinSet < 5 || pointsToWinSet > 50) {
+      pointsToWinSet = 11;
+    }
+
+    const winByTwo = data.win_by_two ?? true;
+
     const newMatch = await this.matchRepository.create({
       creator_id: userId,
       player1_id: userId, // Creator is player 1
@@ -39,6 +52,9 @@ class MatchService {
       venue_name: data.venue_name.trim(),
       location: data.location ? data.location.trim() : null,
       scheduled_at: scheduledDate,
+      total_sets: totalSets,
+      points_to_win_set: pointsToWinSet,
+      win_by_two: winByTwo,
     });
 
     const withDetails = await this.matchRepository.findByIdWithDetails(newMatch.id);
@@ -285,6 +301,70 @@ class MatchService {
     await this.matchRepository.updateParticipants(matchId, { status });
     const updatedWithDetails = await this.matchRepository.findByIdWithDetails(matchId);
     return updatedWithDetails!;
+  }
+
+  async evaluateAndCompleteMatch(
+    matchId: string,
+    requesterId: string,
+    winnerId: string,
+    player1SetsWon: number,
+    player2SetsWon: number
+  ): Promise<MatchWithDetails & { ratingChange?: number }> {
+    const match = await this.matchRepository.findById(matchId);
+    if (!match) {
+      throw new Error('Match not found');
+    }
+
+    const isParticipant =
+      match.creator_id === requesterId ||
+      match.player1_id === requesterId ||
+      match.scorer_id === requesterId;
+
+    if (!isParticipant) {
+      throw new Error('Only match participants or the scorer can finalize the match');
+    }
+
+    // Verify winnerId is valid player
+    if (winnerId !== match.player1_id && winnerId !== match.player2_id) {
+      throw new Error('Winner must be a player in this match');
+    }
+
+    let ratingChange = 25;
+
+    // Calculate & Apply True Elo rating changes if both players exist
+    if (match.player1_id && match.player2_id) {
+      const p1 = await this.userRepository.findById(match.player1_id);
+      const p2 = await this.userRepository.findById(match.player2_id);
+
+      if (p1 && p2) {
+        const isP1Winner = winnerId === p1.id;
+        const winner = isP1Winner ? p1 : p2;
+        const loser = isP1Winner ? p2 : p1;
+
+        const eloResult = calculateElo(winner.rating || 1200, loser.rating || 1200, 32);
+        ratingChange = eloResult.ratingChange;
+
+        // Update database with new ratings and win/loss records
+        await this.userRepository.updateUserRatingAndStats(winner.id, eloResult.winnerNewRating, true);
+        await this.userRepository.updateUserRatingAndStats(loser.id, eloResult.loserNewRating, false);
+      }
+    } else if (winnerId) {
+      const winner = await this.userRepository.findById(winnerId);
+      if (winner) {
+        await this.userRepository.updateUserRatingAndStats(winner.id, (winner.rating || 1200) + 25, true);
+      }
+    }
+
+    await this.matchRepository.updateParticipants(matchId, {
+      status: 'FINISHED',
+      winner_id: winnerId,
+    });
+
+    const updatedWithDetails = await this.matchRepository.findByIdWithDetails(matchId);
+    return {
+      ...updatedWithDetails!,
+      ratingChange,
+    };
   }
 }
 

@@ -22,6 +22,10 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
 
   TimeOfDay _selectedTime = TimeOfDay.fromDateTime(DateTime.now().add(const Duration(hours: 1)));
 
+  int _totalSets = 3;
+  int _pointsToWinSet = 11;
+  bool _winByTwo = true;
+
   bool _isSubmitting = false;
 
   bool get _isDarkMode => themeModeNotifier.value == ThemeMode.dark;
@@ -102,6 +106,9 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
         venueName: _venueNameController.text.trim(),
         location: _locationController.text.trim().isEmpty ? null : _locationController.text.trim(),
         scheduledAt: scheduledDateTime,
+        totalSets: _totalSets,
+        pointsToWinSet: _pointsToWinSet,
+        winByTwo: _winByTwo,
       );
 
       if (mounted) {
@@ -140,6 +147,77 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
     final minute = _selectedTime.minute.toString().padLeft(2, '0');
     final period = _selectedTime.period == DayPeriod.am ? 'AM' : 'PM';
     return '$hour:$minute $period';
+  }
+
+  Widget _buildSummaryRow(String label, String value, {bool isHighlight = false}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              color: PulseColors.getTextSecondary(_isDarkMode),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: isHighlight ? FontWeight.bold : FontWeight.w600,
+                color: isHighlight
+                    ? PulseColors.primary
+                    : PulseColors.getTextPrimary(_isDarkMode),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOptionChip({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? PulseColors.primary
+              : PulseColors.getCard(_isDarkMode),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected
+                ? PulseColors.primary
+                : PulseColors.getBorder(_isDarkMode).withValues(alpha: 0.5),
+            width: 1.0,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+            color: isSelected
+                ? Colors.white
+                : PulseColors.getTextPrimary(_isDarkMode),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -294,7 +372,10 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
                       decoration: BoxDecoration(
                         color: PulseColors.getCard(_isDarkMode),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: PulseColors.getBorder(_isDarkMode)),
+                        border: Border.all(
+                          color: PulseColors.getBorder(_isDarkMode).withValues(alpha: 0.6),
+                          width: 1.0,
+                        ),
                       ),
                       child: Row(
                         children: [
@@ -332,7 +413,10 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
                         decoration: BoxDecoration(
                           color: PulseColors.getCard(_isDarkMode),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: PulseColors.getBorder(_isDarkMode)),
+                          border: Border.all(
+                            color: PulseColors.getBorder(_isDarkMode).withValues(alpha: 0.6),
+                            width: 1.0,
+                          ),
                         ),
                         child: Row(
                           children: [
@@ -363,23 +447,161 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
                 ],
               ),
 
+              const SizedBox(height: 24),
+
+              // Step 4: Custom Scoring Rules
+              Text(
+                '4. Custom Scoring Rules',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: PulseColors.getTextPrimary(_isDarkMode),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: PulseColors.getCard(_isDarkMode),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: PulseColors.getBorder(_isDarkMode).withValues(alpha: 0.6),
+                    width: 1.0,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Number of Sets
+                    Text(
+                      'Match Format (Total Sets)',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: PulseColors.getTextSecondary(_isDarkMode),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _buildOptionChip(
+                          label: '1 Set (Single)',
+                          isSelected: _totalSets == 1,
+                          onTap: () => setState(() => _totalSets = 1),
+                        ),
+                        _buildOptionChip(
+                          label: 'Best of 3 Sets',
+                          isSelected: _totalSets == 3,
+                          onTap: () => setState(() => _totalSets = 3),
+                        ),
+                        _buildOptionChip(
+                          label: 'Best of 5 Sets',
+                          isSelected: _totalSets == 5,
+                          onTap: () => setState(() => _totalSets = 5),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Target Points per Set
+                    Text(
+                      'Points to Win Set',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: PulseColors.getTextSecondary(_isDarkMode),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _buildOptionChip(
+                          label: '11 Points',
+                          isSelected: _pointsToWinSet == 11,
+                          onTap: () => setState(() => _pointsToWinSet = 11),
+                        ),
+                        _buildOptionChip(
+                          label: '15 Points',
+                          isSelected: _pointsToWinSet == 15,
+                          onTap: () => setState(() => _pointsToWinSet = 15),
+                        ),
+                        _buildOptionChip(
+                          label: '21 Points',
+                          isSelected: _pointsToWinSet == 21,
+                          onTap: () => setState(() => _pointsToWinSet = 21),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Win by 2 points switch
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Win by 2 Points',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: PulseColors.getTextPrimary(_isDarkMode),
+                              ),
+                            ),
+                            Text(
+                              'Must lead by at least 2 points to win set',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: PulseColors.getTextSecondary(_isDarkMode),
+                              ),
+                            ),
+                          ],
+                        ),
+                        Switch.adaptive(
+                          value: _winByTwo,
+                          thumbColor: WidgetStateProperty.resolveWith(
+                            (states) => states.contains(WidgetState.selected)
+                                ? Colors.white
+                                : PulseColors.primary,
+                          ),
+                          activeTrackColor: PulseColors.primary,
+                          overlayColor: WidgetStateProperty.all(Colors.transparent),
+                          onChanged: (val) => setState(() => _winByTwo = val),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
               const SizedBox(height: 28),
 
-              // Match Summary Card (Strict Flat Border)
+              // Match Summary Card (Clean Fill, No Heavy Border)
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: PulseColors.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: PulseColors.primary.withValues(alpha: 0.3)),
+                  color: PulseColors.getCard(_isDarkMode),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.info_outline, size: 18, color: PulseColors.primary),
+                        const Icon(
+                          Icons.tune_rounded,
+                          size: 18,
+                          color: PulseColors.primary,
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           'Match Setup Summary',
@@ -391,17 +613,38 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '• Sport: ${_sports.firstWhere((s) => s.key == _selectedSport).title}\n'
-                      '• Venue: ${_venueNameController.text.isEmpty ? "(Not set)" : _venueNameController.text.trim()}\n'
-                      '• Time: Today at ${_formatTimeText()}\n'
-                      '• Next Step: Invite Player 2 & Assign Scorer',
-                      style: TextStyle(
-                        fontSize: 13,
-                        height: 1.4,
-                        color: PulseColors.getTextSecondary(_isDarkMode),
+                    const SizedBox(height: 14),
+                    _buildSummaryRow(
+                      'Sport',
+                      _sports.firstWhere((s) => s.key == _selectedSport).title,
+                    ),
+                    _buildSummaryRow(
+                      'Venue',
+                      _venueNameController.text.trim().isEmpty
+                          ? 'Not specified'
+                          : _venueNameController.text.trim(),
+                    ),
+                    _buildSummaryRow(
+                      'Format',
+                      '${_totalSets == 1 ? "1 Set" : "Best of $_totalSets Sets"} ($_pointsToWinSet pts/set${_winByTwo ? ", win by 2" : ""})',
+                    ),
+                    _buildSummaryRow(
+                      'Start Time',
+                      'Today at ${_formatTimeText()}',
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6.0),
+                      child: Divider(
+                        height: 1,
+                        thickness: 0.8,
+                        color: PulseColors.getBorder(_isDarkMode).withValues(alpha: 0.5),
                       ),
+                    ),
+                    const SizedBox(height: 6),
+                    _buildSummaryRow(
+                      'Next Step',
+                      'Invite Player 2 & Assign Scorer',
+                      isHighlight: true,
                     ),
                   ],
                 ),

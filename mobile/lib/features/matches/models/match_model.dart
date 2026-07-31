@@ -62,6 +62,9 @@ class MatchModel {
   final String? location;
   final DateTime scheduledAt;
   final String status; // 'WAITING', 'READY', 'LIVE', 'FINISHED', 'CONFIRMED'
+  final int totalSets;
+  final int pointsToWinSet;
+  final bool winByTwo;
   final String? winnerId;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -83,6 +86,9 @@ class MatchModel {
     this.location,
     required this.scheduledAt,
     required this.status,
+    this.totalSets = 3,
+    this.pointsToWinSet = 11,
+    this.winByTwo = true,
     this.winnerId,
     this.createdAt,
     this.updatedAt,
@@ -105,6 +111,15 @@ class MatchModel {
     }
   }
 
+  /// Display helper for sets title
+  String get setsFormatTitle => totalSets == 1 ? '1 Set' : 'Best of $totalSets Sets';
+
+  /// Display helper for target points title
+  String get pointsFormatTitle => '$pointsToWinSet Points';
+
+  /// Display helper for win margin title
+  String get winMarginTitle => winByTwo ? 'Win by 2 Points' : 'Standard';
+
   factory MatchModel.fromJson(Map<String, dynamic> json) {
     return MatchModel(
       id: json['id'] as String? ?? '',
@@ -119,6 +134,9 @@ class MatchModel {
       location: json['location'] as String?,
       scheduledAt: DateTime.tryParse('${json['scheduled_at']}') ?? DateTime.now(),
       status: json['status'] as String? ?? 'WAITING',
+      totalSets: json['total_sets'] is int ? json['total_sets'] as int : int.tryParse('${json['total_sets']}') ?? 3,
+      pointsToWinSet: json['points_to_win_set'] is int ? json['points_to_win_set'] as int : int.tryParse('${json['points_to_win_set']}') ?? 11,
+      winByTwo: json['win_by_two'] as bool? ?? true,
       winnerId: json['winner_id'] as String?,
       createdAt: json['created_at'] != null ? DateTime.tryParse('${json['created_at']}') : null,
       updatedAt: json['updated_at'] != null ? DateTime.tryParse('${json['updated_at']}') : null,
@@ -148,6 +166,9 @@ class MatchModel {
       'location': location,
       'scheduled_at': scheduledAt.toIso8601String(),
       'status': status,
+      'total_sets': totalSets,
+      'points_to_win_set': pointsToWinSet,
+      'win_by_two': winByTwo,
       'winner_id': winnerId,
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),

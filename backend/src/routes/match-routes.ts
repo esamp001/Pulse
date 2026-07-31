@@ -14,6 +14,9 @@ router.patch('/:id/participants', authenticateToken, matchController.assignParti
 router.patch('/:id/accept', authenticateToken, matchController.acceptInvitation);
 router.patch('/:id/decline', authenticateToken, matchController.declineInvitation);
 router.patch('/:id/status', authenticateToken, matchController.updateStatus);
+router.patch('/:id/finalize', authenticateToken, matchController.finalizeMatch);
+router.post('/:id/finalize', authenticateToken, matchController.finalizeMatch);
+router.post('/:id/complete', authenticateToken, matchController.finalizeMatch);
 router.delete('/:id/participants/:role', authenticateToken, matchController.kickParticipant);
 router.delete('/:id/exit', authenticateToken, matchController.exitMatch);
 

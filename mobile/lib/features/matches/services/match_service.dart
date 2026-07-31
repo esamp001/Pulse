@@ -21,6 +21,9 @@ class MatchService {
     required String venueName,
     String? location,
     required DateTime scheduledAt,
+    int totalSets = 3,
+    int pointsToWinSet = 11,
+    bool winByTwo = true,
   }) async {
     final token = AuthService.currentToken;
     if (token == null) {
@@ -38,6 +41,9 @@ class MatchService {
         'venue_name': venueName,
         if (location != null && location.isNotEmpty) 'location': location,
         'scheduled_at': scheduledAt.toIso8601String(),
+        'total_sets': totalSets,
+        'points_to_win_set': pointsToWinSet,
+        'win_by_two': winByTwo,
       }),
     );
 
@@ -51,6 +57,43 @@ class MatchService {
       return MatchModel.fromJson(responseData['data']);
     } else {
       throw Exception(responseData['error'] ?? 'Failed to create match');
+    }
+  }
+
+  /// Finalize match and declare winner (with True Elo rating change)
+  Future<Map<String, dynamic>> finalizeMatch({
+    required String matchId,
+    required String winnerId,
+    int player1SetsWon = 0,
+    int player2SetsWon = 0,
+  }) async {
+    final token = AuthService.currentToken;
+    if (token == null) {
+      throw Exception('Authentication token missing. Please log in again.');
+    }
+
+    final response = await http.post(
+      Uri.parse('$_matchesUrl/$matchId/complete'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'winner_id': winnerId,
+        'player1_sets_won': player1SetsWon,
+        'player2_sets_won': player2SetsWon,
+      }),
+    );
+
+    final responseData = jsonDecode(response.body);
+    if (response.statusCode == 200) {
+      final matchData = responseData['data'];
+      return {
+        'match': MatchModel.fromJson(matchData),
+        'ratingChange': matchData['ratingChange'] ?? 25,
+      };
+    } else {
+      throw Exception(responseData['error'] ?? 'Failed to finalize match');
     }
   }
 
