@@ -235,7 +235,7 @@ class MatchService {
     return this.userRepository.searchUsers(query, requesterId);
   }
 
-  async getUserMatches(userId: string): Promise<Match[]> {
+  async getUserMatches(userId: string): Promise<MatchWithDetails[]> {
     return this.matchRepository.findByUserId(userId);
   }
 

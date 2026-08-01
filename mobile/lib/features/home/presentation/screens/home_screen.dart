@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/pulse_colors.dart';
-import '../../../../core/widgets/pulse_top_bar.dart';
 import '../../../../core/widgets/pulse_bottom_nav_bar.dart';
 import '../../../../core/widgets/pulse_widget_card.dart';
 import '../../../../main.dart';
@@ -32,6 +31,9 @@ class _HomeScreenState extends State<HomeScreen> {
   MatchModel? _activeMatch;
   Timer? _pollTimer;
   String? _dismissedInvitationMatchId;
+  List<MatchModel> _historyMatches = [];
+  bool _isLoadingHistory = false;
+  String _historySportFilter = 'ALL';
   final AuthService _authService = AuthService();
   final MatchService _matchService = MatchService();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
@@ -45,6 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _loadCurrentUserProfile();
     }
     _fetchActiveMatch();
+    _fetchMatchHistory();
     _startPollingActiveMatch();
   }
 
@@ -285,28 +288,15 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       key: _scaffoldKey,
+      extendBody: true,
       backgroundColor: PulseColors.getBackground(_isDarkMode),
       drawer: _buildAvatarSideModal(context),
-      appBar: PulseTopBar(
-        userName: displayName,
-        unreadCount: 2,
-        isDarkMode: _isDarkMode,
-        onAvatarTap: _openAvatarSideModal,
-
-        onInboxTap: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Opening Inbox & Invitations'),
-              duration: Duration(seconds: 2),
-            ),
-          );
-        },
-      ),
+      appBar: null,
       body: IndexedStack(
         index: _currentBottomNavIndex,
         children: [
           _buildHomeContent(displayName),
-          _buildPlaceholderTab('Match History'),
+          _buildHistoryTab(),
           _buildHomeContent(displayName), // Compete tab focus
           _buildPlaceholderTab('Rankings & Leaderboards'),
           _buildProfileTab(),
@@ -348,63 +338,154 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+      padding: const EdgeInsets.fromLTRB(20.0, 16.0, 20.0, 100.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. Personalized Greeting Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            'Welcome back, $firstName',
-                            style: TextStyle(
-
-                              fontSize: 24,
-                              fontWeight: FontWeight.w900,
-                              color: PulseColors.getTextPrimary(_isDarkMode),
-                              letterSpacing: -0.5,
+          // 1. Modern Borderless Header Row (Avatar + Greeting + Subtitle + Notification Bell)
+          SafeArea(
+            bottom: false,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      // User Avatar Button
+                      GestureDetector(
+                        onTap: _openAvatarSideModal,
+                        child: Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: PulseColors.getSurface(_isDarkMode),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: PulseColors.getBorder(_isDarkMode),
+                              width: 1.2,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                          ),
+                          child: Center(
+                            child: Text(
+                              firstName.isNotEmpty ? firstName[0].toUpperCase() : 'E',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: PulseColors.getTextPrimary(_isDarkMode),
+                              ),
+                            ),
                           ),
                         ),
-                        if (_isLoadingUser) ...[
-                          const SizedBox(width: 8),
-                          const SizedBox(
-                            height: 14,
-                            width: 14,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: PulseColors.accent,
+                      ),
+                      const SizedBox(width: 12),
+
+                      // Greeting & Subtitle Column
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    'Welcome back, $firstName',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: -0.4,
+                                      color: PulseColors.getTextPrimary(_isDarkMode),
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (_isLoadingUser) ...[
+                                  const SizedBox(width: 6),
+                                  const SizedBox(
+                                    height: 12,
+                                    width: 12,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: PulseColors.accent,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Ready for your next verified match?',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: PulseColors.getTextSecondary(_isDarkMode),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(width: 12),
+
+                // Notification Bell Button with Indicator Badge
+                GestureDetector(
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Opening Inbox & Invitations'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: PulseColors.getSurface(_isDarkMode),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: PulseColors.getBorder(_isDarkMode),
+                            width: 1.0,
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.notifications_none_rounded,
+                          color: PulseColors.getTextPrimary(_isDarkMode),
+                          size: 22,
+                        ),
+                      ),
+                      Positioned(
+                        top: -1,
+                        right: -1,
+                        child: Container(
+                          width: 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF4CAF50), // Green dot indicator
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: PulseColors.getBackground(_isDarkMode),
+                              width: 1.5,
                             ),
                           ),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Ready for your next verified match?',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: PulseColors.getTextSecondary(_isDarkMode),
+                        ),
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
 
           // 2. Athlete Hero Rating Display (Clean Typography Focus)
           _buildHeroRatingCard(
@@ -748,6 +829,514 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 24),
         ],
+      ),
+    );
+  }
+
+  Future<void> _fetchMatchHistory() async {
+    if (_isLoadingHistory) return;
+    setState(() => _isLoadingHistory = true);
+    try {
+      final matches = await _matchService.fetchUserMatches();
+      if (mounted) {
+        setState(() {
+          _historyMatches = matches;
+          _isLoadingHistory = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isLoadingHistory = false);
+      }
+    }
+  }
+
+  Widget _buildHistoryTab() {
+    final currentUserId = _user?.id ?? AuthService.currentUser?.id;
+    final playerOnlyMatches = _historyMatches.where((m) {
+      if (currentUserId == null) return true;
+      return m.player1Id == currentUserId || m.player2Id == currentUserId;
+    }).toList();
+
+    final filteredMatches = _historySportFilter == 'ALL'
+        ? playerOnlyMatches
+        : playerOnlyMatches
+            .where((m) => m.sport.toLowerCase() == _historySportFilter.toLowerCase())
+            .toList();
+
+    return RefreshIndicator(
+      onRefresh: _fetchMatchHistory,
+      color: PulseColors.accent,
+      backgroundColor: PulseColors.getSurface(_isDarkMode),
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+        padding: const EdgeInsets.fromLTRB(20.0, 16.0, 20.0, 100.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 1. Header (Integrated directly onto page background)
+            SafeArea(
+              bottom: false,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'MATCH HISTORY',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.4,
+                          color: PulseColors.getTextPrimary(_isDarkMode),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Your verified match records & score logs',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: PulseColors.getTextSecondary(_isDarkMode),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // 2. Sport Filter Pills Row
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              child: Row(
+                children: [
+                  _buildHistoryFilterChip('ALL', 'All Sports'),
+                  const SizedBox(width: 8),
+                  _buildHistoryFilterChip('PICKLEBALL', 'Pickleball'),
+                  const SizedBox(width: 8),
+                  _buildHistoryFilterChip('TENNIS', 'Tennis'),
+                  const SizedBox(width: 8),
+                  _buildHistoryFilterChip('TABLE_TENNIS', 'Table Tennis'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // 3. Match List / Loading / Empty State
+            if (_isLoadingHistory)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 40),
+                child: Center(
+                  child: CircularProgressIndicator(color: PulseColors.accent),
+                ),
+              )
+            else if (filteredMatches.isEmpty)
+              _buildHistoryEmptyState()
+            else
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: filteredMatches.length,
+                separatorBuilder: (context, index) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  final match = filteredMatches[index];
+                  return _buildHistoryMatchCard(match);
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHistoryFilterChip(String filterKey, String label) {
+    final isSelected = _historySportFilter == filterKey;
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _historySportFilter = filterKey;
+        });
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? PulseColors.primary
+              : PulseColors.getSurface(_isDarkMode),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected
+                ? PulseColors.primary
+                : PulseColors.getBorder(_isDarkMode),
+            width: 1.2,
+          ),
+        ),
+        child: Text(
+          label.toUpperCase(),
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.5,
+            color: isSelected
+                ? Colors.white
+                : PulseColors.getTextPrimary(_isDarkMode),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHistoryEmptyState() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: PulseColors.getSurface(_isDarkMode),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: PulseColors.getBackground(_isDarkMode),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.history_rounded,
+              size: 26,
+              color: PulseColors.accent,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'No Verified Matches Found',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: PulseColors.getTextPrimary(_isDarkMode),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Play and complete rated matches to view your score history and ELO logs.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 12,
+              color: PulseColors.getTextSecondary(_isDarkMode),
+            ),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: _onCompeteNowPressed,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: PulseColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            ),
+            child: const Text(
+              'START A MATCH',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.8,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHistoryMatchCard(MatchModel match) {
+    final currentUserId = _user?.id ?? AuthService.currentUser?.id;
+    final isPlayer1 = currentUserId == match.player1Id;
+    final isPlayer2 = currentUserId == match.player2Id;
+    final isWinner = match.winnerId == currentUserId;
+    final isFinished = match.status == 'FINISHED' || match.status == 'CONFIRMED';
+    final scorerName = match.scorer?.name ?? 'Neutral Ref';
+
+    // Always place logged-in user on the Left and Opponent on the Right
+    final String leftName;
+    final int? leftRating;
+    final String? leftAvatar;
+    final bool isLeftCurrentUser;
+
+    final String rightName;
+    final int? rightRating;
+    final String? rightAvatar;
+    final bool isRightCurrentUser;
+
+    if (isPlayer2) {
+      leftName = match.player2?.name ?? (_user?.name ?? _user?.firstName ?? 'You');
+      leftRating = match.player2?.rating ?? _user?.rating;
+      leftAvatar = match.player2?.avatarUrl ?? _user?.avatarUrl;
+      isLeftCurrentUser = true;
+
+      rightName = match.player1?.name ?? 'Opponent';
+      rightRating = match.player1?.rating;
+      rightAvatar = match.player1?.avatarUrl;
+      isRightCurrentUser = false;
+    } else {
+      leftName = match.player1?.name ?? (isPlayer1 ? (_user?.name ?? _user?.firstName ?? 'You') : 'Player 1');
+      leftRating = match.player1?.rating ?? (isPlayer1 ? _user?.rating : null);
+      leftAvatar = match.player1?.avatarUrl ?? (isPlayer1 ? _user?.avatarUrl : null);
+      isLeftCurrentUser = isPlayer1;
+
+      rightName = match.player2?.name ?? (isPlayer2 ? (_user?.name ?? _user?.firstName ?? 'You') : (match.player2Id != null ? 'Opponent' : 'Waiting...'));
+      rightRating = match.player2?.rating ?? (isPlayer2 ? _user?.rating : null);
+      rightAvatar = match.player2?.avatarUrl ?? (isPlayer2 ? _user?.avatarUrl : null);
+      isRightCurrentUser = isPlayer2;
+    }
+
+    final outcomeText = !isFinished
+        ? match.status
+        : (match.winnerId != null
+            ? (isWinner ? 'VICTORY' : 'DEFEAT')
+            : 'COMPLETED');
+
+    final outcomeColor = !isFinished
+        ? PulseColors.accent
+        : (isWinner ? const Color(0xFF4CAF50) : PulseColors.getTextSecondary(_isDarkMode));
+
+    final outcomeBg = !isFinished
+        ? PulseColors.accent.withValues(alpha: 0.12)
+        : (isWinner ? const Color(0xFF4CAF50).withValues(alpha: 0.12) : PulseColors.getBackground(_isDarkMode));
+
+    final dateStr = '${match.scheduledAt.month}/${match.scheduledAt.day}/${match.scheduledAt.year}';
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: PulseColors.getSurface(_isDarkMode),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Top Row: Sport Name + Outcome Badge
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    match.sportDisplayName.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.8,
+                      color: PulseColors.getTextSecondary(_isDarkMode),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '•  $dateStr',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: PulseColors.getTextSecondary(_isDarkMode),
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: outcomeBg,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  outcomeText,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.6,
+                    color: outcomeColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // Matchup Row (Left = User, Right = Opponent)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Left Player (User)
+              Expanded(
+                child: Row(
+                  children: [
+                    _buildPlayerAvatarWidget(
+                      name: leftName,
+                      avatarUrl: leftAvatar,
+                      isCurrentUser: isLeftCurrentUser,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            leftName,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: isLeftCurrentUser ? FontWeight.w900 : FontWeight.w700,
+                              color: PulseColors.getTextPrimary(_isDarkMode),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (leftRating != null)
+                            Text(
+                              '$leftRating ELO',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: PulseColors.getTextSecondary(_isDarkMode),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Text(
+                  'VS',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                    color: PulseColors.getTextSecondary(_isDarkMode),
+                  ),
+                ),
+              ),
+
+              // Right Player (Opponent)
+              Expanded(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            rightName,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: isRightCurrentUser ? FontWeight.w900 : FontWeight.w700,
+                              color: PulseColors.getTextPrimary(_isDarkMode),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (rightRating != null)
+                            Text(
+                              '$rightRating ELO',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: PulseColors.getTextSecondary(_isDarkMode),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    _buildPlayerAvatarWidget(
+                      name: rightName,
+                      avatarUrl: rightAvatar,
+                      isCurrentUser: isRightCurrentUser,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+          Container(
+            height: 1,
+            color: PulseColors.getBorder(_isDarkMode).withValues(alpha: 0.5),
+          ),
+          const SizedBox(height: 10),
+
+          // Bottom Meta Info (Venue & Referee)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                match.venueName.isNotEmpty ? match.venueName : 'Verified Court',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: PulseColors.getTextSecondary(_isDarkMode),
+                ),
+              ),
+              Text(
+                'Verified by $scorerName',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: PulseColors.getTextSecondary(_isDarkMode),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlayerAvatarWidget({
+    required String name,
+    required String? avatarUrl,
+    required bool isCurrentUser,
+  }) {
+    if (avatarUrl != null && avatarUrl.isNotEmpty && (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://'))) {
+      return Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: isCurrentUser ? PulseColors.primary : PulseColors.getBorder(_isDarkMode),
+            width: 1.5,
+          ),
+          image: DecorationImage(
+            image: NetworkImage(avatarUrl),
+            fit: BoxFit.cover,
+          ),
+        ),
+      );
+    }
+
+    final initial = name.trim().isNotEmpty ? name.trim()[0].toUpperCase() : 'P';
+
+    return CircleAvatar(
+      radius: 16,
+      backgroundColor: isCurrentUser
+          ? PulseColors.primary
+          : PulseColors.getBackground(_isDarkMode),
+      child: Text(
+        initial,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w800,
+          color: isCurrentUser ? Colors.white : PulseColors.getTextPrimary(_isDarkMode),
+        ),
       ),
     );
   }

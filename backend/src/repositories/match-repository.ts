@@ -51,9 +51,22 @@ class MatchRepository {
     if (!match) return undefined;
 
     const [player1, player2, scorer] = await Promise.all([
-      db('users').where({ id: match.player1_id }).select('id', 'name', 'email', 'rating', 'avatar_url', 'primary_sport').first(),
-      match.player2_id ? db('users').where({ id: match.player2_id }).select('id', 'name', 'email', 'rating', 'avatar_url', 'primary_sport').first() : Promise.resolve(null),
-      match.scorer_id ? db('users').where({ id: match.scorer_id }).select('id', 'name', 'email', 'rating', 'avatar_url', 'primary_sport').first() : Promise.resolve(null),
+      db('users')
+        .select('id', 'name', 'email', 'rating', 'avatar_url', 'primary_sport')
+        .where({ id: match.player1_id })
+        .first(),
+      match.player2_id
+        ? db('users')
+            .select('id', 'name', 'email', 'rating', 'avatar_url', 'primary_sport')
+            .where({ id: match.player2_id })
+            .first()
+        : Promise.resolve(null),
+      match.scorer_id
+        ? db('users')
+            .select('id', 'name', 'email', 'rating', 'avatar_url', 'primary_sport')
+            .where({ id: match.scorer_id })
+            .first()
+        : Promise.resolve(null),
     ]);
 
     return {
@@ -84,13 +97,42 @@ class MatchRepository {
     return updatedMatch;
   }
 
-  async findByUserId(userId: string): Promise<Match[]> {
-    return db<Match>('matches')
-      .where({ creator_id: userId })
-      .orWhere({ player1_id: userId })
-      .orWhere({ player2_id: userId })
-      .orWhere({ scorer_id: userId })
+  async findByUserId(userId: string): Promise<MatchWithDetails[]> {
+    const matches = await db<Match>('matches')
+      .where(function() {
+        this.where({ player1_id: userId })
+          .orWhere({ player2_id: userId });
+      })
       .orderBy('scheduled_at', 'desc');
+
+    return Promise.all(
+      matches.map(async (match) => {
+        const [player1, player2, scorer] = await Promise.all([
+          db('users')
+            .select('id', 'name', 'email', 'rating', 'avatar_url', 'primary_sport')
+            .where({ id: match.player1_id })
+            .first(),
+          match.player2_id
+            ? db('users')
+                .select('id', 'name', 'email', 'rating', 'avatar_url', 'primary_sport')
+                .where({ id: match.player2_id })
+                .first()
+            : Promise.resolve(null),
+          match.scorer_id
+            ? db('users')
+                .select('id', 'name', 'email', 'rating', 'avatar_url', 'primary_sport')
+                .where({ id: match.scorer_id })
+                .first()
+            : Promise.resolve(null),
+        ]);
+        return {
+          ...match,
+          player1: player1 || undefined,
+          player2: player2 || null,
+          scorer: scorer || null,
+        };
+      })
+    );
   }
 
   async findActiveByUserId(userId: string): Promise<Match | undefined> {
