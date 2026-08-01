@@ -334,8 +334,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// Modern Minimalist Bento Grid Home Screen Content
   Widget _buildHomeContent(String firstName) {
-    final ratingText = _user?.formattedRating ?? '1,200 ELO';
-    final recordText = _user?.recordText ?? '0W - 0L';
+    final wins = _user?.wins ?? 0;
+    final losses = _user?.losses ?? 0;
+    final totalGames = wins + losses;
+    final winRateText = totalGames > 0 ? '${((wins / totalGames) * 100).toStringAsFixed(0)}%' : '0%';
+    final rawRating = _user?.rating ?? 1200;
+    final ratingNumber = rawRating.toString().replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (Match m) => '${m[1]},',
+        );
+    final recordText = '${wins}W · ${losses}L';
     final sportText = _user?.formattedSport ?? 'Pickleball';
 
     return SingleChildScrollView(
@@ -398,31 +406,15 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 16),
 
-          // 2. Athlete Quick Stats Bar (Minimalist Pills)
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            child: Row(
-              children: [
-                _buildStatPill(
-                  Icons.emoji_events_rounded,
-                  ratingText,
-                  PulseColors.accent,
-                ),
-                const SizedBox(width: 8),
-                _buildStatPill(
-                  Icons.bolt_rounded,
-                  recordText,
-                  const Color(0xFF4CAF50),
-                ),
-                const SizedBox(width: 8),
-                _buildStatPill(
-                  Icons.sports_tennis_rounded,
-                  sportText,
-                  const Color(0xFFFF9800),
-                ),
-              ],
-            ),
+          // 2. Athlete Hero Rating Display (Clean Typography Focus)
+          _buildHeroRatingCard(
+            ratingNumber: ratingNumber,
+            recordText: recordText,
+            winRateText: winRateText,
+            streakText: '0 WINS',
+            lastMatchText: '+15 PTS',
+            sportText: sportText,
+            onSportTap: _showSportSelectionModal,
           ),
           const SizedBox(height: 20),
 
@@ -757,6 +749,194 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 24),
         ],
       ),
+    );
+  }
+
+  Widget _buildHeroRatingCard({
+    required String ratingNumber,
+    required String recordText,
+    required String winRateText,
+    required String streakText,
+    required String lastMatchText,
+    required String sportText,
+    required VoidCallback onSportTap,
+  }) {
+    final gradientColors = _isDarkMode
+        ? const [Color(0xFF1E393F), Color(0xFF122327)]
+        : const [Color(0xFF2A525A), Color(0xFF1E3B41)];
+    const primaryTextColor = Colors.white;
+    const secondaryTextColor = Color(0xFF9DD4DE);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: gradientColors,
+        ),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Top Row: Micro Header & Sport Capsule Dropdown
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const Text(
+                'ELO RATING',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.2,
+                  color: secondaryTextColor,
+                ),
+              ),
+              InkWell(
+                onTap: onSportTap,
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      width: 1.0,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        sportText.toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 2),
+                      const Icon(
+                        Icons.arrow_drop_down_rounded,
+                        size: 18,
+                        color: secondaryTextColor,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+
+          // Prominent Hero Rating Number
+          Text(
+            ratingNumber,
+            style: const TextStyle(
+              fontSize: 42,
+              fontWeight: FontWeight.w900,
+              height: 1.0,
+              letterSpacing: -1.5,
+              color: primaryTextColor,
+            ),
+          ),
+
+          const SizedBox(height: 18),
+
+          // Bottom Sub-Stats Row (No icons, clean typography hierarchy)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildHeroStatColumn('RECORD', recordText, primaryTextColor, secondaryTextColor),
+              _buildHeroStatColumn('WIN RATE', winRateText, primaryTextColor, secondaryTextColor),
+              _buildHeroStatColumn('STREAK', streakText, primaryTextColor, secondaryTextColor),
+              _buildHeroStatColumn('LAST MATCH', lastMatchText, primaryTextColor, secondaryTextColor),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeroStatColumn(String label, String value, Color primaryColor, Color secondaryColor) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 9,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.8,
+            color: secondaryColor,
+          ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            color: primaryColor,
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showSportSelectionModal() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: PulseColors.getSurface(_isDarkMode),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        final sports = ['Pickleball', 'Tennis', 'Padel'];
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'SELECT ACTIVE SPORT',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.2,
+                    color: PulseColors.getTextSecondary(_isDarkMode),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ...sports.map((s) => ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        s,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: PulseColors.getTextPrimary(_isDarkMode),
+                        ),
+                      ),
+                      trailing: s == (_user?.formattedSport ?? 'Pickleball')
+                          ? const Icon(Icons.check_rounded, color: PulseColors.accent)
+                          : null,
+                      onTap: () {
+                        Navigator.pop(context);
+                      },
+                    )),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
