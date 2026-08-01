@@ -5,6 +5,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'package:confetti/confetti.dart';
 import '../../../../core/theme/pulse_colors.dart';
+import '../../../../core/widgets/pulse_toast.dart';
 import '../../../../main.dart';
 import '../../../auth/services/auth_service.dart';
 import '../../models/match_model.dart';
@@ -200,11 +201,10 @@ class _ScorerScreenState extends State<ScorerScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to start match: $e'),
-            backgroundColor: PulseColors.error,
-          ),
+        PulseToast.show(
+          context,
+          'Failed to start match: $e',
+          isError: true,
         );
       }
     }

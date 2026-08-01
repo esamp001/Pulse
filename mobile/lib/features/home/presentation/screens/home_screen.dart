@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/pulse_colors.dart';
 import '../../../../core/widgets/pulse_bottom_nav_bar.dart';
 import '../../../../core/widgets/pulse_widget_card.dart';
+import '../../../../core/widgets/pulse_toast.dart';
 import '../../../../main.dart';
 
 import '../../../auth/models/user_model.dart';
@@ -117,13 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       await _matchService.declineInvitation(matchId);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Match invitation declined.'),
-            backgroundColor: PulseColors.primary,
-            duration: Duration(seconds: 2),
-          ),
-        );
+        PulseToast.show(context, 'Match invitation declined.');
       }
     } catch (_) {}
     _fetchActiveMatch();
@@ -436,12 +431,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 // Notification Bell Button with Indicator Badge
                 GestureDetector(
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Opening Inbox & Invitations'),
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
+                    PulseToast.show(context, 'Opening Inbox & Invitations');
                   },
                   child: Stack(
                     clipBehavior: Clip.none,
@@ -590,9 +580,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 backgroundColor: const Color(0xFFF3E5F5),
                 isDarkMode: _isDarkMode,
                 onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Opening QR Scanner')),
-                  );
+                  PulseToast.show(context, 'Opening QR Scanner');
                 },
               ),
               // 2. Find Courts -> Soft Powder Blue Pastel (Card 2)
@@ -604,9 +592,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 backgroundColor: const Color(0xFFD6E9FE),
                 isDarkMode: _isDarkMode,
                 onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Locating nearby courts...')),
-                  );
+                  PulseToast.show(context, 'Locating nearby courts...');
                 },
               ),
               // 3. Officiate -> Soft Warm Coral / Peach Pastel (Card 3)
@@ -618,9 +604,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 backgroundColor: const Color(0xFFFFE0D6),
                 isDarkMode: _isDarkMode,
                 onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Opening Officiate Mode')),
-                  );
+                  PulseToast.show(context, 'Opening Officiate Mode');
                 },
               ),
               // 4. Log Practice -> Soft Butter Yellow Pastel (Card 4)
@@ -632,11 +616,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 backgroundColor: const Color(0xFFF9EAB8),
                 isDarkMode: _isDarkMode,
                 onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Logging practice session...'),
-                    ),
-                  );
+                  PulseToast.show(context, 'Logging practice session...');
                 },
               ),
             ],
@@ -771,11 +751,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     TextButton(
                       onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Joined open lobby invitation!'),
-                          ),
-                        );
+                        PulseToast.show(context, 'Joined open lobby invitation!');
                       },
                       child: const Text(
                         'JOIN',
@@ -2407,78 +2383,56 @@ class _HomeScreenState extends State<HomeScreen> {
 
                                 if (hasExistingPassword &&
                                     currentPass.isEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Please enter your current password',
-                                      ),
-                                    ),
-                                  );
+                                  PulseToast.show(context,
+                                      'Please enter your current password',
+                                      isError: true);
                                   return;
                                 }
 
                                 if (newPass.length < 6) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Password must be at least 6 characters long',
-                                      ),
-                                    ),
-                                  );
+                                  PulseToast.show(context,
+                                      'Password must be at least 6 characters long',
+                                      isError: true);
                                   return;
                                 }
 
                                 if (newPass != confirmPass) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Passwords do not match'),
-                                    ),
-                                  );
+                                  PulseToast.show(context,
+                                      'Passwords do not match',
+                                      isError: true);
                                   return;
                                 }
 
-                                final messenger = ScaffoldMessenger.of(context);
                                 final navigator = Navigator.of(modalContext);
                                 setModalState(() => isSubmitting = true);
 
                                 try {
                                   final updatedUser = await _authService
                                       .updatePassword(
-                                        currentPassword: hasExistingPassword
-                                            ? currentPass
-                                            : null,
-                                        newPassword: newPass,
-                                      );
+                                    currentPassword: hasExistingPassword
+                                        ? currentPass
+                                        : null,
+                                    newPassword: newPass,
+                                  );
 
-                                  if (mounted) {
+                                  if (mounted && context.mounted) {
                                     setState(() => _user = updatedUser);
                                     navigator.pop();
-                                    messenger.showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          hasExistingPassword
-                                              ? 'Password updated successfully!'
-                                              : 'Rally password created! You can now log in with email/password.',
-                                        ),
-                                        backgroundColor: const Color(
-                                          0xFF4CAF50,
-                                        ),
-                                      ),
+                                    PulseToast.show(
+                                      context,
+                                      hasExistingPassword
+                                          ? 'Password updated successfully!'
+                                          : 'Rally password created! You can now log in with email/password.',
                                     );
                                   }
                                 } catch (e) {
                                   setModalState(() => isSubmitting = false);
-                                  if (mounted) {
-                                    messenger.showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                          e.toString().replaceAll(
-                                            'Exception: ',
-                                            '',
-                                          ),
-                                        ),
-                                        backgroundColor: Colors.redAccent,
-                                      ),
+                                  if (mounted && context.mounted) {
+                                    PulseToast.show(
+                                      context,
+                                      e.toString().replaceAll(
+                                          'Exception: ', ''),
+                                      isError: true,
                                     );
                                   }
                                 }

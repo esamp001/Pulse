@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/theme/pulse_colors.dart';
+import '../../../../core/widgets/pulse_toast.dart';
 import '../../../../main.dart';
 import '../../../auth/services/auth_service.dart';
 import '../../models/match_model.dart';
@@ -123,23 +124,15 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
 
         if (mounted) {
           final roleLabel = role == 'player2' ? 'Player 2 (Opponent)' : 'Neutral Scorer';
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('$roleLabel assigned successfully!'),
-              backgroundColor: PulseColors.primary,
-              duration: const Duration(seconds: 3),
-            ),
-          );
+          PulseToast.show(context, '$roleLabel assigned successfully!');
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: PulseColors.error,
-            duration: const Duration(seconds: 3),
-          ),
+        PulseToast.show(
+          context,
+          e.toString().replaceAll('Exception: ', ''),
+          isError: true,
         );
       }
     } finally {
@@ -151,13 +144,7 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
 
   void _copyMatchCode() {
     Clipboard.setData(ClipboardData(text: _match.id));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Match Code copied to clipboard!'),
-        backgroundColor: PulseColors.accent,
-        duration: Duration(seconds: 2),
-      ),
-    );
+    PulseToast.show(context, 'Match Code copied to clipboard!');
   }
 
   Future<void> _handleExitLobby() async {
@@ -219,23 +206,16 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
     try {
       await _matchService.exitMatch(_match.id);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(isCreator ? 'Match room cancelled.' : 'Left match lobby.'),
-            backgroundColor: PulseColors.primary,
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        PulseToast.show(context, isCreator ? 'Match room cancelled.' : 'Left match lobby.');
         Navigator.of(context).pop(true);
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: PulseColors.error,
-          ),
+        PulseToast.show(
+          context,
+          e.toString().replaceAll('Exception: ', ''),
+          isError: true,
         );
       }
     }
@@ -318,7 +298,6 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
             ),
             ElevatedButton(
               onPressed: () async {
-                final messenger = ScaffoldMessenger.of(context);
                 Navigator.of(dialogContext).pop();
                 setState(() => _isAssigning = true);
                 try {
@@ -331,21 +310,16 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                       _match = updatedMatch;
                     });
                     await _refreshMatchDetails(silent: true);
-                    messenger.showSnackBar(
-                      SnackBar(
-                        content: Text('$participantName removed from match lobby'),
-                        backgroundColor: PulseColors.primary,
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
+                    if (mounted) {
+                      PulseToast.show(context, '$participantName removed from match lobby');
+                    }
                   }
                 } catch (e) {
                   if (mounted) {
-                    messenger.showSnackBar(
-                      SnackBar(
-                        content: Text(e.toString().replaceAll('Exception: ', '')),
-                        backgroundColor: PulseColors.error,
-                      ),
+                    PulseToast.show(
+                      context,
+                      e.toString().replaceAll('Exception: ', ''),
+                      isError: true,
                     );
                   }
                 } finally {

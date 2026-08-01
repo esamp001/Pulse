@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/pulse_colors.dart';
+import '../../../../core/widgets/pulse_toast.dart';
 import '../../../../main.dart';
 import '../../services/match_service.dart';
 import '../widgets/sport_selector_card.dart';
@@ -112,13 +113,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
       );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Match created! Entering lobby...'),
-            backgroundColor: PulseColors.primary,
-            duration: Duration(seconds: 2),
-          ),
-        );
+        PulseToast.show(context, 'Match created! Entering lobby...');
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (context) => MatchLobbyScreen(match: createdMatch),
@@ -127,12 +122,10 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: PulseColors.error,
-            duration: const Duration(seconds: 3),
-          ),
+        PulseToast.show(
+          context,
+          e.toString().replaceAll('Exception: ', ''),
+          isError: true,
         );
       }
     } finally {

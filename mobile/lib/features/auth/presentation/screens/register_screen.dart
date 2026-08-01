@@ -1,7 +1,7 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../../../../core/theme/pulse_colors.dart';
+import '../../../../core/widgets/pulse_toast.dart';
 import '../../../home/presentation/screens/home_screen.dart';
 import 'onboarding_screen.dart';
 import '../../models/user_model.dart';
@@ -22,9 +22,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _passwordController = TextEditingController();
   final AuthService _authService = AuthService();
   final GoogleSignIn _googleSignIn = GoogleSignIn(
-    clientId: kIsWeb ? '254427635301-o7l406affi0gq1j3ae9k63duq0mna3k3.apps.googleusercontent.com' : null,
-    serverClientId: kIsWeb ? null : '254427635301-o7l406affi0gq1j3ae9k63duq0mna3k3.apps.googleusercontent.com',
-    scopes: ['email'],
+    scopes: ['email', 'profile'],
   );
   bool _isPasswordVisible = false;
   bool _isLoading = false;
@@ -39,12 +37,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   void _handleRegister() {
     if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Creating account for ${_nameController.text}...'),
-          backgroundColor: PulseColors.primary,
-        ),
-      );
+      PulseToast.show(context, 'Creating account for ${_nameController.text}...');
     }
   }
 
@@ -80,11 +73,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Google Sign-In failed: ${e.toString().replaceAll('Exception: ', '')}'),
-          backgroundColor: Colors.redAccent,
-        ),
+      PulseToast.show(
+        context,
+        'Google Sign-In failed: ${e.toString().replaceAll('Exception: ', '')}',
+        isError: true,
       );
     } finally {
       if (mounted) {
@@ -94,12 +86,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   void _handleAppleSignUp() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Apple Sign-Up tapped (Frontend Mock)'),
-        backgroundColor: PulseColors.primary,
-      ),
-    );
+    PulseToast.show(context, 'Apple Sign-Up tapped (Frontend Mock)');
   }
 
   @override

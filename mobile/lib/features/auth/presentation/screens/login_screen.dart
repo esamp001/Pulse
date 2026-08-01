@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../../../../core/theme/pulse_colors.dart';
 import '../../../../core/widgets/rally_text_logo.dart';
+import '../../../../core/widgets/pulse_toast.dart';
 import '../../../home/presentation/screens/home_screen.dart';
 import '../../models/user_model.dart';
 import '../../services/auth_service.dart';
@@ -91,11 +92,10 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       } catch (e) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString().replaceAll('Exception: ', '')),
-            backgroundColor: PulseColors.error,
-          ),
+        PulseToast.show(
+          context,
+          e.toString().replaceAll('Exception: ', ''),
+          isError: true,
         );
       }
     }
@@ -133,11 +133,10 @@ class _LoginScreenState extends State<LoginScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Google Sign-In failed: ${e.toString().replaceAll('Exception: ', '')}'),
-          backgroundColor: Colors.redAccent,
-        ),
+      PulseToast.show(
+        context,
+        'Google Sign-In failed: ${e.toString().replaceAll('Exception: ', '')}',
+        isError: true,
       );
     } finally {
       if (mounted) {
