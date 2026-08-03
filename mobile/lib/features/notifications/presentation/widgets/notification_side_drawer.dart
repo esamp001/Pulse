@@ -56,9 +56,8 @@ class _NotificationSideDrawerState extends State<NotificationSideDrawer> {
       user: widget.user,
       historyMatches: widget.historyMatches,
     );
-    if (mounted) {
-      setState(() {});
-    }
+    if (!mounted) return;
+    setState(() {});
   }
 
   @override
@@ -182,9 +181,8 @@ class _NotificationSideDrawerState extends State<NotificationSideDrawer> {
                         isDarkMode: isDark,
                         onMarkAsRead: () async {
                           await _notificationService.markAsRead(notifications[i].id);
-                          if (mounted) {
-                            setState(() {});
-                          }
+                          if (!mounted) return;
+                          setState(() {});
                         },
                       ),
                     ],
