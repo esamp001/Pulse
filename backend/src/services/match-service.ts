@@ -386,12 +386,16 @@ class MatchService {
         const winner = isP1Winner ? p1 : p2;
         const loser = isP1Winner ? p2 : p1;
 
-        const eloResult = calculateElo(winner.rating || 1200, loser.rating || 1200, 32);
+        const matchSport = (match.sport || 'pickleball').toLowerCase();
+        const winnerSportRating = winner.sport_ratings?.[matchSport] ?? winner.rating ?? 1200;
+        const loserSportRating = loser.sport_ratings?.[matchSport] ?? loser.rating ?? 1200;
+
+        const eloResult = calculateElo(winnerSportRating, loserSportRating, 32);
         ratingChange = eloResult.ratingChange;
 
-        // Update database with new ratings and win/loss records
-        await this.userRepository.updateUserRatingAndStats(winner.id, eloResult.winnerNewRating, true);
-        await this.userRepository.updateUserRatingAndStats(loser.id, eloResult.loserNewRating, false);
+        // Update database with new ratings and win/loss records for this specific sport
+        await this.userRepository.updateUserRatingAndStats(winner.id, matchSport, eloResult.winnerNewRating, true);
+        await this.userRepository.updateUserRatingAndStats(loser.id, matchSport, eloResult.loserNewRating, false);
 
         // Notification Triggers: Rating & Score Verification
         try {
@@ -399,7 +403,7 @@ class MatchService {
           await notificationService.createNotification({
             userId: winner.id,
             category: 'RATING',
-            title: `${match.sport ? match.sport.toUpperCase() : "Pickleball"} ELO Increased`,
+            title: `${matchSport.toUpperCase()} ELO Increased`,
             subtitle: `Won match vs ${loser.name} (+${eloResult.ratingChange} ELO). Current Rating: ${eloResult.winnerNewRating} ELO.`,
             payload: { matchId },
           });
@@ -408,7 +412,7 @@ class MatchService {
           await notificationService.createNotification({
             userId: loser.id,
             category: 'RATING',
-            title: `${match.sport ? match.sport.toUpperCase() : "Pickleball"} ELO Updated`,
+            title: `${matchSport.toUpperCase()} ELO Updated`,
             subtitle: `Match vs ${winner.name} (-${eloResult.ratingChange} ELO). Current Rating: ${eloResult.loserNewRating} ELO.`,
             payload: { matchId },
           });
@@ -434,7 +438,9 @@ class MatchService {
     } else if (winnerId) {
       const winner = await this.userRepository.findById(winnerId);
       if (winner) {
-        await this.userRepository.updateUserRatingAndStats(winner.id, (winner.rating || 1200) + 25, true);
+        const matchSport = (match.sport || 'pickleball').toLowerCase();
+        const currentRating = winner.sport_ratings?.[matchSport] ?? winner.rating ?? 1200;
+        await this.userRepository.updateUserRatingAndStats(winner.id, matchSport, currentRating + 25, true);
       }
     }
 

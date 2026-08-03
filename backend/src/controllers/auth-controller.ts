@@ -123,12 +123,13 @@ class AuthController {
         return;
       }
 
-      const { name, primary_sport, rating, avatar_url } = req.body;
+      const { name, primary_sport, rating, avatar_url, sport_ratings } = req.body;
 
       const user = await this.authService.completeOnboarding(userId, {
         name: name ? String(name).trim() : undefined,
         primary_sport,
         rating: rating ? Number(rating) : undefined,
+        sport_ratings: (sport_ratings && typeof sport_ratings === 'object') ? sport_ratings : undefined,
         avatar_url,
       });
 

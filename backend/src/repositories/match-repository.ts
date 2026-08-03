@@ -46,26 +46,37 @@ class MatchRepository {
     return db<Match>('matches').where({ id }).first();
   }
 
+  private async getParticipantDetails(userId: string, matchSport: string) {
+    const user = await db('users')
+      .select('id', 'name', 'email', 'avatar_url', 'primary_sport')
+      .where({ id: userId })
+      .first();
+
+    if (!user) return undefined;
+
+    const sportKey = (matchSport || user.primary_sport || 'pickleball').toLowerCase();
+    const sportStat = await db('user_sport_stats')
+      .where({ user_id: userId, sport: sportKey })
+      .first();
+
+    return {
+      ...user,
+      rating: sportStat ? sportStat.rating : 1200,
+    };
+  }
+
   async findByIdWithDetails(id: string): Promise<MatchWithDetails | undefined> {
     const match = await db<Match>('matches').where({ id }).first();
     if (!match) return undefined;
 
+    const matchSport = match.sport || 'pickleball';
     const [player1, player2, scorer] = await Promise.all([
-      db('users')
-        .select('id', 'name', 'email', 'rating', 'avatar_url', 'primary_sport')
-        .where({ id: match.player1_id })
-        .first(),
+      this.getParticipantDetails(match.player1_id, matchSport),
       match.player2_id
-        ? db('users')
-            .select('id', 'name', 'email', 'rating', 'avatar_url', 'primary_sport')
-            .where({ id: match.player2_id })
-            .first()
+        ? this.getParticipantDetails(match.player2_id, matchSport)
         : Promise.resolve(null),
       match.scorer_id
-        ? db('users')
-            .select('id', 'name', 'email', 'rating', 'avatar_url', 'primary_sport')
-            .where({ id: match.scorer_id })
-            .first()
+        ? this.getParticipantDetails(match.scorer_id, matchSport)
         : Promise.resolve(null),
     ]);
 
@@ -107,22 +118,14 @@ class MatchRepository {
 
     return Promise.all(
       matches.map(async (match) => {
+        const matchSport = match.sport || 'pickleball';
         const [player1, player2, scorer] = await Promise.all([
-          db('users')
-            .select('id', 'name', 'email', 'rating', 'avatar_url', 'primary_sport')
-            .where({ id: match.player1_id })
-            .first(),
+          this.getParticipantDetails(match.player1_id, matchSport),
           match.player2_id
-            ? db('users')
-                .select('id', 'name', 'email', 'rating', 'avatar_url', 'primary_sport')
-                .where({ id: match.player2_id })
-                .first()
+            ? this.getParticipantDetails(match.player2_id, matchSport)
             : Promise.resolve(null),
           match.scorer_id
-            ? db('users')
-                .select('id', 'name', 'email', 'rating', 'avatar_url', 'primary_sport')
-                .where({ id: match.scorer_id })
-                .first()
+            ? this.getParticipantDetails(match.scorer_id, matchSport)
             : Promise.resolve(null),
         ]);
         return {

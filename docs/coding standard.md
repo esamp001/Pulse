@@ -54,6 +54,9 @@ mobile/lib/
 - **Variables & Functions**: `camelCase` (e.g., `findUserByEmail`, `calculateElo`).
 - **Database Tables & Columns**: `snake_case` (e.g., `users`, `score_events`, `player1_id`).
 
+### 3. Database Migrations & Indexing Rules
+- **MANDATORY TABLE INDEXING**: ALWAYS define database indexes (`table.index(...)` or composite raw SQL indexes) on all Knex database table migrations for foreign keys, queried status/filter columns, and ranking/leaderboard fields.
+
 ---
 
 ## 📄 Documentation & Spec Standards

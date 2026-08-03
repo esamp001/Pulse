@@ -14,4 +14,8 @@
   3. `RATING`: Rating & ELO Updates (gained/lost ELO with rating status).
   4. `VERIFIED`: Score Verifications & Match Results (confirmed match outcomes).
 
+## Database & Migration Standards
+- **MANDATORY TABLE INDEXING**: ALWAYS define database indexes (`table.index(...)` or composite raw SQL indexes) on all Knex database table migrations for foreign keys, foreign/primary lookups, status/filter columns, and ranking/leaderboard fields.
+
+
 
