@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/pulse_colors.dart';
+import '../../../../core/widgets/pulse_back_button.dart';
 import '../../../../core/widgets/pulse_toast.dart';
 import '../../../auth/models/user_model.dart';
 import '../../../matches/models/match_model.dart';
@@ -81,17 +82,8 @@ class _NotificationSideDrawerState extends State<NotificationSideDrawer> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                    icon: Icon(
-                      Icons.arrow_back_rounded,
-                      color: textPrimary,
-                      size: 22,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
+                  PulseBackButton(isDarkMode: widget.isDarkMode),
+                  const SizedBox(width: 12),
                   Text(
                     'Notifications',
                     style: TextStyle(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../../../../core/theme/pulse_colors.dart';
+import '../../../../core/widgets/pulse_back_button.dart';
 import '../../../../core/widgets/pulse_toast.dart';
 import '../../../home/presentation/screens/home_screen.dart';
 import 'onboarding_screen.dart';
@@ -103,11 +104,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       appBar: AppBar(
         backgroundColor: PulseColors.getBackground(isDark),
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: textPrimaryColor),
-          onPressed: () {
-            Navigator.pop(context);
-          },
+        leading: Center(
+          child: PulseBackButton(isDarkMode: isDark),
         ),
       ),
       body: SafeArea(

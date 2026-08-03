@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../core/theme/pulse_colors.dart';
+import '../../../../core/widgets/pulse_back_button.dart';
 import '../../../../core/widgets/pulse_toast.dart';
 import '../../../../main.dart';
 import '../../../auth/services/auth_service.dart';
@@ -376,9 +377,8 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
         backgroundColor: PulseColors.getSurface(_isDarkMode),
         elevation: 0,
         scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_rounded, color: PulseColors.getTextPrimary(_isDarkMode)),
-          onPressed: () => Navigator.of(context).pop(),
+        leading: Center(
+          child: PulseBackButton(isDarkMode: _isDarkMode),
         ),
         title: Text(
           'Match Lobby',

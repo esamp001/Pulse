@@ -5,6 +5,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'package:confetti/confetti.dart';
 import '../../../../core/theme/pulse_colors.dart';
+import '../../../../core/widgets/pulse_back_button.dart';
 import '../../../../core/widgets/pulse_toast.dart';
 import '../../../../main.dart';
 import '../../../auth/services/auth_service.dart';
@@ -622,6 +623,9 @@ class _ScorerScreenState extends State<ScorerScreen> {
         elevation: 0,
         centerTitle: false,
         scrolledUnderElevation: 0,
+        leading: Center(
+          child: PulseBackButton(isDarkMode: _isDarkMode),
+        ),
         shape: Border(bottom: BorderSide(color: border, width: 1)),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

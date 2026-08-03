@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/pulse_colors.dart';
+import '../../../../core/widgets/pulse_back_button.dart';
 import '../../../../core/widgets/pulse_toast.dart';
 import '../../../../main.dart';
 import '../../../auth/services/auth_service.dart';
@@ -361,6 +362,9 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
         backgroundColor: PulseColors.getSurface(_isDarkMode),
         elevation: 0,
         scrolledUnderElevation: 0,
+        leading: Center(
+          child: PulseBackButton(isDarkMode: _isDarkMode),
+        ),
         title: Text(
           'Create Match',
           style: TextStyle(

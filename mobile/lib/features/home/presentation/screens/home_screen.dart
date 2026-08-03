@@ -17,6 +17,7 @@ import '../../../notifications/presentation/widgets/notification_side_drawer.dar
 import '../../../notifications/services/notification_service.dart';
 import '../../../matches/services/match_service.dart';
 import '../../../../core/services/socket_service.dart';
+import '../../../help/presentation/screens/help_rules_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final UserModel? user;
@@ -2256,16 +2257,20 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       },
                     ),
                     _buildDrawerMenuItem(
-                      icon: Icons.notifications_none_rounded,
-                      title: 'Notifications',
-                      subtitle: 'Match invites & scores',
-                      onTap: () {},
-                    ),
-                    _buildDrawerMenuItem(
                       icon: Icons.help_outline_rounded,
                       title: 'Help & Rules',
                       subtitle: 'Scoring guides & support',
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => HelpRulesScreen(
+                              isDarkMode: _isDarkMode,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -3040,12 +3045,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               Navigator.pop(context);
               _showSportPreferencesModal(context);
             },
-          ),
-          _buildDrawerMenuItem(
-            icon: Icons.notifications_none_rounded,
-            title: 'Notifications & Alerts',
-            subtitle: 'Match invites & rating updates',
-            onTap: () {},
           ),
 
           // 5. Dark Mode Theme Setting
