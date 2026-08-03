@@ -2,6 +2,7 @@ import type { Response } from 'express';
 import { z } from 'zod';
 import MatchService from '../services/match-service';
 import type { AuthenticatedRequest } from '../middleware/auth-middleware';
+import { notifyUserActiveMatchUpdate } from '../sockets/socket-emitter';
 
 const createMatchSchema = z.object({
   sport: z.enum(['pickleball', 'tennis', 'table_tennis'], {
@@ -39,6 +40,8 @@ class MatchController {
       }
 
       const match = await this.matchService.createMatch(userId, validation.data);
+
+      notifyUserActiveMatchUpdate([userId]);
 
       res.status(201).json({
         message: 'Match created successfully',
@@ -101,6 +104,8 @@ class MatchController {
 
       const match = await this.matchService.assignParticipant(id, userId, role, user_id);
 
+      notifyUserActiveMatchUpdate([userId, user_id, match.creator_id, match.player1_id, match.player2_id, match.scorer_id]);
+
       res.status(200).json({
         message: 'Participant assigned successfully',
         data: match,
@@ -153,6 +158,8 @@ class MatchController {
       const { id } = req.params;
       const result = await this.matchService.exitMatch(id, userId);
 
+      notifyUserActiveMatchUpdate();
+
       res.status(200).json({
         message: result.action === 'cancelled' ? 'Match lobby cancelled successfully' : 'Left match lobby successfully',
         data: result,
@@ -173,6 +180,8 @@ class MatchController {
       const { id } = req.params;
       const match = await this.matchService.acceptInvitation(id, userId);
 
+      notifyUserActiveMatchUpdate([userId, match.creator_id, match.player1_id, match.player2_id, match.scorer_id]);
+
       res.status(200).json({
         message: 'Match invitation accepted successfully',
         data: match,
@@ -192,6 +201,8 @@ class MatchController {
 
       const { id } = req.params;
       const match = await this.matchService.declineInvitation(id, userId);
+
+      notifyUserActiveMatchUpdate([userId, match.creator_id, match.player1_id, match.player2_id, match.scorer_id]);
 
       res.status(200).json({
         message: 'Match invitation declined successfully',
@@ -217,6 +228,8 @@ class MatchController {
       }
 
       const match = await this.matchService.kickParticipant(id, userId, role as 'player2' | 'scorer');
+
+      notifyUserActiveMatchUpdate([userId, match.creator_id, match.player1_id, match.player2_id, match.scorer_id]);
 
       res.status(200).json({
         message: 'Participant kicked successfully',
@@ -244,6 +257,8 @@ class MatchController {
       }
 
       const match = await this.matchService.updateMatchStatus(id, userId, status);
+
+      notifyUserActiveMatchUpdate([userId, match.creator_id, match.player1_id, match.player2_id, match.scorer_id]);
 
       res.status(200).json({
         message: `Match status updated to ${status}`,
@@ -277,6 +292,8 @@ class MatchController {
         player1_sets_won ?? 0,
         player2_sets_won ?? 0
       );
+
+      notifyUserActiveMatchUpdate([userId, match.creator_id, match.player1_id, match.player2_id, match.scorer_id]);
 
       res.status(200).json({
         message: 'Match completed and winner declared successfully',

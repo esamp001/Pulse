@@ -4,6 +4,7 @@ import './config/crypto-polyfill';
 import app from './app';
 import { config } from './config/env';
 import { initMatchSockets } from './sockets/match-socket';
+import { setSocketIOInstance } from './sockets/socket-emitter';
 
 const server = http.createServer(app);
 const io = new SocketIOServer(server, {
@@ -12,6 +13,7 @@ const io = new SocketIOServer(server, {
   },
 });
 
+setSocketIOInstance(io);
 initMatchSockets(io);
 
 server.listen(config.port, () => {

@@ -16,6 +16,7 @@ import '../../../matches/presentation/widgets/match_invitation_snackbar.dart';
 import '../../../notifications/presentation/widgets/notification_side_drawer.dart';
 import '../../../notifications/services/notification_service.dart';
 import '../../../matches/services/match_service.dart';
+import '../../../../core/services/socket_service.dart';
 
 class HomeScreen extends StatefulWidget {
   final UserModel? user;
@@ -26,14 +27,14 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int _currentBottomNavIndex = 0;
   bool get _isDarkMode => themeModeNotifier.value == ThemeMode.dark;
   UserModel? _user;
   late String _selectedSport;
   bool _isLoadingUser = false;
   MatchModel? _activeMatch;
-  Timer? _pollTimer;
+  StreamSubscription<Map<String, dynamic>>? _activeMatchSubscription;
   String? _dismissedInvitationMatchId;
   List<MatchModel> _historyMatches = [];
   bool _isLoadingHistory = false;
@@ -45,6 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _user = widget.user ?? AuthService.currentUser;
     _selectedSport = _user?.primarySport ?? 'pickleball';
 
@@ -53,8 +55,31 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     _fetchActiveMatch();
     _fetchMatchHistory();
-    _startPollingActiveMatch();
+    _setupRealtimeActiveMatchListener();
     _loadInitialNotifications();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _fetchActiveMatch();
+    }
+  }
+
+  void _setupRealtimeActiveMatchListener() {
+    final userId = _user?.id ?? AuthService.currentUser?.id;
+    if (userId != null) {
+      SocketService().joinUserRoom(userId);
+    } else {
+      SocketService().init();
+    }
+
+    _activeMatchSubscription?.cancel();
+    _activeMatchSubscription = SocketService().onActiveMatchUpdated.listen((_) {
+      if (mounted) {
+        _fetchActiveMatch();
+      }
+    });
   }
 
   Future<void> _loadInitialNotifications() async {
@@ -72,18 +97,10 @@ class _HomeScreenState extends State<HomeScreen> {
     return unreadList.isNotEmpty || _isInvitationPending;
   }
 
-  void _startPollingActiveMatch() {
-    _pollTimer?.cancel();
-    _pollTimer = Timer.periodic(const Duration(seconds: 4), (_) {
-      if (mounted) {
-        _fetchActiveMatch();
-      }
-    });
-  }
-
   @override
   void dispose() {
-    _pollTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    _activeMatchSubscription?.cancel();
     super.dispose();
   }
 

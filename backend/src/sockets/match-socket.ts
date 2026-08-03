@@ -1,8 +1,25 @@
 import { Server, Socket } from 'socket.io';
+import { notifyUserActiveMatchUpdate } from './socket-emitter';
 
 export function initMatchSockets(io: Server): void {
   io.on('connection', (socket: Socket) => {
     console.log(`Socket connected: ${socket.id}`);
+
+    // Join personal user room
+    socket.on('join_user', (data: { userId: string }) => {
+      if (data?.userId) {
+        const room = `user:${data.userId}`;
+        socket.join(room);
+      }
+    });
+
+    // Leave personal user room
+    socket.on('leave_user', (data: { userId: string }) => {
+      if (data?.userId) {
+        const room = `user:${data.userId}`;
+        socket.leave(room);
+      }
+    });
 
     // Join match room
     socket.on('join_match', (data: { matchId: string; userId?: string; role?: string }) => {
@@ -31,6 +48,7 @@ export function initMatchSockets(io: Server): void {
         status: 'LIVE',
         timestamp: new Date().toISOString(),
       });
+      notifyUserActiveMatchUpdate();
     });
 
     // Scorer records a point for Player 1 or Player 2
