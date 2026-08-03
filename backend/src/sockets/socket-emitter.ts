@@ -6,10 +6,6 @@ export function setSocketIOInstance(io: Server): void {
   ioInstance = io;
 }
 
-export function getSocketIOInstance(): Server | null {
-  return ioInstance;
-}
-
 /**
  * Notify specific user(s) or broadcast that active match state has changed.
  * If userIds is provided and non-empty, emits to user:<id> rooms.
