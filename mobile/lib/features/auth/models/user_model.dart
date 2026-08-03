@@ -14,6 +14,8 @@ class UserModel {
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
+  final Map<String, int> sportRatings;
+
   UserModel({
     required this.id,
     required this.name,
@@ -23,12 +25,13 @@ class UserModel {
     this.losses = 0,
     this.isOnboarded = false,
     this.primarySport = 'pickleball',
+    Map<String, int>? sportRatings,
     this.avatarUrl,
     this.authProvider = 'email',
     this.hasPassword = true,
     this.createdAt,
     this.updatedAt,
-  });
+  }) : sportRatings = sportRatings ?? {primarySport.toLowerCase(): rating};
 
   /// Getter to retrieve ONLY the user's first name for greetings
   String get firstName {
@@ -38,13 +41,37 @@ class UserModel {
   }
 
   /// Formatted rating string (e.g. "1,200 ELO")
-  String get formattedRating {
-    final str = rating.toString();
+  String get formattedRating => getFormattedRatingForSport(primarySport);
+
+  /// Get rating for a specific sport (fallback to primary rating)
+  int getRatingForSport(String sport) {
+    final key = sport.toLowerCase();
+    if (sportRatings.containsKey(key)) {
+      return sportRatings[key]!;
+    }
+    return rating;
+  }
+
+  /// Formatted rating string for a specific sport (e.g. "1,200 ELO")
+  String getFormattedRatingForSport(String sport) {
+    final val = getRatingForSport(sport);
+    final str = val.toString();
     final formatted = str.replaceAllMapped(
       RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
       (Match m) => '${m[1]},',
     );
     return '$formatted ELO';
+  }
+
+  /// List of capitalized configured sports
+  List<String> get configuredSports {
+    if (sportRatings.isEmpty) {
+      return [formattedSport];
+    }
+    return sportRatings.keys.map((s) {
+      if (s.isEmpty) return 'Pickleball';
+      return '${s[0].toUpperCase()}${s.substring(1)}';
+    }).toList();
   }
 
   /// Formatted win/loss record (e.g. "5W - 2L")
@@ -56,18 +83,72 @@ class UserModel {
     return '${primarySport[0].toUpperCase()}${primarySport.substring(1)}';
   }
 
+  /// Copy user model with updated fields
+  UserModel copyWith({
+    String? id,
+    String? name,
+    String? email,
+    int? rating,
+    int? wins,
+    int? losses,
+    bool? isOnboarded,
+    String? primarySport,
+    Map<String, int>? sportRatings,
+    String? avatarUrl,
+    String? authProvider,
+    bool? hasPassword,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return UserModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      rating: rating ?? this.rating,
+      wins: wins ?? this.wins,
+      losses: losses ?? this.losses,
+      isOnboarded: isOnboarded ?? this.isOnboarded,
+      primarySport: primarySport ?? this.primarySport,
+      sportRatings: sportRatings ?? Map<String, int>.from(this.sportRatings),
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      authProvider: authProvider ?? this.authProvider,
+      hasPassword: hasPassword ?? this.hasPassword,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
   factory UserModel.fromJson(Map<String, dynamic> json) {
     final provider = json['auth_provider'] as String? ?? 'email';
     
+    Map<String, int>? parsedRatings;
+    final rawRatings = json['sport_ratings'] ?? json['sportRatings'];
+    if (rawRatings is Map) {
+      parsedRatings = {};
+      rawRatings.forEach((k, v) {
+        final keyStr = k.toString().toLowerCase();
+        final intVal = v is int ? v : int.tryParse('$v') ?? 1200;
+        parsedRatings![keyStr] = intVal;
+      });
+    }
+
+    final pSport = json['primary_sport'] as String? ?? 'pickleball';
+    final baseRating = json['rating'] is int ? json['rating'] as int : int.tryParse('${json['rating']}') ?? 1200;
+
+    if (parsedRatings == null || parsedRatings.isEmpty) {
+      parsedRatings = {pSport.toLowerCase(): baseRating};
+    }
+
     return UserModel(
       id: json['id'] as String? ?? '',
       name: json['name'] as String? ?? '',
       email: json['email'] as String? ?? '',
-      rating: json['rating'] is int ? json['rating'] as int : int.tryParse('${json['rating']}') ?? 1200,
+      rating: baseRating,
       wins: json['wins'] is int ? json['wins'] as int : int.tryParse('${json['wins']}') ?? 0,
       losses: json['losses'] is int ? json['losses'] as int : int.tryParse('${json['losses']}') ?? 0,
       isOnboarded: json['is_onboarded'] as bool? ?? false,
-      primarySport: json['primary_sport'] as String? ?? 'pickleball',
+      primarySport: pSport,
+      sportRatings: parsedRatings,
       avatarUrl: json['avatar_url'] as String?,
       authProvider: provider,
       hasPassword: json['has_password'] as bool? ?? (provider == 'email'),
@@ -86,6 +167,7 @@ class UserModel {
       'losses': losses,
       'is_onboarded': isOnboarded,
       'primary_sport': primarySport,
+      'sport_ratings': sportRatings,
       'avatar_url': avatarUrl,
       'auth_provider': authProvider,
       'has_password': hasPassword,

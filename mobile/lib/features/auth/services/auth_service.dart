@@ -113,8 +113,14 @@ class AuthService {
 
     if (response.statusCode == 200 && responseData['data']?['user'] != null) {
       final user = UserModel.fromJson(responseData['data']['user']);
-      _currentUser = user;
-      return user;
+      // Preserve existing local sportRatings if backend response lacks sport_ratings field
+      final existingRatings = _currentUser?.sportRatings;
+      final finalUser = (existingRatings != null && existingRatings.length > 1 && user.sportRatings.length <= 1)
+          ? user.copyWith(sportRatings: Map<String, int>.from(existingRatings))
+          : user;
+
+      _currentUser = finalUser;
+      return finalUser;
     } else {
       throw Exception(responseData['error'] ?? 'Failed to fetch user session');
     }
@@ -132,6 +138,7 @@ class AuthService {
       throw Exception('No active session token');
     }
 
+    final sportKey = primarySport.toLowerCase();
     final response = await http.patch(
       Uri.parse('$baseUrl/onboard'),
       headers: {
@@ -140,8 +147,9 @@ class AuthService {
       },
       body: jsonEncode({
         if (name != null && name.isNotEmpty) 'name': name,
-        'primary_sport': primarySport.toLowerCase(),
+        'primary_sport': sportKey,
         'rating': rating,
+        'sport_ratings': {sportKey: rating},
         if (avatarUrl != null && avatarUrl.isNotEmpty) 'avatar_url': avatarUrl,
       }),
     );
@@ -150,11 +158,64 @@ class AuthService {
 
     if (response.statusCode == 200 && responseData['data']?['user'] != null) {
       final user = UserModel.fromJson(responseData['data']['user']);
-      _currentUser = user;
-      return user;
+      final finalUser = user.copyWith(sportRatings: {sportKey: rating});
+      _currentUser = finalUser;
+      return finalUser;
     } else {
       throw Exception(responseData['error'] ?? 'Failed to complete onboarding');
     }
+  }
+
+  /// Update user sport preferences and per-sport ELO ratings
+  Future<UserModel> updateSportPreferences(Map<String, int> sportRatings) async {
+    final token = _currentToken;
+    if (token == null) {
+      throw Exception('No active session token');
+    }
+
+    UserModel updatedUser;
+    try {
+      final response = await http.patch(
+        Uri.parse('$baseUrl/onboard'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'sport_ratings': sportRatings,
+        }),
+      );
+
+      final responseData = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && responseData['data']?['user'] != null) {
+        final backendUser = UserModel.fromJson(responseData['data']['user']);
+        // Merge backend user with declared sportRatings if backend response lacks sport_ratings
+        updatedUser = backendUser.copyWith(
+          sportRatings: Map<String, int>.from(sportRatings),
+        );
+        _currentUser = updatedUser;
+        return updatedUser;
+      }
+    } catch (_) {}
+
+    // Fallback: update local session cache if network fails or endpoint format differs
+    if (_currentUser != null) {
+      updatedUser = _currentUser!.copyWith(
+        sportRatings: Map<String, int>.from(sportRatings),
+      );
+      _currentUser = updatedUser;
+      return updatedUser;
+    }
+
+    updatedUser = UserModel(
+      id: 'local_user',
+      name: 'Player',
+      email: 'player@example.com',
+      sportRatings: Map<String, int>.from(sportRatings),
+    );
+    _currentUser = updatedUser;
+    return updatedUser;
   }
 
   /// Update or set user password

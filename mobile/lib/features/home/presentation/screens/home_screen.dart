@@ -30,6 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _currentBottomNavIndex = 0;
   bool get _isDarkMode => themeModeNotifier.value == ThemeMode.dark;
   UserModel? _user;
+  late String _selectedSport;
   bool _isLoadingUser = false;
   MatchModel? _activeMatch;
   Timer? _pollTimer;
@@ -45,6 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _user = widget.user ?? AuthService.currentUser;
+    _selectedSport = _user?.primarySport ?? 'pickleball';
 
     if (_user == null && AuthService.currentToken != null) {
       _loadCurrentUserProfile();
@@ -163,6 +165,9 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) {
         setState(() {
           _user = fetchedUser;
+          if (!_user!.configuredSports.map((s) => s.toLowerCase()).contains(_selectedSport.toLowerCase())) {
+            _selectedSport = _user!.primarySport;
+          }
           _isLoadingUser = false;
         });
       }
@@ -355,13 +360,16 @@ class _HomeScreenState extends State<HomeScreen> {
     final losses = _user?.losses ?? 0;
     final totalGames = wins + losses;
     final winRateText = totalGames > 0 ? '${((wins / totalGames) * 100).toStringAsFixed(0)}%' : '0%';
-    final rawRating = _user?.rating ?? 1200;
+    final activeSportKey = _selectedSport.isEmpty
+        ? (_user?.primarySport ?? 'pickleball')
+        : _selectedSport;
+    final rawRating = _user?.getRatingForSport(activeSportKey) ?? 1200;
     final ratingNumber = rawRating.toString().replaceAllMapped(
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
           (Match m) => '${m[1]},',
         );
     final recordText = '${wins}W · ${losses}L';
-    final sportText = _user?.formattedSport ?? 'Pickleball';
+    final sportText = '${activeSportKey[0].toUpperCase()}${activeSportKey.substring(1)}';
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
@@ -1488,14 +1496,19 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showSportSelectionModal() {
+    final configuredSports = _user?.configuredSports ?? [
+      _selectedSport.isNotEmpty
+          ? '${_selectedSport[0].toUpperCase()}${_selectedSport.substring(1)}'
+          : 'Pickleball'
+    ];
+
     showModalBottomSheet(
       context: context,
       backgroundColor: PulseColors.getSurface(_isDarkMode),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) {
-        final sports = ['Pickleball', 'Tennis', 'Padel'];
+      builder: (modalContext) {
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -1503,36 +1516,463 @@ class _HomeScreenState extends State<HomeScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'SELECT ACTIVE SPORT',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.2,
-                    color: PulseColors.getTextSecondary(_isDarkMode),
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'SELECT ACTIVE SPORT',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.2,
+                        color: PulseColors.getTextSecondary(_isDarkMode),
+                      ),
+                    ),
+                    Text(
+                      '${configuredSports.length} Active',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: PulseColors.accent,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 12),
-                ...sports.map((s) => ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(
-                        s,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: PulseColors.getTextPrimary(_isDarkMode),
+                ...configuredSports.map((sportName) {
+                  final key = sportName.toLowerCase();
+                  final isSelected = key == _selectedSport.toLowerCase();
+                  final ratingVal = _user?.getRatingForSport(key) ?? 1200;
+                  final formattedRating = ratingVal.toString().replaceAllMapped(
+                        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+                        (Match m) => '${m[1]},',
+                      );
+
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Row(
+                      children: [
+                        Text(
+                          sportName,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: PulseColors.getTextPrimary(_isDarkMode),
+                          ),
                         ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: PulseColors.getBackground(_isDarkMode),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: PulseColors.getBorder(_isDarkMode),
+                              width: 1.0,
+                            ),
+                          ),
+                          child: Text(
+                            '$formattedRating ELO',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: PulseColors.accent,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    trailing: isSelected
+                        ? const Icon(Icons.check_rounded, color: PulseColors.accent)
+                        : null,
+                    onTap: () {
+                      setState(() {
+                        _selectedSport = key;
+                      });
+                      Navigator.pop(modalContext);
+                    },
+                  );
+                }),
+                const SizedBox(height: 12),
+                InkWell(
+                  onTap: () {
+                    Navigator.pop(modalContext);
+                    _showSportPreferencesModal(context);
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: PulseColors.getCard(_isDarkMode),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: PulseColors.getBorder(_isDarkMode),
+                        width: 1.2,
                       ),
-                      trailing: s == (_user?.formattedSport ?? 'Pickleball')
-                          ? const Icon(Icons.check_rounded, color: PulseColors.accent)
-                          : null,
-                      onTap: () {
-                        Navigator.pop(context);
-                      },
-                    )),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.tune_rounded,
+                          size: 16,
+                          color: PulseColors.accent,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Manage Sports in Settings',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: PulseColors.getTextPrimary(_isDarkMode),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
+        );
+      },
+    );
+  }
+
+  void _showSportPreferencesModal(BuildContext context) {
+    final availableSports = [
+      {'name': 'Pickleball', 'key': 'pickleball', 'icon': Icons.sports_tennis_rounded},
+      {'name': 'Tennis', 'key': 'tennis', 'icon': Icons.sports_tennis_outlined},
+      {'name': 'Table Tennis', 'key': 'table tennis', 'icon': Icons.sports_score_rounded},
+      {'name': 'Badminton', 'key': 'badminton', 'icon': Icons.sports_handball_rounded},
+    ];
+
+    final Map<String, int> draftRatings = Map<String, int>.from(
+      _user?.sportRatings ?? {(_user?.primarySport ?? 'pickleball').toLowerCase(): _user?.rating ?? 1200},
+    );
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: PulseColors.getSurface(_isDarkMode),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (modalContext) {
+        bool isSaving = false;
+
+        return StatefulBuilder(
+          builder: (sheetContext, setModalState) {
+            void showRatingPickerForSport(String sportKey, String sportName) {
+              final currentVal = draftRatings[sportKey] ?? 1200;
+
+              showModalBottomSheet(
+                context: sheetContext,
+                backgroundColor: PulseColors.getSurface(_isDarkMode),
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                builder: (pickerContext) {
+                  final tiers = [
+                    {'label': 'Beginner', 'rating': 1000, 'desc': 'New to competitive play'},
+                    {'label': 'Intermediate', 'rating': 1200, 'desc': 'Played social / club games'},
+                    {'label': 'Advanced', 'rating': 1400, 'desc': 'Experienced tournament player'},
+                  ];
+
+                  return SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'DECLARE ELO FOR $sportName'.toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1.2,
+                              color: PulseColors.getTextSecondary(_isDarkMode),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          ...tiers.map((tier) {
+                            final ratingVal = tier['rating'] as int;
+                            final isSel = currentVal == ratingVal;
+                            final formattedTierRating = ratingVal.toString().replaceAllMapped(
+                              RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+                              (Match m) => '${m[1]},',
+                            );
+
+                            return ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              title: Text(
+                                '${tier['label']} ($formattedTierRating ELO)',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  color: PulseColors.getTextPrimary(_isDarkMode),
+                                ),
+                              ),
+                              subtitle: Text(
+                                '${tier['desc']}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: PulseColors.getTextSecondary(_isDarkMode),
+                                ),
+                              ),
+                              trailing: isSel
+                                  ? const Icon(Icons.check_circle_rounded, color: PulseColors.accent)
+                                  : Icon(Icons.radio_button_unchecked_rounded, color: PulseColors.getBorder(_isDarkMode)),
+                              onTap: () {
+                                setModalState(() {
+                                  draftRatings[sportKey] = ratingVal;
+                                });
+                                Navigator.pop(pickerContext);
+                              },
+                            );
+                          }),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              );
+            }
+
+            final primaryKey = (_user?.primarySport ?? 'pickleball').toLowerCase();
+
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  left: 20,
+                  right: 20,
+                  top: 20,
+                  bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 20,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'SPORT PREFERENCES & ELOS',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.2,
+                            color: PulseColors.getTextSecondary(_isDarkMode),
+                          ),
+                        ),
+                        InkWell(
+                          onTap: () => Navigator.pop(modalContext),
+                          borderRadius: BorderRadius.circular(12),
+                          child: Padding(
+                            padding: const EdgeInsets.all(4.0),
+                            child: Icon(
+                              Icons.close_rounded,
+                              color: PulseColors.getTextPrimary(_isDarkMode),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Declare your starting ELO rating for the sports you play. Unconfigured sports remain hidden on your home screen.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: PulseColors.getTextSecondary(_isDarkMode),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Column(
+                      children: availableSports.map((sport) {
+                        final key = sport['key'] as String;
+                        final name = sport['name'] as String;
+                        final icon = sport['icon'] as IconData;
+                        final isConfigured = draftRatings.containsKey(key);
+                        final isPrimary = key == primaryKey;
+                        final eloVal = draftRatings[key];
+                        final formattedElo = eloVal != null
+                            ? eloVal.toString().replaceAllMapped(
+                                RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+                                (Match m) => '${m[1]},',
+                              )
+                            : '';
+
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: isConfigured
+                                ? PulseColors.getCard(_isDarkMode)
+                                : PulseColors.getSurface(_isDarkMode),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: isConfigured
+                                  ? PulseColors.accent.withValues(alpha: 0.5)
+                                  : PulseColors.getBorder(_isDarkMode),
+                              width: 1.2,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: PulseColors.getBackground(_isDarkMode),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  icon,
+                                  color: isConfigured
+                                      ? PulseColors.accent
+                                      : PulseColors.getTextSecondary(_isDarkMode),
+                                  size: 22,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Text(
+                                          name,
+                                          style: TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w700,
+                                            color: PulseColors.getTextPrimary(_isDarkMode),
+                                          ),
+                                        ),
+                                        if (isPrimary) ...[
+                                          const SizedBox(width: 6),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: PulseColors.primary.withValues(alpha: 0.15),
+                                              borderRadius: BorderRadius.circular(6),
+                                            ),
+                                            child: const Text(
+                                              'PRIMARY',
+                                              style: TextStyle(
+                                                fontSize: 9,
+                                                fontWeight: FontWeight.w800,
+                                                color: PulseColors.primary,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      isConfigured ? '$formattedElo ELO' : 'Not configured',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: isConfigured
+                                            ? PulseColors.accent
+                                            : PulseColors.getTextSecondary(_isDarkMode),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (isConfigured) ...[
+                                if (!isPrimary)
+                                  IconButton(
+                                    icon: const Icon(Icons.remove_circle_outline_rounded, size: 20),
+                                    color: PulseColors.error,
+                                    onPressed: () {
+                                      setModalState(() {
+                                        draftRatings.remove(key);
+                                      });
+                                    },
+                                  ),
+                              ] else ...[
+                                TextButton.icon(
+                                  onPressed: () {
+                                    draftRatings[key] = 1200;
+                                    showRatingPickerForSport(key, name);
+                                  },
+                                  icon: const Icon(Icons.add_rounded, size: 16),
+                                  label: const Text('Add'),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: PulseColors.accent,
+                                    textStyle: const TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton(
+                        onPressed: isSaving
+                            ? null
+                            : () async {
+                                setModalState(() => isSaving = true);
+                                final nav = Navigator.of(modalContext);
+                                try {
+                                  final updated = await _authService.updateSportPreferences(draftRatings);
+                                  if (mounted && context.mounted) {
+                                    setState(() {
+                                      _user = updated;
+                                      if (!_user!.configuredSports.map((s) => s.toLowerCase()).contains(_selectedSport.toLowerCase())) {
+                                        _selectedSport = _user!.primarySport;
+                                      }
+                                    });
+                                    nav.pop();
+                                    PulseToast.show(context, 'Sport preferences updated!');
+                                  }
+                                } catch (e) {
+                                  setModalState(() => isSaving = false);
+                                  if (mounted && context.mounted) {
+                                    PulseToast.show(
+                                      context,
+                                      e.toString().replaceAll('Exception: ', ''),
+                                      isError: true,
+                                    );
+                                  }
+                                }
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: PulseColors.primary,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: isSaving
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                              )
+                            : const Text(
+                                'Save Preferences',
+                                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         );
       },
     );
@@ -2690,8 +3130,8 @@ class _HomeScreenState extends State<HomeScreen> {
           _buildDrawerMenuItem(
             icon: Icons.sports_tennis_rounded,
             title: 'Sport Preferences',
-            subtitle: 'Pickleball & Tennis match rules',
-            onTap: () {},
+            subtitle: 'Declare sports & starting ELO ratings',
+            onTap: () => _showSportPreferencesModal(context),
           ),
           _buildDrawerMenuItem(
             icon: Icons.notifications_none_rounded,
