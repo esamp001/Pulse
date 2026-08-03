@@ -6,6 +6,7 @@ class MatchParticipantModel {
   final int rating;
   final String? avatarUrl;
   final String? primarySport;
+  final Map<String, int>? sportRatings;
 
   MatchParticipantModel({
     required this.id,
@@ -14,6 +15,7 @@ class MatchParticipantModel {
     required this.rating,
     this.avatarUrl,
     this.primarySport,
+    this.sportRatings,
   });
 
   String get initials {
@@ -26,6 +28,17 @@ class MatchParticipantModel {
   }
 
   factory MatchParticipantModel.fromJson(Map<String, dynamic> json) {
+    Map<String, int>? parsedRatings;
+    final rawRatings = json['sport_ratings'] ?? json['sportRatings'];
+    if (rawRatings is Map) {
+      parsedRatings = {};
+      rawRatings.forEach((k, v) {
+        final keyStr = k.toString().toLowerCase();
+        final intVal = v is int ? v : int.tryParse('$v') ?? 1200;
+        parsedRatings![keyStr] = intVal;
+      });
+    }
+
     return MatchParticipantModel(
       id: json['id'] as String? ?? '',
       name: json['name'] as String? ?? 'Anonymous',
@@ -33,6 +46,7 @@ class MatchParticipantModel {
       rating: json['rating'] is int ? json['rating'] as int : int.tryParse('${json['rating']}') ?? 1200,
       avatarUrl: json['avatar_url'] as String?,
       primarySport: json['primary_sport'] as String?,
+      sportRatings: parsedRatings,
     );
   }
 
@@ -44,6 +58,7 @@ class MatchParticipantModel {
       'rating': rating,
       'avatar_url': avatarUrl,
       'primary_sport': primarySport,
+      'sport_ratings': sportRatings,
     };
   }
 }

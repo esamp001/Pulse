@@ -193,9 +193,18 @@ class UserRepository {
         const primaryKey = (u.primary_sport || 'pickleball').toLowerCase();
         const primaryStat = userStats.find((s) => s.sport.toLowerCase() === primaryKey) || userStats.find((s) => s.is_primary) || userStats[0];
 
+        const sportRatings: Record<string, number> = {};
+        for (const s of userStats) {
+          sportRatings[s.sport.toLowerCase()] = s.rating;
+        }
+        if (Object.keys(sportRatings).length === 0) {
+          sportRatings[primaryKey] = 1200;
+        }
+
         u.rating = primaryStat ? primaryStat.rating : 1200;
         u.wins = primaryStat ? primaryStat.wins : 0;
         u.losses = primaryStat ? primaryStat.losses : 0;
+        u.sport_ratings = sportRatings;
       }
     }
 

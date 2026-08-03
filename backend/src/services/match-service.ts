@@ -135,9 +135,23 @@ class MatchService {
     let nextScorerId = match.scorer_id;
     let nextScorerAccepted = match.scorer_accepted;
 
+    const matchSportNorm = (match.sport || 'pickleball').toLowerCase().replace(/_/g, ' ').replace(/-/g, ' ').trim();
+
     if (role === 'player2') {
       if (targetUserId === match.scorer_id) {
         throw new Error('User is already assigned as the Scorer');
+      }
+      const targetRatings = targetUser.sport_ratings || {};
+      const targetRatingKeys = Object.keys(targetRatings).map((k) => k.toLowerCase().replace(/_/g, ' ').replace(/-/g, ' ').trim());
+      const primaryNorm = (targetUser.primary_sport || '').toLowerCase().replace(/_/g, ' ').replace(/-/g, ' ').trim();
+
+      const hasSport = targetRatingKeys.includes(matchSportNorm) || primaryNorm === matchSportNorm;
+
+      if (!hasSport) {
+        const sportLabel = matchSportNorm === 'table tennis' ? 'Table Tennis' : matchSportNorm[0].toUpperCase() + matchSportNorm.slice(1);
+        throw new Error(
+          `Cannot invite ${targetUser.name}: This player has not configured ${sportLabel} in their sport preferences.`
+        );
       }
       nextPlayer2Id = targetUserId;
       nextPlayer2Accepted = false; // Pending acceptance
@@ -182,10 +196,29 @@ class MatchService {
       throw new Error('Match not found');
     }
 
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    const matchSportNorm = (match.sport || 'pickleball').toLowerCase().replace(/_/g, ' ').replace(/-/g, ' ').trim();
+
     let nextPlayer2Accepted = match.player2_accepted;
     let nextScorerAccepted = match.scorer_accepted;
 
     if (match.player2_id === userId) {
+      const userRatings = user.sport_ratings || {};
+      const userRatingKeys = Object.keys(userRatings).map((k) => k.toLowerCase().replace(/_/g, ' ').replace(/-/g, ' ').trim());
+      const primaryNorm = (user.primary_sport || '').toLowerCase().replace(/_/g, ' ').replace(/-/g, ' ').trim();
+
+      const hasSport = userRatingKeys.includes(matchSportNorm) || primaryNorm === matchSportNorm;
+
+      if (!hasSport) {
+        const sportLabel = matchSportNorm === 'table tennis' ? 'Table Tennis' : matchSportNorm[0].toUpperCase() + matchSportNorm.slice(1);
+        throw new Error(
+          `Cannot accept invitation: You have not configured ${sportLabel} in your sport preferences.`
+        );
+      }
       nextPlayer2Accepted = true;
     } else if (match.scorer_id === userId) {
       nextScorerAccepted = true;

@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/pulse_colors.dart';
+import '../../../../core/widgets/pulse_toast.dart';
 import '../../models/match_model.dart';
 import '../../services/match_service.dart';
 
 class InviteUserModal extends StatefulWidget {
   final String role; // 'player2' or 'scorer'
+  final String? matchSport;
   final bool isDarkMode;
   final Function(MatchParticipantModel user) onUserSelected;
 
   const InviteUserModal({
     super.key,
     required this.role,
+    this.matchSport,
     required this.isDarkMode,
     required this.onUserSelected,
   });
@@ -36,6 +39,24 @@ class _InviteUserModalState extends State<InviteUserModal> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  bool _isUserCompatible(MatchParticipantModel user) {
+    if (widget.role != 'player2' || widget.matchSport == null || widget.matchSport!.isEmpty) {
+      return true;
+    }
+    final matchSportKey = widget.matchSport!.toLowerCase().replaceAll('_', ' ').replaceAll('-', ' ').trim();
+    if (user.sportRatings != null && user.sportRatings!.isNotEmpty) {
+      final userKeys = user.sportRatings!.keys
+          .map((k) => k.toLowerCase().replaceAll('_', ' ').replaceAll('-', ' ').trim())
+          .toSet();
+      if (userKeys.contains(matchSportKey)) return true;
+    }
+    if (user.primarySport != null && user.primarySport!.isNotEmpty) {
+      final primaryNorm = user.primarySport!.toLowerCase().replaceAll('_', ' ').replaceAll('-', ' ').trim();
+      if (primaryNorm == matchSportKey) return true;
+    }
+    return false;
   }
 
   Future<void> _performSearch(String query) async {
@@ -309,27 +330,59 @@ class _InviteUserModalState extends State<InviteUserModal> {
                                         ],
                                       ),
                                     ),
-                                    const SizedBox(width: 10),
-                                    ElevatedButton(
-                                      onPressed: () => widget.onUserSelected(user),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: PulseColors.primary,
-                                        foregroundColor: Colors.white,
-                                        elevation: 0, // STRICT NO DROP SHADOW
-                                        shadowColor: Colors.transparent,
-                                        minimumSize: const Size(0, 36),
-                                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(10),
-                                          side: const BorderSide(color: PulseColors.primary),
-                                        ),
-                                      ),
-                                      child: const Text(
-                                        'Invite',
-                                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                                      ),
-                                    ),
+                                     const SizedBox(width: 10),
+                                     Builder(
+                                       builder: (context) {
+                                         final isCompatible = _isUserCompatible(user);
+                                         return ElevatedButton(
+                                           onPressed: isCompatible
+                                               ? () => widget.onUserSelected(user)
+                                               : () {
+                                                   final sportLabel = widget.matchSport == 'table_tennis'
+                                                       ? 'Table Tennis'
+                                                       : (widget.matchSport != null && widget.matchSport!.isNotEmpty
+                                                           ? '${widget.matchSport![0].toUpperCase()}${widget.matchSport!.substring(1)}'
+                                                           : 'this sport');
+                                                   PulseToast.show(
+                                                     context,
+                                                     'Cannot invite ${user.name}: Player has not configured $sportLabel in sport preferences.',
+                                                     isError: true,
+                                                   );
+                                                 },
+                                           style: ElevatedButton.styleFrom(
+                                             backgroundColor: isCompatible
+                                                 ? PulseColors.primary
+                                                 : PulseColors.getCard(widget.isDarkMode),
+                                             foregroundColor: isCompatible
+                                                 ? Colors.white
+                                                 : PulseColors.getTextSecondary(widget.isDarkMode),
+                                             elevation: 0, // STRICT NO DROP SHADOW
+                                             shadowColor: Colors.transparent,
+                                             minimumSize: const Size(0, 36),
+                                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                             shape: RoundedRectangleBorder(
+                                               borderRadius: BorderRadius.circular(10),
+                                               side: BorderSide(
+                                                 color: isCompatible
+                                                     ? PulseColors.primary
+                                                     : PulseColors.getBorder(widget.isDarkMode),
+                                               ),
+                                             ),
+                                           ),
+                                           child: Text(
+                                             isCompatible ? 'Invite' : 'No Sport',
+                                             style: TextStyle(
+                                               fontSize: 12,
+                                               fontWeight: FontWeight.bold,
+                                               color: isCompatible
+                                                   ? Colors.white
+                                                   : PulseColors.getTextSecondary(widget.isDarkMode),
+                                             ),
+                                           ),
+                                         );
+                                       },
+                                     ),
                                   ],
                                 ),
                               );

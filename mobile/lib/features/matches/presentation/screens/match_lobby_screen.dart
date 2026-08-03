@@ -93,6 +93,7 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
       builder: (modalContext) {
         return InviteUserModal(
           role: role,
+          matchSport: _match.sport,
           isDarkMode: _isDarkMode,
           onUserSelected: (selectedUser) async {
             Navigator.of(modalContext).pop();

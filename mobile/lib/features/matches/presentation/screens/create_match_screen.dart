@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/pulse_colors.dart';
 import '../../../../core/widgets/pulse_toast.dart';
 import '../../../../main.dart';
+import '../../../auth/services/auth_service.dart';
 import '../../services/match_service.dart';
 import '../widgets/sport_selector_card.dart';
 import 'match_lobby_screen.dart';
@@ -28,6 +29,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
   bool _winByTwo = true;
 
   bool _isSubmitting = false;
+  bool _isSportsExpanded = false;
 
   bool get _isDarkMode => themeModeNotifier.value == ThemeMode.dark;
 
@@ -48,9 +50,147 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
       key: 'table_tennis',
       title: 'Table Tennis',
       subtitle: 'Ping pong indoor table competition',
+      icon: Icons.sports_score_rounded,
+    ),
+    SportOption(
+      key: 'badminton',
+      title: 'Badminton',
+      subtitle: 'High-speed shuttlecock racket game',
       icon: Icons.sports_handball,
     ),
   ];
+
+  List<SportOption> get _availableSports {
+    final user = AuthService.currentUser;
+
+    if (user == null) return _sports;
+
+    final configuredNorm = <String>{};
+
+    for (final s in user.configuredSports) {
+      configuredNorm.add(s.toLowerCase().replaceAll('_', ' ').replaceAll('-', ' ').trim());
+    }
+    
+    for (final k in user.sportRatings.keys) {
+      configuredNorm.add(k.toLowerCase().replaceAll('_', ' ').replaceAll('-', ' ').trim());
+    }
+
+    if (configuredNorm.isEmpty) return _sports;
+
+    final filtered = _sports.where((s) {
+      final normKey = s.key.toLowerCase().replaceAll('_', ' ').replaceAll('-', ' ').trim();
+      return configuredNorm.contains(normKey);
+    }).toList();
+
+    return filtered.isNotEmpty ? filtered : _sports;
+  }
+
+  List<SportOption> get _displayedSports {
+    if (_isSportsExpanded || _availableSports.length <= 2) {
+      return _availableSports;
+    }
+
+    final topSports = _availableSports.take(2).toList();
+    final selectedIdx = _availableSports.indexWhere((s) => s.key == _selectedSport);
+    if (selectedIdx >= 2) {
+      return [_availableSports.first, _availableSports[selectedIdx]];
+    }
+
+    return topSports;
+  }
+
+  Widget _buildCompressedStackPreview(bool isDarkMode) {
+    return Column(
+      children: [
+        Container(
+          height: 10,
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: PulseColors.getCard(isDarkMode).withValues(alpha: 0.7),
+            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+            border: Border.all(
+              color: PulseColors.getBorder(isDarkMode),
+              width: 1.0,
+            ),
+          ),
+        ),
+        Container(
+          height: 7,
+          margin: const EdgeInsets.symmetric(horizontal: 32),
+          decoration: BoxDecoration(
+            color: PulseColors.getCard(isDarkMode).withValues(alpha: 0.35),
+            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(10)),
+            border: Border.all(
+              color: PulseColors.getBorder(isDarkMode).withValues(alpha: 0.6),
+              width: 1.0,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+      ],
+    );
+  }
+
+  Widget _buildExpandToggleButton(int totalCount, bool isDarkMode) {
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _isSportsExpanded = !_isSportsExpanded;
+        });
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+        decoration: BoxDecoration(
+          color: PulseColors.getSurface(isDarkMode),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: PulseColors.getBorder(isDarkMode),
+            width: 1.0,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              _isSportsExpanded
+                  ? Icons.keyboard_arrow_up_rounded
+                  : Icons.keyboard_arrow_down_rounded,
+              size: 20,
+              color: PulseColors.accent,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              _isSportsExpanded
+                  ? 'SHOW LESS'
+                  : 'SEE ALL SPORTS ($totalCount)',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.8,
+                color: PulseColors.accent,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    final available = _availableSports;
+    if (available.isNotEmpty) {
+      final user = AuthService.currentUser;
+      final primaryNorm = user?.primarySport.toLowerCase().replaceAll('_', ' ').replaceAll('-', ' ').trim();
+      final hasPrimary = available.any((s) => s.key.toLowerCase().replaceAll('_', ' ').replaceAll('-', ' ').trim() == primaryNorm);
+      _selectedSport = (hasPrimary && primaryNorm != null)
+          ? available.firstWhere((s) => s.key.toLowerCase().replaceAll('_', ' ').replaceAll('-', ' ').trim() == primaryNorm).key
+          : available.first.key;
+    }
+  }
 
   @override
   void dispose() {
@@ -247,28 +387,61 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Step 1: Select Sport
-              Text(
-                '1. Select Sport',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: PulseColors.getTextPrimary(_isDarkMode),
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '1. Select Sport',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: PulseColors.getTextPrimary(_isDarkMode),
+                    ),
+                  ),
+                  if (_availableSports.length > 2)
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _isSportsExpanded = !_isSportsExpanded;
+                        });
+                      },
+                      child: Text(
+                        _isSportsExpanded ? 'Collapse' : 'Expand (${_availableSports.length})',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: PulseColors.accent,
+                        ),
+                      ),
+                    ),
+                ],
               ),
               const SizedBox(height: 12),
-              ..._sports.map(
-                (sport) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10.0),
-                  child: SportSelectorCard(
-                    option: sport,
-                    isSelected: _selectedSport == sport.key,
-                    isDarkMode: _isDarkMode,
-                    onTap: () {
-                      setState(() {
-                        _selectedSport = sport.key;
-                      });
-                    },
-                  ),
+              AnimatedSize(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeInOut,
+                child: Column(
+                  children: [
+                    ..._displayedSports.map(
+                      (sport) => Padding(
+                        padding: const EdgeInsets.only(bottom: 10.0),
+                        child: SportSelectorCard(
+                          option: sport,
+                          isSelected: _selectedSport == sport.key,
+                          isDarkMode: _isDarkMode,
+                          onTap: () {
+                            setState(() {
+                              _selectedSport = sport.key;
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                    if (!_isSportsExpanded && _availableSports.length > 2)
+                      _buildCompressedStackPreview(_isDarkMode),
+                    if (_availableSports.length > 2)
+                      _buildExpandToggleButton(_availableSports.length, _isDarkMode),
+                  ],
                 ),
               ),
 

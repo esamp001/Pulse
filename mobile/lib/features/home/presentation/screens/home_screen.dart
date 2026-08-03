@@ -1644,7 +1644,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final availableSports = [
       {'name': 'Pickleball', 'key': 'pickleball', 'icon': Icons.sports_tennis_rounded},
       {'name': 'Tennis', 'key': 'tennis', 'icon': Icons.sports_tennis_outlined},
-      {'name': 'Table Tennis', 'key': 'table tennis', 'icon': Icons.sports_score_rounded},
+      {'name': 'Table Tennis', 'key': 'table_tennis', 'icon': Icons.sports_score_rounded},
       {'name': 'Badminton', 'key': 'badminton', 'icon': Icons.sports_handball_rounded},
     ];
 
@@ -1978,34 +1978,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildStatPill(IconData icon, String text, Color accentColor) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-      decoration: BoxDecoration(
-        color: PulseColors.getSurface(_isDarkMode),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: PulseColors.getBorder(_isDarkMode),
-          width: 1.5,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: accentColor),
-          const SizedBox(width: 6),
-          Text(
-            text,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: PulseColors.getTextPrimary(_isDarkMode),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
 
 
@@ -2174,47 +2146,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Athlete Quick Stats
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 12,
-                        horizontal: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: PulseColors.getSurface(_isDarkMode),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: PulseColors.getBorder(_isDarkMode),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _buildDrawerStatItem(
-                            'ELO',
-                            _user != null ? '${_user!.rating}' : '1,200',
-                          ),
-                          Container(
-                            width: 1,
-                            height: 24,
-                            color: PulseColors.getBorder(_isDarkMode),
-                          ),
-                          _buildDrawerStatItem(
-                            'RECORD',
-                            _user != null
-                                ? '${_user!.wins}W-${_user!.losses}L'
-                                : '0W-0L',
-                          ),
-                          Container(
-                            width: 1,
-                            height: 28,
-                            color: PulseColors.getBorder(_isDarkMode),
-                          ),
-                          _buildDrawerStatItem('WIN RATE', '100%'),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
+
 
                     // Dark Mode Toggle Switch (Standard Side Drawer Setting)
                     Container(
@@ -2300,8 +2232,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     _buildDrawerMenuItem(
                       icon: Icons.sports_tennis_rounded,
                       title: 'Sport Preferences',
-                      subtitle: 'Pickleball & Tennis rules',
-                      onTap: () {},
+                      subtitle: 'Declare sports & starting ELO ratings',
+                      onTap: () {
+                        Navigator.pop(context);
+                        _showSportPreferencesModal(context);
+                      },
                     ),
                     _buildDrawerMenuItem(
                       icon: Icons.notifications_none_rounded,
@@ -2354,30 +2289,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
 
 
-  Widget _buildDrawerStatItem(String label, String value) {
-    return Column(
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 9,
-            fontWeight: FontWeight.w700,
-            color: PulseColors.getTextSecondary(_isDarkMode),
-            letterSpacing: 0.5,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: PulseColors.getTextPrimary(_isDarkMode),
-          ),
-        ),
-      ],
-    );
-  }
+
 
   Widget _buildDrawerMenuItem({
     required IconData icon,
@@ -2955,9 +2867,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final initials = _user?.firstName != null && _user!.firstName.isNotEmpty
         ? _user!.firstName[0].toUpperCase()
         : 'E';
-    final ratingText = _user?.formattedRating ?? '1,200 ELO';
-    final recordText = _user?.recordText ?? '5W-1L';
-    final sportText = _user?.formattedSport ?? 'Pickleball';
+
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
@@ -3065,29 +2975,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // Athlete Status Badges
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  alignment: WrapAlignment.center,
-                  children: [
-                    _buildStatPill(
-                      Icons.emoji_events_rounded,
-                      ratingText,
-                      PulseColors.accent,
-                    ),
-                    _buildStatPill(
-                      Icons.bolt_rounded,
-                      recordText,
-                      const Color(0xFF4CAF50),
-                    ),
-                    _buildStatPill(
-                      Icons.sports_tennis_rounded,
-                      sportText,
-                      const Color(0xFFFF9800),
-                    ),
-                  ],
-                ),
+
               ],
             ),
           ),
@@ -3131,7 +3019,10 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icons.sports_tennis_rounded,
             title: 'Sport Preferences',
             subtitle: 'Declare sports & starting ELO ratings',
-            onTap: () => _showSportPreferencesModal(context),
+            onTap: () {
+              Navigator.pop(context);
+              _showSportPreferencesModal(context);
+            },
           ),
           _buildDrawerMenuItem(
             icon: Icons.notifications_none_rounded,

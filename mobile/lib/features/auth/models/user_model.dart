@@ -70,7 +70,9 @@ class UserModel {
     }
     return sportRatings.keys.map((s) {
       if (s.isEmpty) return 'Pickleball';
-      return '${s[0].toUpperCase()}${s.substring(1)}';
+      final clean = s.replaceAll('_', ' ').replaceAll('-', ' ').trim();
+      final words = clean.split(' ');
+      return words.map((w) => w.isNotEmpty ? '${w[0].toUpperCase()}${w.substring(1)}' : '').join(' ');
     }).toList();
   }
 
