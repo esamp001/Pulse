@@ -55,9 +55,16 @@ class MatchRepository {
     if (!user) return undefined;
 
     const sportKey = (matchSport || user.primary_sport || 'pickleball').toLowerCase();
-    const sportStat = await db('user_sport_stats')
+    let sportStat = await db('user_sport_stats')
       .where({ user_id: userId, sport: sportKey })
       .first();
+
+    if (!sportStat) {
+      const primaryKey = (user.primary_sport || 'pickleball').toLowerCase();
+      sportStat = await db('user_sport_stats')
+        .where({ user_id: userId, sport: primaryKey })
+        .first();
+    }
 
     return {
       ...user,

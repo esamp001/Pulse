@@ -173,49 +173,29 @@ class AuthService {
       throw Exception('No active session token');
     }
 
-    UserModel updatedUser;
-    try {
-      final response = await http.patch(
-        Uri.parse('$baseUrl/onboard'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode({
-          'sport_ratings': sportRatings,
-        }),
-      );
+    final response = await http.patch(
+      Uri.parse('$baseUrl/onboard'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'sport_ratings': sportRatings,
+      }),
+    );
 
-      final responseData = jsonDecode(response.body);
+    final responseData = jsonDecode(response.body);
 
-      if (response.statusCode == 200 && responseData['data']?['user'] != null) {
-        final backendUser = UserModel.fromJson(responseData['data']['user']);
-        // Merge backend user with declared sportRatings if backend response lacks sport_ratings
-        updatedUser = backendUser.copyWith(
-          sportRatings: Map<String, int>.from(sportRatings),
-        );
-        _currentUser = updatedUser;
-        return updatedUser;
-      }
-    } catch (_) {}
-
-    // Fallback: update local session cache if network fails or endpoint format differs
-    if (_currentUser != null) {
-      updatedUser = _currentUser!.copyWith(
+    if (response.statusCode == 200 && responseData['data']?['user'] != null) {
+      final backendUser = UserModel.fromJson(responseData['data']['user']);
+      final updatedUser = backendUser.copyWith(
         sportRatings: Map<String, int>.from(sportRatings),
       );
       _currentUser = updatedUser;
       return updatedUser;
+    } else {
+      throw Exception(responseData['error'] ?? 'Failed to update sport preferences');
     }
-
-    updatedUser = UserModel(
-      id: 'local_user',
-      name: 'Player',
-      email: 'player@example.com',
-      sportRatings: Map<String, int>.from(sportRatings),
-    );
-    _currentUser = updatedUser;
-    return updatedUser;
   }
 
   /// Update or set user password

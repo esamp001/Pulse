@@ -1,5 +1,6 @@
 import MatchRepository from '../repositories/match-repository';
 import UserRepository from '../repositories/user-repository';
+import db from '../database/db';
 import notificationService from './notification-service';
 import type { Match, MatchWithDetails, CreateMatchDTO, SportType, MatchStatus } from '../types/match';
 import { calculateElo } from '../utils/elo';
@@ -393,9 +394,11 @@ class MatchService {
         const eloResult = calculateElo(winnerSportRating, loserSportRating, 32);
         ratingChange = eloResult.ratingChange;
 
-        // Update database with new ratings and win/loss records for this specific sport
-        await this.userRepository.updateUserRatingAndStats(winner.id, matchSport, eloResult.winnerNewRating, true);
-        await this.userRepository.updateUserRatingAndStats(loser.id, matchSport, eloResult.loserNewRating, false);
+        // Update database with new ratings and win/loss records for this specific sport in a transaction
+        await db.transaction(async (trx) => {
+          await this.userRepository.updateUserRatingAndStats(winner.id, matchSport, eloResult.winnerNewRating, true, trx);
+          await this.userRepository.updateUserRatingAndStats(loser.id, matchSport, eloResult.loserNewRating, false, trx);
+        });
 
         // Notification Triggers: Rating & Score Verification
         try {

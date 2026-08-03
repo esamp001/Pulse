@@ -38,4 +38,18 @@ export async function down(knex: Knex): Promise<void> {
     table.integer('wins').notNullable().defaultTo(0);
     table.integer('losses').notNullable().defaultTo(0);
   });
+
+  const stats = await knex('user_sport_stats').select('user_id', 'rating', 'wins', 'losses', 'is_primary');
+
+  for (const stat of stats) {
+    if (stat.is_primary) {
+      await knex('users')
+        .where({ id: stat.user_id })
+        .update({
+          rating: stat.rating,
+          wins: stat.wins,
+          losses: stat.losses,
+        });
+    }
+  }
 }
