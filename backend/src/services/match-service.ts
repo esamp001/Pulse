@@ -1,5 +1,6 @@
 import MatchRepository from '../repositories/match-repository';
 import UserRepository from '../repositories/user-repository';
+import notificationService from './notification-service';
 import type { Match, MatchWithDetails, CreateMatchDTO, SportType, MatchStatus } from '../types/match';
 import { calculateElo } from '../utils/elo';
 
@@ -157,6 +158,20 @@ class MatchService {
     });
 
     const updatedWithDetails = await this.matchRepository.findByIdWithDetails(matchId);
+
+    // Notification Trigger: Match Invitation Sent
+    try {
+      const inviterName = updatedWithDetails?.player1?.name || 'Match Host';
+      const sportName = updatedWithDetails?.sport ? updatedWithDetails.sport.toUpperCase() : 'Pickleball';
+      await notificationService.createNotification({
+        userId: targetUserId,
+        category: 'INVITE',
+        title: role === 'player2' ? 'Match Invitation' : 'Referee Invitation',
+        subtitle: `${inviterName} invited you to join a ${sportName} match at ${updatedWithDetails?.venue_name || 'Court #1'}.`,
+        payload: { matchId, role },
+      });
+    } catch (_) {}
+
     return updatedWithDetails!;
   }
 
@@ -195,6 +210,21 @@ class MatchService {
     });
 
     const updatedWithDetails = await this.matchRepository.findByIdWithDetails(matchId);
+
+    // Notification Trigger: Invitation Accepted -> Host Notification
+    try {
+      const accepter = await this.userRepository.findById(userId);
+      if (match.player1_id && match.player1_id !== userId) {
+        await notificationService.createNotification({
+          userId: match.player1_id,
+          category: 'INVITE',
+          title: 'Invitation Accepted',
+          subtitle: `${accepter?.name || 'Participant'} accepted your match invitation! Match is ready.`,
+          payload: { matchId },
+        });
+      }
+    } catch (_) {}
+
     return updatedWithDetails!;
   }
 
@@ -228,6 +258,21 @@ class MatchService {
     });
 
     const updatedWithDetails = await this.matchRepository.findByIdWithDetails(matchId);
+
+    // Notification Trigger: Invitation Declined -> Host Notification
+    try {
+      const decliner = await this.userRepository.findById(userId);
+      if (match.player1_id && match.player1_id !== userId) {
+        await notificationService.createNotification({
+          userId: match.player1_id,
+          category: 'INVITE',
+          title: 'Invitation Declined',
+          subtitle: `${decliner?.name || 'Participant'} declined your match invitation.`,
+          payload: { matchId },
+        });
+      }
+    } catch (_) {}
+
     return updatedWithDetails!;
   }
 
@@ -347,6 +392,44 @@ class MatchService {
         // Update database with new ratings and win/loss records
         await this.userRepository.updateUserRatingAndStats(winner.id, eloResult.winnerNewRating, true);
         await this.userRepository.updateUserRatingAndStats(loser.id, eloResult.loserNewRating, false);
+
+        // Notification Triggers: Rating & Score Verification
+        try {
+          // Winner Notification
+          await notificationService.createNotification({
+            userId: winner.id,
+            category: 'RATING',
+            title: `${match.sport ? match.sport.toUpperCase() : "Pickleball"} ELO Increased`,
+            subtitle: `Won match vs ${loser.name} (+${eloResult.ratingChange} ELO). Current Rating: ${eloResult.winnerNewRating} ELO.`,
+            payload: { matchId },
+          });
+
+          // Loser Notification
+          await notificationService.createNotification({
+            userId: loser.id,
+            category: 'RATING',
+            title: `${match.sport ? match.sport.toUpperCase() : "Pickleball"} ELO Updated`,
+            subtitle: `Match vs ${winner.name} (-${eloResult.ratingChange} ELO). Current Rating: ${eloResult.loserNewRating} ELO.`,
+            payload: { matchId },
+          });
+
+          // Match Verification Notifications
+          await notificationService.createNotification({
+            userId: winner.id,
+            category: 'VERIFIED',
+            title: 'Match Result Verified',
+            subtitle: `Match outcome vs ${loser.name} confirmed and published to leaderboards.`,
+            payload: { matchId },
+          });
+
+          await notificationService.createNotification({
+            userId: loser.id,
+            category: 'VERIFIED',
+            title: 'Match Result Verified',
+            subtitle: `Match outcome vs ${winner.name} confirmed and published to leaderboards.`,
+            payload: { matchId },
+          });
+        } catch (_) {}
       }
     } else if (winnerId) {
       const winner = await this.userRepository.findById(winnerId);

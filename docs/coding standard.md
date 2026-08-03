@@ -35,6 +35,7 @@ mobile/lib/
 
 ### 4. UI & Styling Rules (Strict Flat Design)
 - **NO DROP SHADOWS (`boxShadow` / `elevation`)**: Do NOT use `boxShadow`, `BoxShadow(...)`, `elevation`, or drop shadows on cards, buttons, dialogs, top app bars, or navigation bars across the mobile app. All containers MUST remain flat with clean borders (`Border.all(...)`, `side: BorderSide(...)`).
+- **Notification Center Design**: Must use Bell Icon `🔔`, `All` / `Unread` filter tabs, plain text category labels (no colored background pills), and inline `Mark as read` action buttons. Only active, existing event triggers (`ACCOUNT`, `INVITE`, `RATING`, `VERIFIED`) are populated.
 
 ---
 

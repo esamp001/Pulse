@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import UserRepository from '../repositories/user-repository';
+import notificationService from './notification-service';
 import { config } from '../config/env';
 import type { User } from '../types/user';
 
@@ -38,6 +39,16 @@ class AuthService {
       password_hash: passwordHash,
     });
 
+    // Notification Trigger: Welcome Onboarding
+    try {
+      await notificationService.createNotification({
+        userId: user.id,
+        category: 'ACCOUNT',
+        title: 'Welcome to Rally!',
+        subtitle: `Welcome ${name}! Your athlete profile is ready. Start or join a verified match anytime.`,
+      });
+    } catch (_) {}
+
     const token = this.generateToken(user.id);
     return { user: this.formatUserResponse(user), token };
   }
@@ -61,6 +72,7 @@ class AuthService {
 
   async googleAuth(email: string, name: string): Promise<{ user: ReturnType<AuthService['formatUserResponse']>; token: string }> {
     let user = await this.userRepository.findByEmail(email);
+    const isNew = !user;
 
     if (!user) {
       user = await this.userRepository.create({
@@ -68,6 +80,16 @@ class AuthService {
         email,
       });
     }
+
+    // Notification Trigger: Social Auth / Welcome
+    try {
+      await notificationService.createNotification({
+        userId: user.id,
+        category: 'ACCOUNT',
+        title: 'Signed In via Google',
+        subtitle: `You are securely logged in as ${email}. Password setup is optional.`,
+      });
+    } catch (_) {}
 
     const token = this.generateToken(user.id);
     return { user: this.formatUserResponse(user), token };
@@ -83,6 +105,16 @@ class AuthService {
 
   async completeOnboarding(userId: string, payload: { name?: string; primary_sport?: string; rating?: number; avatar_url?: string }): Promise<ReturnType<AuthService['formatUserResponse']>> {
     const user = await this.userRepository.updateOnboardingStatus(userId, { is_onboarded: true, ...payload });
+
+    try {
+      await notificationService.createNotification({
+        userId,
+        category: 'ACCOUNT',
+        title: 'Welcome Onboarding Completed',
+        subtitle: `Your profile for ${user.name} has been set up successfully.`,
+      });
+    } catch (_) {}
+
     return this.formatUserResponse(user);
   }
 
@@ -96,6 +128,8 @@ class AuthService {
       throw new Error('User not found');
     }
 
+    const hadPassword = Boolean(user.password_hash);
+
     if (user.password_hash) {
       if (!currentPassword) {
         throw new Error('Current password is required');
@@ -108,6 +142,19 @@ class AuthService {
 
     const newHash = await bcrypt.hash(newPassword, 10);
     const updatedUser = await this.userRepository.updatePassword(userId, newHash);
+
+    // Notification Trigger: Password Update / Created
+    try {
+      await notificationService.createNotification({
+        userId,
+        category: 'ACCOUNT',
+        title: hadPassword ? 'Password Updated' : 'Rally Password Set',
+        subtitle: hadPassword
+          ? 'Your Rally account password was successfully updated.'
+          : 'You set a password for email login. You can now log in with email/password.',
+      });
+    } catch (_) {}
+
     return this.formatUserResponse(updatedUser);
   }
 

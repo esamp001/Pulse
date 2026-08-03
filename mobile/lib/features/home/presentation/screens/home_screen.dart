@@ -13,6 +13,8 @@ import '../../../matches/models/match_model.dart';
 import '../../../matches/presentation/screens/create_match_screen.dart';
 import '../../../matches/presentation/screens/match_lobby_screen.dart';
 import '../../../matches/presentation/widgets/match_invitation_snackbar.dart';
+import '../../../notifications/presentation/widgets/notification_side_drawer.dart';
+import '../../../notifications/services/notification_service.dart';
 import '../../../matches/services/match_service.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -50,6 +52,22 @@ class _HomeScreenState extends State<HomeScreen> {
     _fetchActiveMatch();
     _fetchMatchHistory();
     _startPollingActiveMatch();
+    _loadInitialNotifications();
+  }
+
+  Future<void> _loadInitialNotifications() async {
+    await NotificationService().fetchBackendNotifications(
+      user: _user,
+      historyMatches: _historyMatches,
+    );
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  bool get _hasUnreadNotifications {
+    final unreadList = NotificationService().getNotifications(unreadOnly: true);
+    return unreadList.isNotEmpty || _isInvitationPending;
   }
 
   void _startPollingActiveMatch() {
@@ -285,7 +303,21 @@ class _HomeScreenState extends State<HomeScreen> {
       key: _scaffoldKey,
       extendBody: true,
       backgroundColor: PulseColors.getBackground(_isDarkMode),
+      onEndDrawerChanged: (isOpened) {
+        if (!isOpened && mounted) {
+          setState(() {});
+        }
+      },
       drawer: _buildAvatarSideModal(context),
+      endDrawer: NotificationSideDrawer(
+        isDarkMode: _isDarkMode,
+        user: _user,
+        activeMatch: _activeMatch,
+        isInvitationPending: _isInvitationPending,
+        historyMatches: _historyMatches,
+        onAcceptMatchInvitation: _acceptMatchInvitation,
+        onDeclineMatchInvitation: _declineMatchInvitation,
+      ),
       appBar: null,
       body: IndexedStack(
         index: _currentBottomNavIndex,
@@ -431,7 +463,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 // Notification Bell Button with Indicator Badge
                 GestureDetector(
                   onTap: () {
-                    PulseToast.show(context, 'Opening Inbox & Invitations');
+                    _scaffoldKey.currentState?.openEndDrawer();
                   },
                   child: Stack(
                     clipBehavior: Clip.none,
@@ -453,22 +485,23 @@ class _HomeScreenState extends State<HomeScreen> {
                           size: 22,
                         ),
                       ),
-                      Positioned(
-                        top: -1,
-                        right: -1,
-                        child: Container(
-                          width: 10,
-                          height: 10,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF4CAF50), // Green dot indicator
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: PulseColors.getBackground(_isDarkMode),
-                              width: 1.5,
+                      if (_hasUnreadNotifications)
+                        Positioned(
+                          top: -1,
+                          right: -1,
+                          child: Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF4CAF50), // Green dot indicator
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: PulseColors.getBackground(_isDarkMode),
+                                width: 1.5,
+                              ),
                             ),
                           ),
                         ),
-                      ),
                     ],
                   ),
                 ),
@@ -1878,6 +1911,8 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
+
 
   Widget _buildDrawerStatItem(String label, String value) {
     return Column(
