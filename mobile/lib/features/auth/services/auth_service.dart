@@ -188,11 +188,11 @@ class AuthService {
       },
       body: jsonEncode({
         if (name != null && name.isNotEmpty) 'name': name,
-        if (avatarUrl != null && avatarUrl.isNotEmpty) 'avatar_url': avatarUrl,
-        if (coverPhotoUrl != null && coverPhotoUrl.isNotEmpty) 'cover_photo_url': coverPhotoUrl,
-        if (phoneNumber?.isNotEmpty == true) 'phone_number': phoneNumber,
-        if (location?.isNotEmpty == true) 'location': location,
-        if (bio?.isNotEmpty == true) 'bio': bio,
+        'avatar_url': ? avatarUrl,
+        'cover_photo_url': ? coverPhotoUrl,
+        'phone_number': ? phoneNumber,
+        'location': ? location,
+        'bio': ? bio,
       }),
     );
 
