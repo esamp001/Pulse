@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/pulse_colors.dart';
+
+
 import '../../../../core/widgets/pulse_bottom_nav_bar.dart';
 import '../../../../core/widgets/pulse_widget_card.dart';
 import '../../../../core/widgets/pulse_toast.dart';
@@ -19,6 +21,7 @@ import '../../../matches/services/match_service.dart';
 import '../../../../core/services/socket_service.dart';
 import '../../../help/presentation/screens/help_rules_screen.dart';
 import '../../../profile/presentation/screens/edit_profile_screen.dart';
+import '../../../rankings/presentation/screens/rankings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final UserModel? user;
@@ -31,7 +34,15 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int _currentBottomNavIndex = 0;
+  double _bottomNavHiddenOffset = 0.0;
+  double _lastScrollOffset = 0.0;
+  bool _isSnapping = false;
+  static const double _maxNavOffset = 120.0;
+
   bool get _isDarkMode => themeModeNotifier.value == ThemeMode.dark;
+
+
+
   UserModel? _user;
   late String _selectedSport;
   bool _isLoadingUser = false;
@@ -204,12 +215,57 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void _onBottomNavTapped(int index) {
     setState(() {
       _currentBottomNavIndex = index;
+      _isSnapping = true;
+      _bottomNavHiddenOffset = 0.0;
     });
 
     if (index == 2) {
       _onCompeteNowPressed();
     }
   }
+
+  bool _handleScrollNotification(ScrollNotification notification) {
+    if (notification.depth != 0) {
+      return false;
+    }
+
+    if (notification is ScrollUpdateNotification) {
+      final currentOffset = notification.metrics.pixels;
+      final scrollDelta = notification.scrollDelta ?? (currentOffset - _lastScrollOffset);
+
+      if (currentOffset <= 15 || notification.metrics.extentAfter <= 15) {
+        if (_bottomNavHiddenOffset != 0.0) {
+          setState(() {
+            _isSnapping = true;
+            _bottomNavHiddenOffset = 0.0;
+          });
+        }
+      } else if (scrollDelta != 0.0) {
+        final newOffset = (_bottomNavHiddenOffset + scrollDelta).clamp(0.0, _maxNavOffset);
+        if (newOffset != _bottomNavHiddenOffset) {
+          setState(() {
+            _isSnapping = false;
+            _bottomNavHiddenOffset = newOffset;
+          });
+        }
+      }
+      _lastScrollOffset = currentOffset;
+    } else if (notification is ScrollEndNotification) {
+      if (_bottomNavHiddenOffset > 0.0 && _bottomNavHiddenOffset < _maxNavOffset) {
+        final targetOffset = _bottomNavHiddenOffset > (_maxNavOffset / 2) ? _maxNavOffset : 0.0;
+        if (targetOffset != _bottomNavHiddenOffset) {
+          setState(() {
+            _isSnapping = true;
+            _bottomNavHiddenOffset = targetOffset;
+          });
+        }
+      }
+    }
+    return false;
+  }
+
+
+
 
   void _onCompeteNowPressed() async {
     await _fetchActiveMatch();
@@ -342,34 +398,51 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         onAcceptMatchInvitation: _acceptMatchInvitation,
         onDeclineMatchInvitation: _declineMatchInvitation,
       ),
-      appBar: null,
-      body: IndexedStack(
-        index: _currentBottomNavIndex,
+      body: Stack(
         children: [
-          _buildHomeContent(displayName),
-          _buildHistoryTab(),
-          _buildHomeContent(displayName), // Compete tab focus
-          _buildPlaceholderTab('Rankings & Leaderboards'),
-          _buildProfileTab(),
-        ],
-      ),
-      bottomNavigationBar: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (_isInvitationPending && _activeMatch != null)
-            MatchInvitationSnackbar(
-              match: _activeMatch!,
-              currentUserRoleLabel: _invitedUserRoleLabel,
-              isDarkMode: _isDarkMode,
-              onAccept: _acceptMatchInvitation,
-              onDecline: _declineMatchInvitation,
+          NotificationListener<ScrollNotification>(
+            onNotification: _handleScrollNotification,
+            child: IndexedStack(
+              index: _currentBottomNavIndex,
+              children: [
+                _buildHomeContent(displayName),
+                _buildHistoryTab(),
+                _buildHomeContent(displayName), // Compete tab focus
+                const RankingsScreen(),
+                _buildProfileTab(),
+              ],
             ),
-          PulseBottomNavBar(
-            currentIndex: _currentBottomNavIndex,
-            onTap: _onBottomNavTapped,
           ),
+          AnimatedPositioned(
+            duration: _isSnapping ? const Duration(milliseconds: 220) : Duration.zero,
+            curve: Curves.easeOutCubic,
+            left: 0,
+            right: 0,
+            bottom: -_bottomNavHiddenOffset,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_isInvitationPending && _activeMatch != null)
+                  MatchInvitationSnackbar(
+                    match: _activeMatch!,
+                    currentUserRoleLabel: _invitedUserRoleLabel,
+                    isDarkMode: _isDarkMode,
+                    onAccept: _acceptMatchInvitation,
+                    onDecline: _declineMatchInvitation,
+                  ),
+                PulseBottomNavBar(
+                  currentIndex: _currentBottomNavIndex,
+                  onTap: _onBottomNavTapped,
+                ),
+              ],
+            ),
+          ),
+
+
         ],
       ),
+
+
     );
   }
 
@@ -2001,36 +2074,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
 
 
-
-  Widget _buildPlaceholderTab(String title) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.construction_rounded,
-            size: 48,
-            color: PulseColors.accent.withValues(alpha: 0.7),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: PulseColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Coming soon in the next module release.',
-            style: TextStyle(color: PulseColors.textSecondary),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildAvatarSideModal(BuildContext context) {
     final fullName = _user?.name ?? 'Ellejun Apresto Sampaga';
     final email = _user?.email ?? 'ellejunsampaga@gmail.com';
@@ -3391,7 +3434,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 110),
+
               ],
             ),
           ),

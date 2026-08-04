@@ -17,6 +17,8 @@ This directory contains the complete specification-driven documentation for the 
 
 ### 🔧 Backend Specifications (Node.js)
 - [**Layered Architecture**](./backend/architecture.md) - Controller → Service → Repository 3-Layer architecture, Knex.js queries, and Cloudflare R2 integration.
+- [**Leaderboard Pagination**](./backend/leaderboard_pagination.md) - Indexed database pagination, limit/offset rules, and Flutter lazy-loading specification.
+
 
 ### 📦 Module Specifications
 - **User & Auth Management**: Registration, Login, and Social OAuth UI (Google & Apple Sign-In).

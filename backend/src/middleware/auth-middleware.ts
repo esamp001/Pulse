@@ -27,3 +27,23 @@ export const authenticateToken = (req: AuthenticatedRequest, res: Response, next
     return;
   }
 };
+
+export const optionalAuthenticateToken = (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): void => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, config.jwtSecret) as { userId: string };
+      req.user = { userId: decoded.userId };
+    } catch (_) {
+      // Ignore token errors for optional authentication
+    }
+  }
+  next();
+};
+

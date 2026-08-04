@@ -5,6 +5,7 @@ import authRoutes from './routes/auth-routes';
 import uploadRoutes from './routes/upload-routes';
 import matchRoutes from './routes/match-routes';
 import notificationRoutes from './routes/notification-routes';
+import leaderboardRoutes from './routes/leaderboard-routes';
 
 const app = express();
 
@@ -16,6 +17,8 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/upload', uploadRoutes);
 app.use('/api/v1/matches', matchRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
+app.use('/api/v1/leaderboard', leaderboardRoutes);
+
 
 // Healthcheck Route
 app.get('/health', (req, res) => {
