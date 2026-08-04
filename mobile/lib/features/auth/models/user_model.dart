@@ -9,6 +9,10 @@ class UserModel {
   final bool isOnboarded;
   final String primarySport;
   final String? avatarUrl;
+  final String? coverPhotoUrl;
+  final String? phoneNumber;
+  final String? location;
+  final String? bio;
   final String authProvider;
   final bool hasPassword;
   final DateTime? createdAt;
@@ -27,6 +31,10 @@ class UserModel {
     this.primarySport = 'pickleball',
     Map<String, int>? sportRatings,
     this.avatarUrl,
+    this.coverPhotoUrl,
+    this.phoneNumber,
+    this.location,
+    this.bio,
     this.authProvider = 'email',
     this.hasPassword = true,
     this.createdAt,
@@ -97,6 +105,10 @@ class UserModel {
     String? primarySport,
     Map<String, int>? sportRatings,
     String? avatarUrl,
+    String? coverPhotoUrl,
+    String? phoneNumber,
+    String? location,
+    String? bio,
     String? authProvider,
     bool? hasPassword,
     DateTime? createdAt,
@@ -113,6 +125,10 @@ class UserModel {
       primarySport: primarySport ?? this.primarySport,
       sportRatings: sportRatings ?? Map<String, int>.from(this.sportRatings),
       avatarUrl: avatarUrl ?? this.avatarUrl,
+      coverPhotoUrl: coverPhotoUrl ?? this.coverPhotoUrl,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      location: location ?? this.location,
+      bio: bio ?? this.bio,
       authProvider: authProvider ?? this.authProvider,
       hasPassword: hasPassword ?? this.hasPassword,
       createdAt: createdAt ?? this.createdAt,
@@ -152,6 +168,10 @@ class UserModel {
       primarySport: pSport,
       sportRatings: parsedRatings,
       avatarUrl: json['avatar_url'] as String?,
+      coverPhotoUrl: json['cover_photo_url'] as String?,
+      phoneNumber: json['phone_number'] as String?,
+      location: json['location'] as String?,
+      bio: json['bio'] as String?,
       authProvider: provider,
       hasPassword: json['has_password'] as bool? ?? (provider == 'email'),
       createdAt: json['created_at'] != null ? DateTime.tryParse('${json['created_at']}') : null,
@@ -171,6 +191,10 @@ class UserModel {
       'primary_sport': primarySport,
       'sport_ratings': sportRatings,
       'avatar_url': avatarUrl,
+      'cover_photo_url': coverPhotoUrl,
+      'phone_number': phoneNumber,
+      'location': location,
+      'bio': bio,
       'auth_provider': authProvider,
       'has_password': hasPassword,
       'created_at': createdAt?.toIso8601String(),

@@ -11,6 +11,10 @@ export interface User {
   sport_ratings?: Record<string, number>;
   sport_stats?: UserSportStat[];
   avatar_url?: string | null;
+  cover_photo_url?: string | null;
+  phone_number?: string | null;
+  location?: string | null;
+  bio?: string | null;
   has_password?: boolean;
   created_at: Date;
   updated_at: Date;

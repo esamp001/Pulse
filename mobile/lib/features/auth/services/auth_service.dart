@@ -166,6 +166,51 @@ class AuthService {
     }
   }
 
+  /// Update user profile details (name, avatarUrl, coverPhotoUrl, phoneNumber, location, bio)
+  Future<UserModel> updateProfile({
+    String? name,
+    String? avatarUrl,
+    String? coverPhotoUrl,
+    String? phoneNumber,
+    String? location,
+    String? bio,
+  }) async {
+    final token = _currentToken;
+    if (token == null) {
+      throw Exception('No active session token');
+    }
+
+    final response = await http.patch(
+      Uri.parse('$baseUrl/onboard'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        if (name != null && name.isNotEmpty) 'name': name,
+        if (avatarUrl != null && avatarUrl.isNotEmpty) 'avatar_url': avatarUrl,
+        if (coverPhotoUrl != null && coverPhotoUrl.isNotEmpty) 'cover_photo_url': coverPhotoUrl,
+        if (phoneNumber?.isNotEmpty == true) 'phone_number': phoneNumber,
+        if (location?.isNotEmpty == true) 'location': location,
+        if (bio?.isNotEmpty == true) 'bio': bio,
+      }),
+    );
+
+    final responseData = jsonDecode(response.body);
+
+    if (response.statusCode == 200 && responseData['data']?['user'] != null) {
+      final user = UserModel.fromJson(responseData['data']['user']);
+      final existingRatings = _currentUser?.sportRatings;
+      final finalUser = (existingRatings != null && existingRatings.length > 1 && user.sportRatings.length <= 1)
+          ? user.copyWith(sportRatings: Map<String, int>.from(existingRatings))
+          : user;
+      _currentUser = finalUser;
+      return finalUser;
+    } else {
+      throw Exception(responseData['error'] ?? 'Failed to update profile');
+    }
+  }
+
   /// Update user sport preferences and per-sport ELO ratings
   Future<UserModel> updateSportPreferences(Map<String, int> sportRatings) async {
     final token = _currentToken;

@@ -18,6 +18,7 @@ import '../../../notifications/services/notification_service.dart';
 import '../../../matches/services/match_service.dart';
 import '../../../../core/services/socket_service.dart';
 import '../../../help/presentation/screens/help_rules_screen.dart';
+import '../../../profile/presentation/screens/edit_profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final UserModel? user;
@@ -2245,7 +2246,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       icon: Icons.person_outline_rounded,
                       title: 'Edit Profile',
                       subtitle: 'Update details & photo',
-                      onTap: () {},
+                      onTap: () => _navigateToEditProfile(context, popDrawer: true),
                     ),
                     _buildDrawerMenuItem(
                       icon: Icons.sports_tennis_rounded,
@@ -2312,6 +2313,30 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
 
 
+
+  Future<void> _navigateToEditProfile(BuildContext context, {bool popDrawer = false}) async {
+    if (popDrawer) {
+      Navigator.pop(context);
+    }
+    final user = _user ?? widget.user;
+    if (user == null) return;
+
+    final updatedUser = await Navigator.push<UserModel>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditProfileScreen(
+          user: user,
+          isDarkMode: _isDarkMode,
+        ),
+      ),
+    );
+
+    if (updatedUser != null && mounted) {
+      setState(() {
+        _user = updatedUser;
+      });
+    }
+  }
 
   Widget _buildDrawerMenuItem({
     required IconData icon,
@@ -2883,103 +2908,218 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildProfileTab() {
-    final fullName = _user?.name ?? 'Ellejun Apresto Sampaga';
-    final email = _user?.email ?? 'ellejunsampaga@gmail.com';
-    final initials = _user?.firstName != null && _user!.firstName.isNotEmpty
-        ? _user!.firstName[0].toUpperCase()
-        : 'E';
+  Widget _buildProfileStatColumn(String value, String label, bool isDark) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w900,
+            color: PulseColors.getTextPrimary(isDark),
+            letterSpacing: -0.5,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+            color: PulseColors.getTextSecondary(isDark),
+          ),
+        ),
+      ],
+    );
+  }
 
+  Widget _buildProfileTab() {
+    final currentUser = _user ?? widget.user;
+    final fullName = currentUser?.name ?? 'Ellejun Apresto Sampaga';
+    final email = currentUser?.email ?? 'ellejunsampaga@gmail.com';
+    final initials = fullName.isNotEmpty ? fullName[0].toUpperCase() : 'E';
+    final avatarUrl = currentUser?.avatarUrl;
+    final coverPhotoUrl = currentUser?.coverPhotoUrl;
+    final wins = currentUser?.wins ?? 0;
+    final losses = currentUser?.losses ?? 0;
+    final totalMatches = wins + losses;
+    final winRate = totalMatches > 0 ? '${((wins / totalMatches) * 100).round()}%' : '0%';
+    final rating = currentUser?.rating ?? 1200;
+    final primarySport = (currentUser?.primarySport ?? 'pickleball').toUpperCase();
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
       child: Column(
         children: [
-          // 1. Prominent Hero Avatar & User Info Card
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(24.0),
-            decoration: BoxDecoration(
-              color: PulseColors.getSurface(_isDarkMode),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: PulseColors.getBorder(_isDarkMode),
-                width: 1.8,
-              ),
-            ),
-            child: Column(
-              children: [
-                // Prominent Centered Avatar with Camera Edit Badge
-                Stack(
-                  children: [
-                    Container(
-                      width: 96,
-                      height: 96,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [PulseColors.accent, PulseColors.secondary],
+          // 1. Full-Width Edge-to-Edge Banner & 50/50 Overlapping Avatar (100% Screen Width)
+          Stack(
+            alignment: Alignment.topCenter,
+            clipBehavior: Clip.none,
+            children: [
+              // Full-Width Cover Photo Banner Header
+              Container(
+                height: 140,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: _isDarkMode ? PulseColors.darkCard : PulseColors.secondary.withValues(alpha: 0.3),
+                  gradient: (coverPhotoUrl == null || coverPhotoUrl.isEmpty)
+                      ? LinearGradient(
+                          colors: _isDarkMode
+                              ? [const Color(0xFF1B3B36), const Color(0xFF0F2622)]
+                              : [PulseColors.primary, const Color(0xFF2C5E55)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                        ),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: PulseColors.accent,
-                          width: 2.5,
-                        ),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(3.0),
-                        child: CircleAvatar(
-                          backgroundColor: PulseColors.getCard(_isDarkMode),
-                          child: Text(
-                            initials,
-                            style: TextStyle(
-                              color: PulseColors.getTextPrimary(_isDarkMode),
-                              fontSize: 36,
-                              fontWeight: FontWeight.w900,
-                            ),
+                        )
+                      : null,
+                ),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (coverPhotoUrl != null && coverPhotoUrl.isNotEmpty)
+                      Image.network(
+                        coverPhotoUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (c, e, s) => Center(
+                          child: Icon(
+                            Icons.sports_tennis_rounded,
+                            size: 100,
+                            color: Colors.white.withValues(alpha: 0.15),
                           ),
                         ),
+                      )
+                    else
+                      Positioned(
+                        right: -10,
+                        top: -10,
+                        child: Icon(
+                          Icons.sports_tennis_rounded,
+                          size: 160,
+                          color: Colors.white.withValues(alpha: 0.08),
+                        ),
                       ),
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: InkWell(
-                        onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Profile photo upload feature'),
-                            ),
-                          );
-                        },
-                        borderRadius: BorderRadius.circular(16),
-                        child: Container(
-                          padding: const EdgeInsets.all(7),
+                  ],
+                ),
+              ),
+
+              // Overlapping Avatar (50% on top banner, 50% on bottom content)
+              Positioned(
+                top: 92, // 140 - (96 / 2) = 92px. Exactly 50% top, 50% bottom!
+                child: Column(
+                  children: [
+                    Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Container(
+                          width: 96,
+                          height: 96,
                           decoration: BoxDecoration(
-                            color: PulseColors.accent,
                             shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 1.8),
+                            color: PulseColors.getBackground(_isDarkMode),
+                            border: Border.all(
+                              color: PulseColors.getBackground(_isDarkMode),
+                              width: 3.5,
+                            ),
                           ),
-                          child: const Icon(
-                            Icons.camera_alt_rounded,
-                            color: Colors.white,
-                            size: 14,
+                          child: ClipOval(
+                            child: (avatarUrl != null && avatarUrl.isNotEmpty)
+                                ? Image.network(
+                                    avatarUrl,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) => Center(
+                                      child: Text(
+                                        initials,
+                                        style: TextStyle(
+                                          color: PulseColors.getTextPrimary(_isDarkMode),
+                                          fontSize: 36,
+                                          fontWeight: FontWeight.w900,
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                : Center(
+                                    child: Text(
+                                      initials,
+                                      style: TextStyle(
+                                        color: PulseColors.getTextPrimary(_isDarkMode),
+                                        fontSize: 36,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                  ),
                           ),
                         ),
-                      ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: InkWell(
+                            onTap: () => _navigateToEditProfile(context, popDrawer: false),
+                            borderRadius: BorderRadius.circular(16),
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: PulseColors.accent,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 1.5),
+                              ),
+                              child: const Icon(
+                                Icons.camera_alt_rounded,
+                                color: Colors.white,
+                                size: 13,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-                const SizedBox(height: 14),
+              ),
+            ],
+          ),
 
-                // User Full Name & Handle/Email
+          const SizedBox(height: 54),
+
+          // Streak / Rating Badge Pill
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+            decoration: BoxDecoration(
+              color: PulseColors.accent,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.local_fire_department_rounded,
+                  size: 14,
+                  color: Color(0xFFFF4500), // Fiery red-orange
+                ),
+                const SizedBox(width: 4),
                 Text(
-                  fullName,
+                  '$rating ELO',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Rest of Profile Content uses Horizontal Padding
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            child: Column(
+              children: [
+                // User Full Name (Bold Uppercase)
+                Text(
+                  fullName.toUpperCase(),
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: 22,
                     fontWeight: FontWeight.w900,
                     color: PulseColors.getTextPrimary(_isDarkMode),
                     letterSpacing: -0.3,
@@ -2995,126 +3135,266 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     color: PulseColors.getTextSecondary(_isDarkMode),
                   ),
                 ),
+
+                // Phone & Location Text Row
+                if ((currentUser?.phoneNumber?.isNotEmpty ?? false) ||
+                    (currentUser?.location?.isNotEmpty ?? false)) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (currentUser?.phoneNumber?.isNotEmpty ?? false) ...[
+                        Icon(
+                          Icons.phone_rounded,
+                          size: 13,
+                          color: PulseColors.getTextSecondary(_isDarkMode),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          currentUser!.phoneNumber!,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: PulseColors.getTextSecondary(_isDarkMode),
+                          ),
+                        ),
+                      ],
+                      if ((currentUser?.phoneNumber?.isNotEmpty ?? false) &&
+                          (currentUser?.location?.isNotEmpty ?? false)) ...[
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                          child: Text(
+                            '•',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: PulseColors.getTextSecondary(_isDarkMode),
+                            ),
+                          ),
+                        ),
+                      ],
+                      if (currentUser?.location?.isNotEmpty ?? false) ...[
+                        Icon(
+                          Icons.location_on_outlined,
+                          size: 13,
+                          color: PulseColors.accent,
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            currentUser!.location!,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: PulseColors.getTextSecondary(_isDarkMode),
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+
+                // Player Bio / Tagline
+                if (currentUser?.bio?.isNotEmpty ?? false) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    currentUser!.bio!,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontStyle: FontStyle.italic,
+                      fontWeight: FontWeight.w400,
+                      color: PulseColors.getTextPrimary(_isDarkMode).withValues(alpha: 0.85),
+                    ),
+                  ),
+                ],
+
                 const SizedBox(height: 16),
 
+                // Sport Pill Badges
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: PulseColors.getSurface(_isDarkMode),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: PulseColors.getBorder(_isDarkMode),
+                          width: 1.0,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.sports_tennis_rounded, size: 15, color: PulseColors.accent),
+                          const SizedBox(width: 6),
+                          Text(
+                            primarySport,
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.5,
+                              color: PulseColors.getTextPrimary(_isDarkMode),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
 
+                const SizedBox(height: 20),
+
+                // Stats Overview Row (3 Columns: Wins, Matches, Win Rate)
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 18.0, horizontal: 16.0),
+                  decoration: BoxDecoration(
+                    color: PulseColors.getSurface(_isDarkMode),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: PulseColors.getBorder(_isDarkMode),
+                      width: 1.0,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildProfileStatColumn('$wins', 'Wins', _isDarkMode),
+                      Container(
+                        width: 1,
+                        height: 32,
+                        color: PulseColors.getBorder(_isDarkMode).withValues(alpha: 0.5),
+                      ),
+                      _buildProfileStatColumn('$totalMatches', 'Matches', _isDarkMode),
+                      Container(
+                        width: 1,
+                        height: 32,
+                        color: PulseColors.getBorder(_isDarkMode).withValues(alpha: 0.5),
+                      ),
+                      _buildProfileStatColumn(winRate, 'Win rates', _isDarkMode),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 24),
               ],
             ),
           ),
-          const SizedBox(height: 20),
-
-          // 2. Settings & Security Section Title
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              'Account & Settings',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: PulseColors.getTextPrimary(_isDarkMode),
-                letterSpacing: -0.3,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // 3. Password Setup Tile (Interactive Modal Launcher)
-          _buildDrawerMenuItem(
-            icon: Icons.lock_reset_rounded,
-            title: 'Password & Security Setup',
-            subtitle: 'Setup or update account password',
-            onTap: () => _showPasswordSetupModal(context),
-          ),
-
-          // 4. Other Settings Menu Items
-          _buildDrawerMenuItem(
-            icon: Icons.person_outline_rounded,
-            title: 'Edit Profile Information',
-            subtitle: 'Name, bio & preferred court',
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Opening Profile Editor')),
-              );
-            },
-          ),
-          _buildDrawerMenuItem(
-            icon: Icons.sports_tennis_rounded,
-            title: 'Sport Preferences',
-            subtitle: 'Declare sports & starting ELO ratings',
-            onTap: () {
-              Navigator.pop(context);
-              _showSportPreferencesModal(context);
-            },
-          ),
-
-          // 5. Dark Mode Theme Setting
-          Container(
-            margin: const EdgeInsets.only(bottom: 10.0),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              color: PulseColors.getSurface(_isDarkMode),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: PulseColors.getBorder(_isDarkMode),
-                width: 1.8,
-              ),
-            ),
-            child: Row(
+          // 2. Account & Settings Section with 20px Horizontal Padding
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: PulseColors.getBackground(_isDarkMode),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    _isDarkMode
-                        ? Icons.nights_stay_rounded
-                        : Icons.wb_sunny_outlined,
-                    size: 20,
-                    color: _isDarkMode
-                        ? PulseColors.secondary
-                        : PulseColors.primary,
+                Text(
+                  'Account & Settings',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: PulseColors.getTextPrimary(_isDarkMode),
+                    letterSpacing: -0.3,
                   ),
                 ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                const SizedBox(height: 12),
+
+                // Password Setup Tile
+                _buildDrawerMenuItem(
+                  icon: Icons.lock_reset_rounded,
+                  title: 'Password & Security Setup',
+                  subtitle: 'Setup or update account password',
+                  onTap: () => _showPasswordSetupModal(context),
+                ),
+
+                // Other Settings Menu Items
+                _buildDrawerMenuItem(
+                  icon: Icons.person_outline_rounded,
+                  title: 'Edit Profile Information',
+                  subtitle: 'Update details & photo',
+                  onTap: () => _navigateToEditProfile(context),
+                ),
+                _buildDrawerMenuItem(
+                  icon: Icons.sports_tennis_rounded,
+                  title: 'Sport Preferences',
+                  subtitle: 'Declare sports & starting ELO ratings',
+                  onTap: () {
+                    _showSportPreferencesModal(context);
+                  },
+                ),
+
+                // Dark Mode Theme Setting
+                Container(
+                  margin: const EdgeInsets.only(bottom: 10.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: PulseColors.getSurface(_isDarkMode),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: PulseColors.getBorder(_isDarkMode),
+                      width: 1.8,
+                    ),
+                  ),
+                  child: Row(
                     children: [
-                      Text(
-                        'Dark Mode Theme',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: PulseColors.getTextPrimary(_isDarkMode),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: PulseColors.getBackground(_isDarkMode),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          _isDarkMode
+                              ? Icons.nights_stay_rounded
+                              : Icons.wb_sunny_outlined,
+                          size: 20,
+                          color: _isDarkMode
+                              ? PulseColors.secondary
+                              : PulseColors.primary,
                         ),
                       ),
-                      Text(
-                        _isDarkMode
-                            ? 'Dark theme active'
-                            : 'Light theme active',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: PulseColors.getTextSecondary(_isDarkMode),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Dark Mode Theme',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: PulseColors.getTextPrimary(_isDarkMode),
+                              ),
+                            ),
+                            Text(
+                              _isDarkMode
+                                  ? 'Dark theme active'
+                                  : 'Light theme active',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: PulseColors.getTextSecondary(_isDarkMode),
+                              ),
+                            ),
+                          ],
                         ),
+                      ),
+                      Switch(
+                        value: _isDarkMode,
+                        activeTrackColor: PulseColors.accent,
+                        onChanged: (val) {
+                          themeModeNotifier.value = val
+                              ? ThemeMode.dark
+                              : ThemeMode.light;
+                        },
                       ),
                     ],
                   ),
                 ),
-                Switch(
-                  value: _isDarkMode,
-                  activeTrackColor: PulseColors.accent,
-                  onChanged: (val) {
-                    themeModeNotifier.value = val
-                        ? ThemeMode.dark
-                        : ThemeMode.light;
-                  },
-                ),
+                const SizedBox(height: 24),
               ],
             ),
           ),
-          const SizedBox(height: 24),
         ],
       ),
     );

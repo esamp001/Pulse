@@ -121,7 +121,7 @@ class UserRepository {
     });
   }
 
-  async updateOnboardingStatus(userId: string, data: { is_onboarded: boolean; name?: string; primary_sport?: string; rating?: number; sport_ratings?: Record<string, number>; avatar_url?: string }): Promise<User> {
+  async updateOnboardingStatus(userId: string, data: { is_onboarded: boolean; name?: string; primary_sport?: string; rating?: number; sport_ratings?: Record<string, number>; avatar_url?: string; cover_photo_url?: string; phone_number?: string; location?: string; bio?: string }): Promise<User> {
     return db.transaction(async (trx) => {
       const updatePayload: Record<string, any> = {
         is_onboarded: data.is_onboarded,
@@ -130,7 +130,11 @@ class UserRepository {
       
       if (data.name && data.name.trim().length > 0) updatePayload.name = data.name.trim();
       if (data.primary_sport) updatePayload.primary_sport = data.primary_sport;
-      if (data.avatar_url) updatePayload.avatar_url = data.avatar_url;
+      if (data.avatar_url !== undefined) updatePayload.avatar_url = data.avatar_url;
+      if (data.cover_photo_url !== undefined) updatePayload.cover_photo_url = data.cover_photo_url;
+      if (data.phone_number !== undefined) updatePayload.phone_number = data.phone_number;
+      if (data.location !== undefined) updatePayload.location = data.location;
+      if (data.bio !== undefined) updatePayload.bio = data.bio;
 
       await trx<User>('users')
         .where({ id: userId })
