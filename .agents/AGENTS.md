@@ -2,8 +2,8 @@
 
 ## Frontend UI & Styling Standards (Flutter & Dart)
 - **STRICT NO DROP SHADOW RULE**: Do NOT add or re-implement drop shadows (`boxShadow`, `BoxShadow(...)`, `elevation`, `shadows`) anywhere in the application.
-- All cards, containers, buttons, app bars, navigation bars, and modals MUST be flat with clean borders (`Border.all(...)`, `side: BorderSide(...)`) and surface fills.
-- Use `PulseColors` palette and `Theme.of(context)` for all colors and border strokes.
+- **NO FORCED STYLING BORDERS / BORDERLESS DESIGN**: Do NOT automatically add explicit outline borders (`Border.all(...)`, `borderSide`) for visual styling. Cards, input fields, containers, and modals should rely on clean, borderless surface fills (like the username/email input fields with `BorderSide.none`) rather than forced borders. Use borders only when structurally necessary for separation.
+- Use `PulseColors` palette and `Theme.of(context)` for all colors.
 
 ## Notification Drawer & UI Standards
 - **Modern Design & Layout**: Uses Bell Icon `🔔`, `All` / `Unread` tab filter bar, plain text category labels (no colored background pills), and inline `Mark as read` action buttons.

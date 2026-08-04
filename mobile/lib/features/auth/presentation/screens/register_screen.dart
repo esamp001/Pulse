@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../../../../core/theme/pulse_colors.dart';
+import '../../../../core/widgets/google_logo_widget.dart';
 import '../../../../core/widgets/pulse_back_button.dart';
 import '../../../../core/widgets/pulse_toast.dart';
 import '../../../home/presentation/screens/home_screen.dart';
@@ -151,11 +152,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       backgroundColor: surfaceColor,
                     ),
-                    icon: Icon(
-                      Icons.g_mobiledata_rounded,
-                      size: 28,
-                      color: accentLinkColor,
-                    ),
+                    icon: const GoogleLogoWidget(size: 20),
                     label: Text(
                       'Sign up with Google',
                       style: TextStyle(

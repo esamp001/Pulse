@@ -33,8 +33,9 @@ mobile/lib/
 - **Constructors**: Always prefer `const` constructors wherever possible for optimal rendering performance.
 - **Theme Usage**: Always consume brand colors from `PulseColors` or `Theme.of(context)` rather than hardcoding hex colors inline.
 
-### 4. UI & Styling Rules (Strict Flat Design)
-- **NO DROP SHADOWS (`boxShadow` / `elevation`)**: Do NOT use `boxShadow`, `BoxShadow(...)`, `elevation`, or drop shadows on cards, buttons, dialogs, top app bars, or navigation bars across the mobile app. All containers MUST remain flat with clean borders (`Border.all(...)`, `side: BorderSide(...)`).
+### 4. UI & Styling Rules (Strict Flat & Borderless Surface Design)
+- **NO DROP SHADOWS (`boxShadow` / `elevation`)**: Do NOT use `boxShadow`, `BoxShadow(...)`, `elevation`, or drop shadows on cards, buttons, dialogs, top app bars, or navigation bars across the mobile app.
+- **NO FORCED STYLING BORDERS**: Do NOT automatically add explicit outline borders (`Border.all(...)`, `borderSide`) purely for visual decoration. Cards, input fields, containers, and modals should rely on clean, borderless surface fills (reference: username/email input fields using `BorderSide.none`) rather than forced outline strokes. Use borders only when structurally required for visual separation.
 - **Notification Center Design**: Must use Bell Icon `🔔`, `All` / `Unread` filter tabs, plain text category labels (no colored background pills), and inline `Mark as read` action buttons. Only active, existing event triggers (`ACCOUNT`, `INVITE`, `RATING`, `VERIFIED`) are populated.
 
 ---
