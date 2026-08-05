@@ -127,6 +127,8 @@ class _MatchInvitationSnackbarState extends State<MatchInvitationSnackbar> {
                                 fontWeight: FontWeight.bold,
                                 color: textPrimary,
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(height: 2),
                             Text(
@@ -207,11 +209,14 @@ class _MatchInvitationSnackbarState extends State<MatchInvitationSnackbar> {
                             ),
                             elevation: 0,
                           ),
-                          child: const Text(
-                            'Decline',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
+                          child: const FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              'Decline',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ),
@@ -230,11 +235,14 @@ class _MatchInvitationSnackbarState extends State<MatchInvitationSnackbar> {
                             ),
                             elevation: 0,
                           ),
-                          child: const Text(
-                            'Accept & Join',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
+                          child: const FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              'Accept & Join',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ),

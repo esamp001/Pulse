@@ -151,29 +151,32 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
             width: 1.0,
           ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              _isSportsExpanded
-                  ? Icons.keyboard_arrow_up_rounded
-                  : Icons.keyboard_arrow_down_rounded,
-              size: 20,
-              color: PulseColors.accent,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              _isSportsExpanded
-                  ? 'SHOW LESS'
-                  : 'SEE ALL SPORTS ($totalCount)',
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.8,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                _isSportsExpanded
+                    ? Icons.keyboard_arrow_up_rounded
+                    : Icons.keyboard_arrow_down_rounded,
+                size: 20,
                 color: PulseColors.accent,
               ),
-            ),
-          ],
+              const SizedBox(width: 6),
+              Text(
+                _isSportsExpanded
+                    ? 'SHOW LESS'
+                    : 'SEE ALL SPORTS ($totalCount)',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.8,
+                  color: PulseColors.accent,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -290,12 +293,15 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              color: PulseColors.getTextSecondary(_isDarkMode),
-              fontWeight: FontWeight.w500,
+          Flexible(
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 13,
+                color: PulseColors.getTextSecondary(_isDarkMode),
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
           const SizedBox(width: 12),
@@ -394,12 +400,15 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    '1. Select Sport',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: PulseColors.getTextPrimary(_isDarkMode),
+                  Expanded(
+                    child: Text(
+                      '1. Select Sport',
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: PulseColors.getTextPrimary(_isDarkMode),
+                      ),
                     ),
                   ),
                   if (_availableSports.length > 2)
@@ -551,22 +560,30 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
                         children: [
                           const Icon(Icons.today, size: 20, color: PulseColors.primary),
                           const SizedBox(width: 8),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Date',
-                                style: TextStyle(fontSize: 11, color: PulseColors.textSecondary),
-                              ),
-                              Text(
-                                'Today',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: PulseColors.getTextPrimary(_isDarkMode),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Date',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(fontSize: 11, color: PulseColors.textSecondary),
                                 ),
-                              ),
-                            ],
+                                FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    'Today',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: PulseColors.getTextPrimary(_isDarkMode),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
@@ -592,22 +609,30 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
                           children: [
                             const Icon(Icons.access_time, size: 20, color: PulseColors.primary),
                             const SizedBox(width: 8),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Start Time',
-                                  style: TextStyle(fontSize: 11, color: PulseColors.textSecondary),
-                                ),
-                                Text(
-                                  _formatTimeText(),
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                    color: PulseColors.getTextPrimary(_isDarkMode),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Start Time',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(fontSize: 11, color: PulseColors.textSecondary),
                                   ),
-                                ),
-                              ],
+                                  FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: Alignment.centerLeft,
+                                    child: Text(
+                                      _formatTimeText(),
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: PulseColors.getTextPrimary(_isDarkMode),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                         ),
@@ -715,26 +740,31 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Win by 2 Points',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: PulseColors.getTextPrimary(_isDarkMode),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Win by 2 Points',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: PulseColors.getTextPrimary(_isDarkMode),
+                                ),
                               ),
-                            ),
-                            Text(
-                              'Must lead by at least 2 points to win set',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: PulseColors.getTextSecondary(_isDarkMode),
+                              Text(
+                                'Must lead by at least 2 points to win set',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: PulseColors.getTextSecondary(_isDarkMode),
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
+                        const SizedBox(width: 8),
                         Switch.adaptive(
                           value: _winByTwo,
                           thumbColor: WidgetStateProperty.resolveWith(
@@ -773,12 +803,15 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
                           color: PulseColors.primary,
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          'Match Setup Summary',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: PulseColors.getTextPrimary(_isDarkMode),
+                        Expanded(
+                          child: Text(
+                            'Match Setup Summary',
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: PulseColors.getTextPrimary(_isDarkMode),
+                            ),
                           ),
                         ),
                       ],

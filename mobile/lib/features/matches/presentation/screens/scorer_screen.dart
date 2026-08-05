@@ -333,26 +333,26 @@ class _ScorerScreenState extends State<ScorerScreen> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(24),
             ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 28.0),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // Gold Trophy Header Circle (Borderless)
                   Container(
-                    width: 68,
-                    height: 68,
+                    width: 60,
+                    height: 60,
                     decoration: BoxDecoration(
                       color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
                       Icons.emoji_events_rounded,
-                      size: 38,
+                      size: 34,
                       color: Color(0xFFF59E0B),
                     ),
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 12),
                   const Text(
                     'VICTORY',
                     style: TextStyle(
@@ -366,13 +366,13 @@ class _ScorerScreenState extends State<ScorerScreen> {
                   Text(
                     '$winnerName WINS!',
                     style: TextStyle(
-                      fontSize: 22,
+                      fontSize: 20,
                       fontWeight: FontWeight.w900,
                       color: PulseColors.getTextPrimary(_isDarkMode),
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 14),
 
                   // Winner Avatar with Soft Glow Ring (Borderless)
                   Container(
@@ -382,7 +382,7 @@ class _ScorerScreenState extends State<ScorerScreen> {
                       color: const Color(0xFFF59E0B).withValues(alpha: 0.2),
                     ),
                     child: CircleAvatar(
-                      radius: 38,
+                      radius: 34,
                       backgroundColor: PulseColors.primary.withValues(alpha: 0.15),
                       backgroundImage: winnerAvatar != null && winnerAvatar.isNotEmpty
                           ? NetworkImage(winnerAvatar)
@@ -391,7 +391,7 @@ class _ScorerScreenState extends State<ScorerScreen> {
                           ? Text(
                               winnerInitials,
                               style: const TextStyle(
-                                fontSize: 24,
+                                fontSize: 22,
                                 fontWeight: FontWeight.bold,
                                 color: PulseColors.primary,
                               ),
@@ -400,34 +400,37 @@ class _ScorerScreenState extends State<ScorerScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
 
                   // Gained Elo Badge (Borderless Pill)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF22C55E).withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.trending_up_rounded, size: 16, color: Color(0xFF22C55E)),
-                        const SizedBox(width: 6),
-                        Text(
-                          '+$_ratingGained ELO GAINED',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF22C55E),
-                            letterSpacing: 0.5,
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF22C55E).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.trending_up_rounded, size: 16, color: Color(0xFF22C55E)),
+                          const SizedBox(width: 6),
+                          Text(
+                            '+$_ratingGained ELO GAINED',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF22C55E),
+                              letterSpacing: 0.5,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 18),
 
                   // Score Breakdown Card (Borderless)
                   Container(
@@ -476,12 +479,12 @@ class _ScorerScreenState extends State<ScorerScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
 
                   // Return Button
                   SizedBox(
                     width: double.infinity,
-                    height: 50,
+                    height: 48,
                     child: ElevatedButton(
                       onPressed: () => Navigator.of(ctx).popUntil((route) => route.isFirst),
                       style: ElevatedButton.styleFrom(
@@ -682,7 +685,7 @@ class _ScorerScreenState extends State<ScorerScreen> {
             children: [
               // Status & Info Header Bar
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                 decoration: BoxDecoration(
                   color: card,
                   borderRadius: BorderRadius.circular(12),
@@ -692,49 +695,57 @@ class _ScorerScreenState extends State<ScorerScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'MATCH STATUS',
-                          style: TextStyle(
-                            color: textSecondary,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.0,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: _matchStatus == 'LIVE'
-                                ? PulseColors.accent.withValues(alpha: 0.15)
-                                : PulseColors.primary.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(4),
-                            border: Border.all(
-                              color: _matchStatus == 'LIVE' ? PulseColors.accent : PulseColors.primary,
-                              width: 1,
-                            ),
-                          ),
-                          child: Text(
-                            _matchStatus,
+                    Flexible(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'MATCH STATUS',
                             style: TextStyle(
-                              color: _matchStatus == 'LIVE' ? PulseColors.accent : PulseColors.primary,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 1.0,
+                              color: textSecondary,
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.8,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: _matchStatus == 'LIVE'
+                                  ? PulseColors.accent.withValues(alpha: 0.15)
+                                  : PulseColors.primary.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(
+                                color: _matchStatus == 'LIVE' ? PulseColors.accent : PulseColors.primary,
+                                width: 1,
+                              ),
+                            ),
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                _matchStatus,
+                                style: TextStyle(
+                                  color: _matchStatus == 'LIVE' ? PulseColors.accent : PulseColors.primary,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 0.8,
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
+                    const SizedBox(width: 4),
                     // Minimalist Expandable Rules Chip
                     InkWell(
                       onTap: () => setState(() => _showRulesPanel = !_showRulesPanel),
                       borderRadius: BorderRadius.circular(20),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                         decoration: BoxDecoration(
                           color: _showRulesPanel
                               ? PulseColors.primary
@@ -748,45 +759,52 @@ class _ScorerScreenState extends State<ScorerScreen> {
                               'RULES',
                               style: TextStyle(
                                 color: _showRulesPanel ? Colors.white : PulseColors.primary,
-                                fontSize: 10,
+                                fontSize: 9.5,
                                 fontWeight: FontWeight.bold,
-                                letterSpacing: 0.8,
+                                letterSpacing: 0.6,
                               ),
                             ),
-                            const SizedBox(width: 4),
+                            const SizedBox(width: 2),
                             Icon(
                               _showRulesPanel
                                   ? Icons.keyboard_arrow_up_rounded
                                   : Icons.tune_rounded,
-                              size: 14,
+                              size: 13,
                               color: _showRulesPanel ? Colors.white : PulseColors.primary,
                             ),
                           ],
                         ),
                       ),
                     ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          'CURRENT SET',
-                          style: TextStyle(
-                            color: textSecondary,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.0,
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            'CURRENT SET',
+                            style: TextStyle(
+                              color: textSecondary,
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.8,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'SET $_currentSet',
-                          style: TextStyle(
-                            color: textPrimary,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w900,
+                          const SizedBox(height: 4),
+                          Text(
+                            'SET $_currentSet',
+                            style: TextStyle(
+                              color: textPrimary,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w900,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),

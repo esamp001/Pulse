@@ -78,46 +78,53 @@ class _NotificationSideDrawerState extends State<NotificationSideDrawer> {
           children: [
             // 1. Header (Back Arrow + Title + Mark All as Read)
             Padding(
-              padding: const EdgeInsets.fromLTRB(8.0, 12.0, 16.0, 8.0),
+              padding: const EdgeInsets.fromLTRB(8.0, 12.0, 12.0, 8.0),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   PulseBackButton(isDarkMode: widget.isDarkMode),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Notifications',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: textPrimary,
-                      letterSpacing: -0.4,
-                      height: 1.1,
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Notifications',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: textPrimary,
+                        letterSpacing: -0.4,
+                        height: 1.1,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const Spacer(),
-                  if (notifications.any((n) => n.isUnread))
-                    GestureDetector(
-                      onTap: () async {
-                        await _notificationService.markAllAsRead();
-                        if (!mounted) return;
-                        setState(() {});
-                        if (context.mounted) {
-                          PulseToast.show(context, 'All notifications marked as read');
-                        }
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4.0),
-                        child: const Text(
-                          'Mark all as read',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: PulseColors.accent,
-                            height: 1.1,
+                  if (notifications.any((n) => n.isUnread)) ...[
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: GestureDetector(
+                        onTap: () async {
+                          await _notificationService.markAllAsRead();
+                          if (!mounted) return;
+                          setState(() {});
+                          if (context.mounted) {
+                            PulseToast.show(context, 'All notifications marked as read');
+                          }
+                        },
+                        child: const FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            'Mark all as read',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                              color: PulseColors.accent,
+                              height: 1.1,
+                            ),
                           ),
                         ),
                       ),
                     ),
+                  ],
                 ],
               ),
             ),
@@ -278,7 +285,10 @@ class _NotificationSideDrawerState extends State<NotificationSideDrawer> {
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  child: const Text('Decline', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  child: const FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text('Decline', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
@@ -297,7 +307,10 @@ class _NotificationSideDrawerState extends State<NotificationSideDrawer> {
                     ),
                     elevation: 0,
                   ),
-                  child: const Text('Accept & Join', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  child: const FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text('Accept & Join', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  ),
                 ),
               ),
             ],

@@ -287,11 +287,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               children: [
                 const Icon(Icons.info_outline_rounded, color: PulseColors.accent),
                 const SizedBox(width: 8),
-                Text(
-                  'Active Room Exists',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: PulseColors.getTextPrimary(_isDarkMode),
+                Expanded(
+                  child: Text(
+                    'Active Room Exists',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: PulseColors.getTextPrimary(_isDarkMode),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
@@ -637,44 +641,52 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: PulseColors.primary,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          _activeMatch == null ? 'START A MATCH' : 'RETURN TO ROOM',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0.8,
-                          ),
+                  Flexible(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: PulseColors.primary,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              _activeMatch == null ? 'START A MATCH' : 'RETURN TO ROOM',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            const Icon(
+                              Icons.arrow_forward_rounded,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 8),
-                        const Icon(
-                          Icons.arrow_forward_rounded,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                      ],
+                      ),
                     ),
                   ),
-                  SizedBox(
-                    height: 52,
-                    child: Image.asset(
-                      'assets/images/find_court.png',
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) => const Icon(
-                        Icons.bolt_rounded,
-                        size: 40,
-                        color: PulseColors.accent,
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: SizedBox(
+                      height: 48,
+                      child: Image.asset(
+                        'assets/images/find_court.png',
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) => const Icon(
+                          Icons.bolt_rounded,
+                          size: 36,
+                          color: PulseColors.accent,
+                        ),
                       ),
-
                     ),
                   ),
                 ],
@@ -1484,15 +1496,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Text(
-                'ELO RATING',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.2,
-                  color: secondaryTextColor,
+              const Flexible(
+                child: Text(
+                  'ELO RATING',
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.2,
+                    color: secondaryTextColor,
+                  ),
                 ),
               ),
+              const SizedBox(width: 6),
               InkWell(
                 onTap: onSportTap,
                 borderRadius: BorderRadius.circular(16),
@@ -1548,12 +1564,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
           // Bottom Sub-Stats Row (No icons, clean typography hierarchy)
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildHeroStatColumn('RECORD', recordText, primaryTextColor, secondaryTextColor),
-              _buildHeroStatColumn('WIN RATE', winRateText, primaryTextColor, secondaryTextColor),
-              _buildHeroStatColumn('STREAK', streakText, primaryTextColor, secondaryTextColor),
-              _buildHeroStatColumn('LAST MATCH', lastMatchText, primaryTextColor, secondaryTextColor),
+              Expanded(child: _buildHeroStatColumn('RECORD', recordText, primaryTextColor, secondaryTextColor)),
+              Expanded(child: _buildHeroStatColumn('WIN RATE', winRateText, primaryTextColor, secondaryTextColor)),
+              Expanded(child: _buildHeroStatColumn('STREAK', streakText, primaryTextColor, secondaryTextColor)),
+              Expanded(child: _buildHeroStatColumn('LAST MATCH', lastMatchText, primaryTextColor, secondaryTextColor)),
             ],
           ),
         ],
@@ -1567,6 +1582,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       children: [
         Text(
           label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: TextStyle(
             fontSize: 9,
             fontWeight: FontWeight.w700,
@@ -1575,12 +1592,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           ),
         ),
         const SizedBox(height: 3),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w800,
-            color: primaryColor,
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              color: primaryColor,
+            ),
           ),
         ),
       ],
@@ -1882,130 +1905,148 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    Column(
-                      children: availableSports.map((sport) {
-                        final key = sport['key'] as String;
-                        final name = sport['name'] as String;
-                        final icon = sport['icon'] as IconData;
-                        final isConfigured = draftRatings.containsKey(key);
-                        final isPrimary = key == primaryKey;
-                        final eloVal = draftRatings[key];
-                        final formattedElo = eloVal != null
-                            ? eloVal.toString().replaceAllMapped(
-                                RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-                                (Match m) => '${m[1]},',
-                              )
-                            : '';
+                    Flexible(
+                      child: SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        child: Column(
+                          children: availableSports.map((sport) {
+                            final key = sport['key'] as String;
+                            final name = sport['name'] as String;
+                            final icon = sport['icon'] as IconData;
+                            final isConfigured = draftRatings.containsKey(key);
+                            final isPrimary = key == primaryKey;
+                            final eloVal = draftRatings[key];
+                            final formattedElo = eloVal != null
+                                ? eloVal.toString().replaceAllMapped(
+                                    RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+                                    (Match m) => '${m[1]},',
+                                  )
+                                : '';
 
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 10),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: isConfigured
-                                ? PulseColors.getCard(_isDarkMode)
-                                : PulseColors.getSurface(_isDarkMode),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: isConfigured
-                                  ? PulseColors.accent.withValues(alpha: 0.5)
-                                  : PulseColors.getBorder(_isDarkMode),
-                              width: 1.2,
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: PulseColors.getBackground(_isDarkMode),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Icon(
-                                  icon,
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 10),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: isConfigured
+                                    ? PulseColors.getCard(_isDarkMode)
+                                    : PulseColors.getSurface(_isDarkMode),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
                                   color: isConfigured
-                                      ? PulseColors.accent
-                                      : PulseColors.getTextSecondary(_isDarkMode),
-                                  size: 22,
+                                      ? PulseColors.accent.withValues(alpha: 0.5)
+                                      : PulseColors.getBorder(_isDarkMode),
+                                  width: 1.2,
                                 ),
                               ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: PulseColors.getBackground(_isDarkMode),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Icon(
+                                      icon,
+                                      color: isConfigured
+                                          ? PulseColors.accent
+                                          : PulseColors.getTextSecondary(_isDarkMode),
+                                      size: 22,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text(
-                                          name,
-                                          style: TextStyle(
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w700,
-                                            color: PulseColors.getTextPrimary(_isDarkMode),
-                                          ),
-                                        ),
-                                        if (isPrimary) ...[
-                                          const SizedBox(width: 6),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                            decoration: BoxDecoration(
-                                              color: PulseColors.primary.withValues(alpha: 0.15),
-                                              borderRadius: BorderRadius.circular(6),
-                                            ),
-                                            child: const Text(
-                                              'PRIMARY',
-                                              style: TextStyle(
-                                                fontSize: 9,
-                                                fontWeight: FontWeight.w800,
-                                                color: PulseColors.primary,
+                                        Row(
+                                          children: [
+                                            Flexible(
+                                              child: Text(
+                                                name,
+                                                style: TextStyle(
+                                                  fontSize: 15,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: PulseColors.getTextPrimary(_isDarkMode),
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
                                               ),
                                             ),
+                                            if (isPrimary) ...[
+                                              const SizedBox(width: 6),
+                                              FittedBox(
+                                                fit: BoxFit.scaleDown,
+                                                child: Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                  decoration: BoxDecoration(
+                                                    color: PulseColors.primary.withValues(alpha: 0.15),
+                                                    borderRadius: BorderRadius.circular(6),
+                                                  ),
+                                                  child: const Text(
+                                                    'PRIMARY',
+                                                    style: TextStyle(
+                                                      fontSize: 9,
+                                                      fontWeight: FontWeight.w800,
+                                                      color: PulseColors.primary,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          isConfigured ? '$formattedElo ELO' : 'Not configured',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                            color: isConfigured
+                                                ? PulseColors.accent
+                                                : PulseColors.getTextSecondary(_isDarkMode),
                                           ),
-                                        ],
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
                                       ],
                                     ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      isConfigured ? '$formattedElo ELO' : 'Not configured',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                        color: isConfigured
-                                            ? PulseColors.accent
-                                            : PulseColors.getTextSecondary(_isDarkMode),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  if (isConfigured) ...[
+                                    if (!isPrimary)
+                                      IconButton(
+                                        icon: const Icon(Icons.remove_circle_outline_rounded, size: 20),
+                                        color: PulseColors.error,
+                                        onPressed: () {
+                                          setModalState(() {
+                                            draftRatings.remove(key);
+                                          });
+                                        },
+                                      ),
+                                  ] else ...[
+                                    TextButton.icon(
+                                      onPressed: () {
+                                        draftRatings[key] = 1200;
+                                        showRatingPickerForSport(key, name);
+                                      },
+                                      icon: const Icon(Icons.add_rounded, size: 16),
+                                      label: const Text('Add'),
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: PulseColors.accent,
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        minimumSize: Size.zero,
+                                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                        textStyle: const TextStyle(fontWeight: FontWeight.bold),
                                       ),
                                     ),
                                   ],
-                                ),
+                                ],
                               ),
-                              if (isConfigured) ...[
-                                if (!isPrimary)
-                                  IconButton(
-                                    icon: const Icon(Icons.remove_circle_outline_rounded, size: 20),
-                                    color: PulseColors.error,
-                                    onPressed: () {
-                                      setModalState(() {
-                                        draftRatings.remove(key);
-                                      });
-                                    },
-                                  ),
-                              ] else ...[
-                                TextButton.icon(
-                                  onPressed: () {
-                                    draftRatings[key] = 1200;
-                                    showRatingPickerForSport(key, name);
-                                  },
-                                  icon: const Icon(Icons.add_rounded, size: 16),
-                                  label: const Text('Add'),
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: PulseColors.accent,
-                                    textStyle: const TextStyle(fontWeight: FontWeight.bold),
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        );
-                      }).toList(),
+                            );
+                          }).toList(),
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 16),
                     SizedBox(

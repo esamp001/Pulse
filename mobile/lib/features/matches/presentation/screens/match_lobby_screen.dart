@@ -271,11 +271,15 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                 ),
               ),
               const SizedBox(width: 10),
-              Text(
-                'Kick $roleTitle',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: PulseColors.getTextPrimary(_isDarkMode),
+              Expanded(
+                child: Text(
+                  'Kick $roleTitle',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: PulseColors.getTextPrimary(_isDarkMode),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -498,20 +502,28 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.sports_tennis_rounded, color: PulseColors.primary, size: 20),
-                          const SizedBox(width: 8),
-                          Text(
-                            _match.sportDisplayName,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w900,
-                              color: PulseColors.getTextPrimary(_isDarkMode),
-                            ),
+                      Expanded(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Row(
+                            children: [
+                              const Icon(Icons.sports_tennis_rounded, color: PulseColors.primary, size: 20),
+                              const SizedBox(width: 8),
+                              Text(
+                                _match.sportDisplayName,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w900,
+                                  color: PulseColors.getTextPrimary(_isDarkMode),
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
+                      const SizedBox(width: 6),
                       InkWell(
                         onTap: _copyMatchCode,
                         borderRadius: BorderRadius.circular(8),
@@ -522,19 +534,22 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(color: PulseColors.primary.withValues(alpha: 0.3)),
                           ),
-                          child: Row(
-                            children: [
-                              Text(
-                                'ID: ${_match.id.length > 8 ? _match.id.substring(0, 8) : _match.id}',
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  color: PulseColors.primary,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Row(
+                              children: [
+                                Text(
+                                  'ID: ${_match.id.length > 8 ? _match.id.substring(0, 8) : _match.id}',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: PulseColors.primary,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 4),
-                              const Icon(Icons.copy_rounded, size: 12, color: PulseColors.primary),
-                            ],
+                                const SizedBox(width: 4),
+                                const Icon(Icons.copy_rounded, size: 12, color: PulseColors.primary),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -564,11 +579,14 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                     children: [
                       Icon(Icons.event_rounded, size: 16, color: PulseColors.getTextSecondary(_isDarkMode)),
                       const SizedBox(width: 6),
-                      Text(
-                        _formatDateTime(_match.scheduledAt),
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: PulseColors.getTextSecondary(_isDarkMode),
+                      Expanded(
+                        child: Text(
+                          _formatDateTime(_match.scheduledAt),
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: PulseColors.getTextSecondary(_isDarkMode),
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -578,12 +596,16 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                     children: [
                       Icon(Icons.tune_rounded, size: 16, color: PulseColors.getTextSecondary(_isDarkMode)),
                       const SizedBox(width: 6),
-                      Text(
-                        '${_match.setsFormatTitle} (${_match.pointsFormatTitle}, ${_match.winMarginTitle})',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: PulseColors.getTextPrimary(_isDarkMode),
+                      Expanded(
+                        child: Text(
+                          '${_match.setsFormatTitle} (${_match.pointsFormatTitle}, ${_match.winMarginTitle})',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: PulseColors.getTextPrimary(_isDarkMode),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -768,32 +790,38 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        color: PulseColors.textSecondary,
-                        letterSpacing: 0.8,
-                      ),
-                    ),
-                    if (isHostCard) ...[
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                        decoration: BoxDecoration(
-                          color: PulseColors.accent,
-                          borderRadius: BorderRadius.circular(4),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Row(
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: PulseColors.textSecondary,
+                          letterSpacing: 0.8,
                         ),
-                        child: const Text(
-                          'HOST',
-                          style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.white),
-                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
+                      if (isHostCard) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: PulseColors.accent,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            'HOST',
+                            style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.white),
+                          ),
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(

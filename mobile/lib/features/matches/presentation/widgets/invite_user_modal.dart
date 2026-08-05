@@ -203,9 +203,10 @@ class _InviteUserModalState extends State<InviteUserModal> {
           const SizedBox(height: 16),
 
           // Users List / State
-          SizedBox(
-            height: 280,
-            child: _isLoading
+          Flexible(
+            child: Container(
+              constraints: const BoxConstraints(maxHeight: 280),
+              child: _isLoading
                 ? const Center(
                     child: CircularProgressIndicator(
                       color: PulseColors.accent,
@@ -386,8 +387,9 @@ class _InviteUserModalState extends State<InviteUserModal> {
                                   ],
                                 ),
                               );
-                            },
-                          ),
+                              },
+                            ),
+            ),
           ),
         ],
       ),

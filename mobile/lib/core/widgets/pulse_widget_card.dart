@@ -112,19 +112,24 @@ class PulseWidgetCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 6),
                 // Capsule Pill Badge
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: pillBg,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    pillText,
-                    style: TextStyle(
-                      color: pillFg,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.5,
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: pillBg,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        pillText,
+                        style: TextStyle(
+                          color: pillFg,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
                     ),
                   ),
                 ),

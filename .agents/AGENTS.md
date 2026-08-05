@@ -4,6 +4,8 @@
 - **STRICT NO DROP SHADOW RULE**: Do NOT add or re-implement drop shadows (`boxShadow`, `BoxShadow(...)`, `elevation`, `shadows`) anywhere in the application.
 - **NO FORCED STYLING BORDERS / BORDERLESS DESIGN**: Do NOT automatically add explicit outline borders (`Border.all(...)`, `borderSide`) for visual styling. Cards, input fields, containers, and modals should rely on clean, borderless surface fills (like the username/email input fields with `BorderSide.none`) rather than forced borders. Use borders only when structurally necessary for separation.
 - Use `PulseColors` palette and `Theme.of(context)` for all colors.
+- **RESPONSIVE LAYOUT & OVERFLOW PROTECTION**: Support standard modern screen sizes (~360dp–430dp width) while ensuring full layout flexibility down to ultra-small legacy viewports (~280dp–360dp width). Wrap horizontal row text, pill tags, and action buttons in `Expanded`, `Flexible`, or `FittedBox(fit: BoxFit.scaleDown)` with `TextOverflow.ellipsis` to strictly prevent `RenderFlex` pixel overflow errors.
+- **MANDATORY 280x520 WORST-CASE OVERFLOW TEST FOR NEW SCREENS**: Standard mobile screens are fully supported, but to guarantee zero layout breaks even for worst-case ultra-small viewports (~280x520), whenever a new screen, page, or modal component is created in `mobile/lib/`, you MUST register a corresponding widget test in `mobile/test/responsive_280x520_overflow_test.dart` using `setSmallestScreen280x520(tester)` to ensure automated overflow verification passes continuously.
 
 ## Notification Drawer & UI Standards
 - **Modern Design & Layout**: Uses Bell Icon `🔔`, `All` / `Unread` tab filter bar, plain text category labels (no colored background pills), and inline `Mark as read` action buttons.

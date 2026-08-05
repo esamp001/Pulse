@@ -275,8 +275,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
             // Navigation Buttons Bottom Bar
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   if (_currentStep > 0)
                     TextButton.icon(
@@ -285,14 +286,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       label: const Text('BACK'),
                     )
                   else
-                    const SizedBox(width: 80),
-                  const Spacer(),
+                    const SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   if (_currentStep < 2)
                     ElevatedButton(
                       onPressed: _nextPage,
                       style: ElevatedButton.styleFrom(
-                        minimumSize: const Size(0, 52),
-                        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+                        minimumSize: const Size(0, 48),
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                       ),
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
@@ -304,27 +305,32 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       ),
                     )
                   else
-                    ElevatedButton(
-                      onPressed: _isLoading ? null : _handleFinish,
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: const Size(0, 52),
-                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                        backgroundColor: PulseColors.accent,
+                    Flexible(
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _handleFinish,
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size(0, 48),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          backgroundColor: PulseColors.accent,
+                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                              )
+                            : const FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text('GET STARTED'),
+                                    SizedBox(width: 6),
+                                    Icon(Icons.check_circle_outline_rounded, size: 18),
+                                  ],
+                                ),
+                              ),
                       ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                            )
-                          : const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text('GET STARTED'),
-                                SizedBox(width: 6),
-                                Icon(Icons.check_circle_outline_rounded, size: 18),
-                              ],
-                            ),
                     ),
                 ],
               ),
@@ -600,7 +606,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 // Minimalist Competitor Pass Card
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(28),
+                  padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: PulseColors.getSurface(isDark),
                     borderRadius: BorderRadius.circular(24),
@@ -611,27 +617,30 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   child: Column(
                     children: [
                       // Success pill tag
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF4CAF50).withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.check_circle_rounded, color: Color(0xFF4CAF50), size: 14),
-                            SizedBox(width: 6),
-                            Text(
-                              'COMPETITOR PROFILE READY',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                color: Color(0xFF4CAF50),
-                                letterSpacing: 0.8,
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF4CAF50).withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.check_circle_rounded, color: Color(0xFF4CAF50), size: 14),
+                              SizedBox(width: 6),
+                              Text(
+                                'COMPETITOR PROFILE READY',
+                                style: TextStyle(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF4CAF50),
+                                  letterSpacing: 0.5,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -725,7 +734,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     required bool isDark,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E292B) : const Color(0xFFF4F7F8),
         borderRadius: BorderRadius.circular(16),
@@ -736,14 +745,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           Row(
             children: [
               Icon(icon, size: 14, color: PulseColors.accent),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: PulseColors.getTextSecondary(isDark),
-                  letterSpacing: 0.5,
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w700,
+                    color: PulseColors.getTextSecondary(isDark),
+                    letterSpacing: 0.3,
+                  ),
                 ),
               ),
             ],
@@ -751,6 +764,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           const SizedBox(height: 6),
           Text(
             value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w800,
