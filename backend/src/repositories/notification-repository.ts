@@ -26,7 +26,7 @@ class NotificationRepository {
         category: data.category,
         title: data.title,
         subtitle: data.subtitle,
-        payload: data.payload ? JSON.stringify(data.payload) : null,
+        payload: data.payload ? data.payload : null,
       })
       .returning('*');
     return row;

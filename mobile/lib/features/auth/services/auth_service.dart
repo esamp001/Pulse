@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import '../models/user_model.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import '../../../core/services/socket_service.dart';
 
 class AuthService {
   // Static session state cache
@@ -341,6 +342,7 @@ class AuthService {
 
   /// Clear active user session & sign out Google OAuth
   static Future<void> logout() async {
+    SocketService().disconnect();
     _currentToken = null;
     _currentUser = null;
     try {

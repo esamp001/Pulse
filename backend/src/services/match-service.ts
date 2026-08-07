@@ -257,7 +257,9 @@ class MatchService {
           payload: { matchId },
         });
       }
-    } catch (_) {}
+    } catch (err) {
+      console.error('[MatchService AcceptInvitation Error]:', err);
+    }
 
     return updatedWithDetails!;
   }

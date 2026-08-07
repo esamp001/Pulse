@@ -21,5 +21,10 @@
 ## Database & Migration Standards
 - **MANDATORY TABLE INDEXING**: ALWAYS define database indexes (`table.index(...)` or composite raw SQL indexes) on all Knex database table migrations for foreign keys, foreign/primary lookups, status/filter columns, and ranking/leaderboard fields.
 
-
-
+## Error Handling & Logging Standards
+- **EXPLICIT ERROR LOGGING IN CATCH BLOCKS**: Never swallow errors silently with empty `catch (_) {}` or `catch (err) {}` blocks (especially during database transactions, socket emits, or background operations). Always catch errors explicitly and log them with clear contextual naming:
+  ```typescript
+  catch (err) {
+    console.error('[Service/Feature Name Error]:', err);
+  }
+  ```

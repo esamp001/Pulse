@@ -81,8 +81,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final userId = _user?.id ?? AuthService.currentUser?.id;
     if (userId != null) {
       SocketService().joinUserRoom(userId);
-    } else {
-      SocketService().init();
     }
 
     _activeMatchSubscription?.cancel();
