@@ -278,7 +278,7 @@ class MatchController {
       }
 
       const { id } = req.params;
-      const { winner_id, player1_sets_won, player2_sets_won } = req.body;
+      const { winner_id, player1_sets_won, player2_sets_won, set_scores } = req.body;
 
       if (!winner_id) {
         res.status(400).json({ error: 'winner_id is required' });
@@ -290,7 +290,8 @@ class MatchController {
         userId,
         winner_id,
         player1_sets_won ?? 0,
-        player2_sets_won ?? 0
+        player2_sets_won ?? 0,
+        set_scores
       );
 
       notifyUserActiveMatchUpdate([userId, match.creator_id, match.player1_id, match.player2_id, match.scorer_id]);

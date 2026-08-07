@@ -18,6 +18,9 @@ export interface Match {
   points_to_win_set: number;
   win_by_two: boolean;
   winner_id?: string | null;
+  player1_sets_won?: number;
+  player2_sets_won?: number;
+  set_scores?: string | null;
   created_at: Date;
   updated_at: Date;
 }

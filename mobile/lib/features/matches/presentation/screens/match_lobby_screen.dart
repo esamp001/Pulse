@@ -67,6 +67,10 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
           _match = updatedMatch;
           if (!silent) _isLoading = false;
         });
+
+        if (['FINISHED', 'CONFIRMED'].contains(updatedMatch.status)) {
+          _pollingTimer?.cancel();
+        }
       }
     } catch (_) {
       if (mounted && !silent) {

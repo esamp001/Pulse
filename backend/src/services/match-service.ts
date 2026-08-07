@@ -387,7 +387,8 @@ class MatchService {
     requesterId: string,
     winnerId: string,
     player1SetsWon: number,
-    player2SetsWon: number
+    player2SetsWon: number,
+    setScores?: string
   ): Promise<MatchWithDetails & { ratingChange?: number }> {
     const match = await this.matchRepository.findById(matchId);
     if (!match) {
@@ -457,16 +458,16 @@ class MatchService {
           await notificationService.createNotification({
             userId: winner.id,
             category: 'VERIFIED',
-            title: 'Match Result Verified',
-            subtitle: `Match outcome vs ${loser.name} confirmed and published to leaderboards.`,
+            title: 'Match Outcome Finalized',
+            subtitle: `Match outcome vs ${loser.name} confirmed by referee and published to leaderboards.`,
             payload: { matchId },
           });
 
           await notificationService.createNotification({
             userId: loser.id,
             category: 'VERIFIED',
-            title: 'Match Result Verified',
-            subtitle: `Match outcome vs ${winner.name} confirmed and published to leaderboards.`,
+            title: 'Match Outcome Finalized',
+            subtitle: `Match outcome vs ${winner.name} confirmed by referee and published to leaderboards.`,
             payload: { matchId },
           });
         } catch (_) {}
@@ -481,15 +482,112 @@ class MatchService {
     }
 
     await this.matchRepository.updateParticipants(matchId, {
-      status: 'FINISHED',
+      status: 'CONFIRMED',
       winner_id: winnerId,
+      player1_sets_won: player1SetsWon,
+      player2_sets_won: player2SetsWon,
+      set_scores: setScores ?? null,
     });
 
     const updatedWithDetails = await this.matchRepository.findByIdWithDetails(matchId);
+
     return {
       ...updatedWithDetails!,
       ratingChange,
     };
+  }
+
+  async applyEloForConfirmedMatch(matchId: string): Promise<MatchWithDetails> {
+    const match = await this.matchRepository.findById(matchId);
+    if (!match) {
+      throw new Error('Match not found');
+    }
+
+    if (match.status === 'CONFIRMED') {
+      return (await this.matchRepository.findByIdWithDetails(matchId))!;
+    }
+
+    if (!match.winner_id) {
+      throw new Error('Cannot confirm match without a recorded winner');
+    }
+
+    const winnerId = match.winner_id;
+
+    // Calculate & Apply True Elo rating changes if both players exist
+    if (match.player1_id && match.player2_id) {
+      const p1 = await this.userRepository.findById(match.player1_id);
+      const p2 = await this.userRepository.findById(match.player2_id);
+
+      if (p1 && p2) {
+        const isP1Winner = winnerId === p1.id;
+        const winner = isP1Winner ? p1 : p2;
+        const loser = isP1Winner ? p2 : p1;
+
+        const matchSport = (match.sport || 'pickleball').toLowerCase();
+        const winnerSportRating = winner.sport_ratings?.[matchSport] ?? winner.rating ?? 1200;
+        const loserSportRating = loser.sport_ratings?.[matchSport] ?? loser.rating ?? 1200;
+
+        const eloResult = calculateElo(winnerSportRating, loserSportRating, 32);
+
+        // Update database with new ratings and win/loss records for this specific sport in a transaction
+        await db.transaction(async (trx) => {
+          await this.userRepository.updateUserRatingAndStats(winner.id, matchSport, eloResult.winnerNewRating, true, trx);
+          await this.userRepository.updateUserRatingAndStats(loser.id, matchSport, eloResult.loserNewRating, false, trx);
+        });
+
+        // Notification Triggers: Rating & Score Verification
+        try {
+          // Winner Notification
+          await notificationService.createNotification({
+            userId: winner.id,
+            category: 'RATING',
+            title: `${matchSport.toUpperCase()} ELO Increased`,
+            subtitle: `Won match vs ${loser.name} (+${eloResult.ratingChange} ELO). Current Rating: ${eloResult.winnerNewRating} ELO.`,
+            payload: { matchId },
+          });
+
+          // Loser Notification
+          await notificationService.createNotification({
+            userId: loser.id,
+            category: 'RATING',
+            title: `${matchSport.toUpperCase()} ELO Updated`,
+            subtitle: `Match vs ${winner.name} (-${eloResult.ratingChange} ELO). Current Rating: ${eloResult.loserNewRating} ELO.`,
+            payload: { matchId },
+          });
+
+          // Match Verification Notifications
+          await notificationService.createNotification({
+            userId: winner.id,
+            category: 'VERIFIED',
+            title: 'Match Result Confirmed',
+            subtitle: `Match outcome vs ${loser.name} officially confirmed and published to leaderboards.`,
+            payload: { matchId },
+          });
+
+          await notificationService.createNotification({
+            userId: loser.id,
+            category: 'VERIFIED',
+            title: 'Match Result Confirmed',
+            subtitle: `Match outcome vs ${winner.name} officially confirmed and published to leaderboards.`,
+            payload: { matchId },
+          });
+        } catch (_) {}
+      }
+    } else if (winnerId) {
+      const winner = await this.userRepository.findById(winnerId);
+      if (winner) {
+        const matchSport = (match.sport || 'pickleball').toLowerCase();
+        const currentRating = winner.sport_ratings?.[matchSport] ?? winner.rating ?? 1200;
+        await this.userRepository.updateUserRatingAndStats(winner.id, matchSport, currentRating + 25, true);
+      }
+    }
+
+    await this.matchRepository.updateParticipants(matchId, {
+      status: 'CONFIRMED',
+    });
+
+    const updatedWithDetails = await this.matchRepository.findByIdWithDetails(matchId);
+    return updatedWithDetails!;
   }
 }
 

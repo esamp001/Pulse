@@ -84,6 +84,10 @@ class MatchModel {
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
+  final int player1SetsWon;
+  final int player2SetsWon;
+  final String? setScores;
+
   final MatchParticipantModel? player1;
   final MatchParticipantModel? player2;
   final MatchParticipantModel? scorer;
@@ -105,6 +109,9 @@ class MatchModel {
     this.pointsToWinSet = 11,
     this.winByTwo = true,
     this.winnerId,
+    this.player1SetsWon = 0,
+    this.player2SetsWon = 0,
+    this.setScores,
     this.createdAt,
     this.updatedAt,
     this.player1,
@@ -153,6 +160,9 @@ class MatchModel {
       pointsToWinSet: json['points_to_win_set'] is int ? json['points_to_win_set'] as int : int.tryParse('${json['points_to_win_set']}') ?? 11,
       winByTwo: json['win_by_two'] as bool? ?? true,
       winnerId: json['winner_id'] as String?,
+      player1SetsWon: json['player1_sets_won'] is int ? json['player1_sets_won'] as int : int.tryParse('${json['player1_sets_won']}') ?? 0,
+      player2SetsWon: json['player2_sets_won'] is int ? json['player2_sets_won'] as int : int.tryParse('${json['player2_sets_won']}') ?? 0,
+      setScores: json['set_scores'] as String?,
       createdAt: json['created_at'] != null ? DateTime.tryParse('${json['created_at']}') : null,
       updatedAt: json['updated_at'] != null ? DateTime.tryParse('${json['updated_at']}') : null,
       player1: json['player1'] != null && json['player1'] is Map<String, dynamic>

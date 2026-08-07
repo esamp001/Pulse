@@ -16,6 +16,7 @@ import '../../../matches/models/match_model.dart';
 import '../../../matches/presentation/screens/create_match_screen.dart';
 import '../../../matches/presentation/screens/match_lobby_screen.dart';
 import '../../../matches/presentation/widgets/match_invitation_snackbar.dart';
+import '../../../matches/presentation/screens/match_confirmation_screen.dart';
 import '../../../notifications/presentation/widgets/notification_side_drawer.dart';
 import '../../../notifications/services/notification_service.dart';
 import '../../../matches/services/match_service.dart';
@@ -229,6 +230,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     if (_activeMatch != null) {
       final activeMatch = _activeMatch!;
+
+      if (['FINISHED', 'CONFIRMED'].contains(activeMatch.status)) {
+        final userId = _user?.id ?? widget.user?.id ?? AuthService.currentToken ?? '';
+        await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => MatchConfirmationScreen(
+              match: activeMatch,
+              currentUserId: userId,
+            ),
+          ),
+        );
+        _fetchActiveMatch();
+        return;
+      }
+
       showDialog(
         context: context,
         builder: (dialogContext) {
@@ -571,11 +587,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
           // 3. Dynamic Featured Hero Action Card ("COMPETE NOW" vs "RETURN TO ROOM")
           PulseWidgetCard(
-            title: _activeMatch == null ? 'Compete Now' : 'Active Match Lobby',
+            title: _activeMatch == null
+                ? 'Compete Now'
+                : (_activeMatch!.status == 'FINISHED' ? 'Verify Match Result' : 'Active Match Lobby'),
             subtitle: _activeMatch == null
                 ? 'Create or join a rated match'
-                : '${_activeMatch!.sportDisplayName} • ${_activeMatch!.status == 'READY' ? 'Ready to play' : 'Waiting for participants'}',
-            pillText: _activeMatch == null ? 'RATED' : 'LIVE ROOM',
+                : (_activeMatch!.status == 'FINISHED'
+                    ? 'Scorer submitted outcome • Tap to confirm or dispute'
+                    : '${_activeMatch!.sportDisplayName} • ${_activeMatch!.status == 'READY' ? 'Ready to play' : 'Waiting for participants'}'),
+            pillText: _activeMatch == null
+                ? 'RATED'
+                : (_activeMatch!.status == 'FINISHED' ? 'VERIFY' : 'LIVE ROOM'),
             onTap: _onCompeteNowPressed,
             isDarkMode: _isDarkMode,
             customContent: Padding(
@@ -598,7 +620,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              _activeMatch == null ? 'START A MATCH' : 'RETURN TO ROOM',
+                              _activeMatch == null
+                                  ? 'START A MATCH'
+                                  : (_activeMatch!.status == 'FINISHED' ? 'VERIFY RESULT' : 'RETURN TO ROOM'),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 12,

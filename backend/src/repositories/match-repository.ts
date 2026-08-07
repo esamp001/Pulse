@@ -20,6 +20,9 @@ export interface UpdateMatchParticipantsParams {
   scorer_accepted?: boolean;
   status?: MatchStatus;
   winner_id?: string | null;
+  player1_sets_won?: number;
+  player2_sets_won?: number;
+  set_scores?: string | null;
 }
 
 class MatchRepository {
@@ -106,6 +109,9 @@ class MatchRepository {
     if (params.scorer_accepted !== undefined) updatePayload.scorer_accepted = params.scorer_accepted;
     if (params.status !== undefined) updatePayload.status = params.status;
     if (params.winner_id !== undefined) updatePayload.winner_id = params.winner_id;
+    if (params.player1_sets_won !== undefined) updatePayload.player1_sets_won = params.player1_sets_won;
+    if (params.player2_sets_won !== undefined) updatePayload.player2_sets_won = params.player2_sets_won;
+    if (params.set_scores !== undefined) updatePayload.set_scores = params.set_scores;
 
     const [updatedMatch] = (await db<Match>('matches')
       .where({ id })
@@ -153,7 +159,7 @@ class MatchRepository {
           .orWhere({ player2_id: userId })
           .orWhere({ scorer_id: userId });
       })
-      .whereIn('status', ['WAITING', 'READY', 'LIVE'])
+      .whereIn('status', ['WAITING', 'READY', 'LIVE', 'FINISHED'])
       .orderBy('created_at', 'desc')
       .first();
   }

@@ -11,6 +11,7 @@ import '../../../../main.dart';
 import '../../../auth/services/auth_service.dart';
 import '../../models/match_model.dart';
 import '../../services/match_service.dart';
+import 'match_confirmation_screen.dart';
 
 class ScoreStateHistory {
   final int p1Score;
@@ -211,6 +212,29 @@ class _ScorerScreenState extends State<ScorerScreen> {
     }
   }
 
+  String? get _matchPointState {
+    if (_matchStatus != 'LIVE') return null;
+    final targetPts = _match.pointsToWinSet;
+    final winByTwo = _match.winByTwo;
+    final setsToWin = (_match.totalSets / 2).ceil();
+
+    final scoreDiffP1 = _p1Score - _p2Score;
+    final scoreDiffP2 = _p2Score - _p1Score;
+
+    final p1AtSetPoint = (_p1Score >= targetPts - 1) && (!winByTwo || scoreDiffP1 >= 1);
+    final p2AtSetPoint = (_p2Score >= targetPts - 1) && (!winByTwo || scoreDiffP2 >= 1);
+
+    if (p1AtSetPoint) {
+      if (_p1SetsWon == setsToWin - 1) return 'P1_MATCH';
+      return 'P1_SET';
+    }
+    if (p2AtSetPoint) {
+      if (_p2SetsWon == setsToWin - 1) return 'P2_MATCH';
+      return 'P2_SET';
+    }
+    return null;
+  }
+
   void _recordPoint(String targetPlayer) {
     if (!_isScorer || _matchStatus != 'LIVE') return;
     HapticFeedback.lightImpact();
@@ -224,6 +248,11 @@ class _ScorerScreenState extends State<ScorerScreen> {
       } else {
         _p2Score++;
         _serverPlayer = 'P2';
+      }
+
+      // Trigger haptic feedback if match point or set point reached
+      if (_matchPointState != null) {
+        HapticFeedback.mediumImpact();
       }
 
       // Check set completion rule (Dynamic target points and win by two)
@@ -249,7 +278,7 @@ class _ScorerScreenState extends State<ScorerScreen> {
           final winnerId = _p1SetsWon >= setsToWin
               ? (_match.player1Id.isNotEmpty ? _match.player1Id : _match.creatorId)
               : (_match.player2Id ?? '');
-          _finalizeMatch(winnerId);
+          _showCrossCheckModal(winnerId);
         } else {
           _p1Score = 0;
           _p2Score = 0;
@@ -269,6 +298,177 @@ class _ScorerScreenState extends State<ScorerScreen> {
     });
   }
 
+  void _showCrossCheckModal(String winnerId) {
+    final isP1Winner = winnerId == _match.player1Id || winnerId == _match.creatorId;
+    final winnerName = isP1Winner
+        ? (_match.player1?.name ?? 'Player 1')
+        : (_match.player2?.name ?? 'Player 2');
+
+    final setBreakdown = _completedSets.join('  •  ');
+
+    showModalBottomSheet(
+      context: context,
+      isDismissible: false,
+      enableDrag: false,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (modalCtx) {
+        final isDark = _isDarkMode;
+        return Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: PulseColors.getCard(isDark),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: SafeArea(
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.withValues(alpha: 0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.verified_rounded, color: Colors.amber, size: 30),
+                  ),
+                  const SizedBox(height: 10),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      'Cross-Check & Verify Winner',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: PulseColors.getTextPrimary(isDark),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Please double-check set scores before official submission.',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: PulseColors.getTextSecondary(isDark),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Winner & Score Card
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: PulseColors.getBackground(isDark),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          '$winnerName Wins!',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: PulseColors.getTextPrimary(isDark),
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          setBreakdown.isNotEmpty ? setBreakdown : 'Final Set Won',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: PulseColors.getTextSecondary(isDark),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 18),
+
+                  Row(
+                    children: [
+                      // Button 1: Get back to the match
+                      Expanded(
+                        child: SizedBox(
+                          height: 48,
+                          child: OutlinedButton(
+                            onPressed: () {
+                              Navigator.pop(modalCtx);
+                              _undoPoint();
+                            },
+                            style: OutlinedButton.styleFrom(
+                              backgroundColor: PulseColors.getBackground(isDark),
+                              foregroundColor: PulseColors.accent,
+                              side: const BorderSide(color: PulseColors.accent, width: 1.5),
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                            child: const FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                'Get back to the match',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w800,
+                                  color: PulseColors.accent,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      // Button 2: Confirm & Declare Winner
+                      Expanded(
+                        child: SizedBox(
+                          height: 48,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              Navigator.pop(modalCtx);
+                              _finalizeMatch(winnerId);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: PulseColors.primary,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                            child: const FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                'Confirm & Declare Winner',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _finalizeMatch(String winnerId) async {
     if (_matchStatus == 'FINISHED') return;
     setState(() {
@@ -283,6 +483,7 @@ class _ScorerScreenState extends State<ScorerScreen> {
         winnerId: winnerId,
         player1SetsWon: _p1SetsWon,
         player2SetsWon: _p2SetsWon,
+        setScores: _completedSets.join('  •  '),
       );
       if (mounted) {
         setState(() {
@@ -481,12 +682,23 @@ class _ScorerScreenState extends State<ScorerScreen> {
 
                   const SizedBox(height: 20),
 
-                  // Return Button
+                  // Confirm Match Button -> Navigates to Post Match Screen
                   SizedBox(
                     width: double.infinity,
-                    height: 48,
+                    height: 52,
                     child: ElevatedButton(
-                      onPressed: () => Navigator.of(ctx).popUntil((route) => route.isFirst),
+                      onPressed: () {
+                        Navigator.of(ctx).pop();
+                        final userId = AuthService.currentUser?.id ?? '';
+                        Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(
+                            builder: (context) => MatchConfirmationScreen(
+                              match: _match,
+                              currentUserId: userId,
+                            ),
+                          ),
+                        );
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: PulseColors.primary,
                         foregroundColor: Colors.white,
@@ -497,10 +709,10 @@ class _ScorerScreenState extends State<ScorerScreen> {
                         ),
                       ),
                       child: const Text(
-                        'RETURN TO HOME',
+                        'CONFIRM MATCH',
                         style: TextStyle(
                           fontSize: 14,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w800,
                           letterSpacing: 0.8,
                         ),
                       ),
@@ -939,6 +1151,49 @@ class _ScorerScreenState extends State<ScorerScreen> {
                 ),
                 child: Column(
                   children: [
+                    // Idea B: Top Banner Indicator
+                    if (_matchPointState != null) ...[
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFF59E0B), width: 1.5),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              _matchPointState!.endsWith('_MATCH')
+                                  ? Icons.emoji_events_rounded
+                                  : Icons.local_fire_department_rounded,
+                              color: const Color(0xFFF59E0B),
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                _matchPointState == 'P1_MATCH'
+                                    ? 'MATCH POINT: $player1Name needs 1 point to win!'
+                                    : (_matchPointState == 'P2_MATCH'
+                                        ? 'MATCH POINT: $player2Name needs 1 point to win!'
+                                        : (_matchPointState == 'P1_SET'
+                                            ? 'SET POINT: $player1Name needs 1 point to win Set $_currentSet'
+                                            : 'SET POINT: $player2Name needs 1 point to win Set $_currentSet')),
+                                style: const TextStyle(
+                                  color: Color(0xFFF59E0B),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+
                     if (_completedSets.isNotEmpty) ...[
                       Text(
                         _completedSets.join('  •  '),
@@ -1043,14 +1298,18 @@ class _ScorerScreenState extends State<ScorerScreen> {
                                   color: card,
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
-                                    color: _serverPlayer == 'P1' ? PulseColors.accent : border,
-                                    width: 1.5,
+                                    color: (_matchPointState == 'P1_SET' || _matchPointState == 'P1_MATCH')
+                                        ? const Color(0xFFF59E0B)
+                                        : (_serverPlayer == 'P1' ? PulseColors.accent : border),
+                                    width: (_matchPointState == 'P1_SET' || _matchPointState == 'P1_MATCH') ? 2.5 : 1.5,
                                   ),
                                 ),
                                 child: Text(
                                   '$_p1Score',
                                   style: TextStyle(
-                                    color: textPrimary,
+                                    color: (_matchPointState == 'P1_SET' || _matchPointState == 'P1_MATCH')
+                                        ? const Color(0xFFF59E0B)
+                                        : textPrimary,
                                     fontSize: 54,
                                     fontWeight: FontWeight.w900,
                                     height: 1.0,
@@ -1161,14 +1420,18 @@ class _ScorerScreenState extends State<ScorerScreen> {
                                   color: card,
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
-                                    color: _serverPlayer == 'P2' ? PulseColors.accent : border,
-                                    width: 1.5,
+                                    color: (_matchPointState == 'P2_SET' || _matchPointState == 'P2_MATCH')
+                                        ? const Color(0xFFF59E0B)
+                                        : (_serverPlayer == 'P2' ? PulseColors.accent : border),
+                                    width: (_matchPointState == 'P2_SET' || _matchPointState == 'P2_MATCH') ? 2.5 : 1.5,
                                   ),
                                 ),
                                 child: Text(
                                   '$_p2Score',
                                   style: TextStyle(
-                                    color: textPrimary,
+                                    color: (_matchPointState == 'P2_SET' || _matchPointState == 'P2_MATCH')
+                                        ? const Color(0xFFF59E0B)
+                                        : textPrimary,
                                     fontSize: 54,
                                     fontWeight: FontWeight.w900,
                                     height: 1.0,
@@ -1181,7 +1444,6 @@ class _ScorerScreenState extends State<ScorerScreen> {
                         ),
                       ],
                     ),
-
                   ],
                 ),
               ),

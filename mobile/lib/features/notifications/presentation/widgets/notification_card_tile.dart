@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/pulse_colors.dart';
 import '../../../../core/widgets/pulse_toast.dart';
+import '../../../auth/services/auth_service.dart';
+import '../../../matches/presentation/screens/match_confirmation_screen.dart';
+import '../../../matches/services/match_service.dart';
 import '../../domain/models/notification_item_model.dart';
 
 /// Reusable Notification Card Tile Widget
@@ -22,13 +25,34 @@ class NotificationCardTile extends StatelessWidget {
     final textPrimary = PulseColors.getTextPrimary(isDarkMode);
     final textSecondary = PulseColors.getTextSecondary(isDarkMode);
 
-    return Container(
-      padding: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        color: surfaceColor,
-        borderRadius: BorderRadius.circular(16),
-        border: null,
-      ),
+    return GestureDetector(
+      onTap: () async {
+        if (item.isUnread) onMarkAsRead();
+        final matchId = item.payload?['matchId'] ?? item.payload?['match_id'];
+        if (matchId != null) {
+          try {
+            final match = await MatchService().getMatchById(matchId.toString());
+            if (context.mounted) {
+              final userId = AuthService.currentUser?.id ?? '';
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (ctx) => MatchConfirmationScreen(
+                    match: match,
+                    currentUserId: userId,
+                  ),
+                ),
+              );
+            }
+          } catch (_) {}
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16.0),
+        decoration: BoxDecoration(
+          color: surfaceColor,
+          borderRadius: BorderRadius.circular(16),
+          border: null,
+        ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -128,6 +152,7 @@ class NotificationCardTile extends StatelessWidget {
           ),
         ],
       ),
+    ),
     );
   }
 }

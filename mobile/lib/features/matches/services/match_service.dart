@@ -66,6 +66,7 @@ class MatchService {
     required String winnerId,
     int player1SetsWon = 0,
     int player2SetsWon = 0,
+    String? setScores,
   }) async {
     final token = AuthService.currentToken;
     if (token == null) {
@@ -82,6 +83,7 @@ class MatchService {
         'winner_id': winnerId,
         'player1_sets_won': player1SetsWon,
         'player2_sets_won': player2SetsWon,
+        'set_scores': setScores,
       }),
     );
 
