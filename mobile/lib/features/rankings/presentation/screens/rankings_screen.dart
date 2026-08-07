@@ -171,66 +171,72 @@ class _RankingsScreenState extends State<RankingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: PulseColors.getBackground(_isDarkMode),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(),
-            _buildSportFilterBar(),
-            const SizedBox(height: 10),
-            _buildCategoryTabBar(),
-            const SizedBox(height: 12),
-            Expanded(
-              child: _isLoading
-                  ? _buildLoadingState()
-                  : _errorMessage != null
-                      ? _buildErrorState()
-                      : _entries.isEmpty
-                          ? _buildEmptyState()
-                          : RefreshIndicator(
-                              onRefresh: _loadLeaderboard,
-                              color: PulseColors.accent,
-                              backgroundColor: PulseColors.getSurface(_isDarkMode),
-                              child: SingleChildScrollView(
-                                controller: _scrollController,
-                                physics: const AlwaysScrollableScrollPhysics(
-                                  parent: BouncingScrollPhysics(),
-                                ),
-                                padding: const EdgeInsets.only(bottom: 120),
-                                child: Column(
-                                  children: [
-                                    if (_entries.isNotEmpty) ...[
-                                      const SizedBox(height: 8),
-                                      _buildPodiumSection(),
-                                      const SizedBox(height: 16),
-                                    ],
-                                    if (_entries.length > 3) ...[
-                                      _buildListHeader(),
-                                      _buildRankingsList(),
-                                    ],
-                                    if (_isLoadingMore) ...[
-                                      const SizedBox(height: 16),
-                                      const Center(
-                                        child: SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: PulseColors.accent,
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: themeModeNotifier,
+      builder: (context, themeMode, child) {
+        final isDark = themeMode == ThemeMode.dark;
+        return Scaffold(
+          backgroundColor: PulseColors.getBackground(isDark),
+          body: SafeArea(
+            child: Column(
+              children: [
+                _buildHeader(),
+                _buildSportFilterBar(),
+                const SizedBox(height: 10),
+                _buildCategoryTabBar(),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: _isLoading
+                      ? _buildLoadingState()
+                      : _errorMessage != null
+                          ? _buildErrorState()
+                          : _entries.isEmpty
+                              ? _buildEmptyState()
+                              : RefreshIndicator(
+                                  onRefresh: _loadLeaderboard,
+                                  color: PulseColors.accent,
+                                  backgroundColor: PulseColors.getSurface(isDark),
+                                  child: SingleChildScrollView(
+                                    controller: _scrollController,
+                                    physics: const AlwaysScrollableScrollPhysics(
+                                      parent: BouncingScrollPhysics(),
+                                    ),
+                                    padding: const EdgeInsets.only(bottom: 120),
+                                    child: Column(
+                                      children: [
+                                        if (_entries.isNotEmpty) ...[
+                                          const SizedBox(height: 8),
+                                          _buildPodiumSection(),
+                                          const SizedBox(height: 16),
+                                        ],
+                                        if (_entries.length > 3) ...[
+                                          _buildListHeader(),
+                                          _buildRankingsList(),
+                                        ],
+                                        if (_isLoadingMore) ...[
+                                          const SizedBox(height: 16),
+                                          const Center(
+                                            child: SizedBox(
+                                              width: 20,
+                                              height: 20,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: PulseColors.accent,
+                                              ),
+                                            ),
                                           ),
-                                        ),
-                                      ),
-                                    ],
-                                  ],
+                                        ],
+                                      ],
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ),
+                ),
+                if (_currentUserEntry != null && !_isLoading) _buildPinnedCurrentUserBar(),
+              ],
             ),
-            if (_currentUserEntry != null && !_isLoading) _buildPinnedCurrentUserBar(),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 

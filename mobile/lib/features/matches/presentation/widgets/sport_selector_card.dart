@@ -6,12 +6,14 @@ class SportOption {
   final String title;
   final String subtitle;
   final IconData icon;
+  final String? imageAsset;
 
   const SportOption({
     required this.key,
     required this.title,
     required this.subtitle,
     required this.icon,
+    this.imageAsset,
   });
 }
 
@@ -31,50 +33,73 @@ class SportSelectorCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final borderColor = isSelected
-        ? PulseColors.accent
-        : (isDarkMode ? PulseColors.darkBorder : PulseColors.border);
-
     final backgroundColor = isSelected
         ? (isDarkMode
-            ? PulseColors.primary.withValues(alpha: 0.25)
-            : PulseColors.secondary.withValues(alpha: 0.2))
+            ? PulseColors.primary.withValues(alpha: 0.3)
+            : PulseColors.secondary.withValues(alpha: 0.25))
         : PulseColors.getCard(isDarkMode);
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           color: backgroundColor,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: borderColor,
-            width: isSelected ? 2.0 : 1.0,
-          ),
-          // STRICT NO DROP SHADOW RULE
+          borderRadius: BorderRadius.circular(16),
+          // STRICT NO FORCED BORDER RULE & BORDERLESS DESIGN
         ),
         child: Row(
           children: [
+            // Modern Larger Borderless Gradient Icon Container
             Container(
-              padding: const EdgeInsets.all(10),
+              width: 64,
+              height: 64,
+              padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: isSelected
-                    ? PulseColors.accent
-                    : (isDarkMode ? PulseColors.darkSurface : PulseColors.background),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: isSelected ? PulseColors.accent : PulseColors.getBorder(isDarkMode),
-                  width: 1,
-                ),
+                borderRadius: BorderRadius.circular(16),
+                gradient: isSelected
+                    ? const LinearGradient(
+                        colors: [PulseColors.accent, PulseColors.primary],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      )
+                    : LinearGradient(
+                        colors: isDarkMode
+                            ? [
+                                PulseColors.accent.withValues(alpha: 0.2),
+                                PulseColors.primary.withValues(alpha: 0.15),
+                              ]
+                            : [
+                                PulseColors.secondary.withValues(alpha: 0.35),
+                                PulseColors.background,
+                              ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
               ),
-              child: Icon(
-                option.icon,
-                size: 24,
-                color: isSelected
-                    ? Colors.white
-                    : PulseColors.getTextPrimary(isDarkMode),
+              child: Center(
+                child: option.imageAsset != null
+                    ? Image.asset(
+                        option.imageAsset!,
+                        width: 52,
+                        height: 52,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) => Icon(
+                          option.icon,
+                          size: 40,
+                          color: isSelected
+                              ? Colors.white
+                              : PulseColors.getTextPrimary(isDarkMode),
+                        ),
+                      )
+                    : Icon(
+                        option.icon,
+                        size: 40,
+                        color: isSelected
+                            ? Colors.white
+                            : PulseColors.getTextPrimary(isDarkMode),
+                      ),
               ),
             ),
             const SizedBox(width: 14),
@@ -103,7 +128,7 @@ class SportSelectorCard extends StatelessWidget {
             ),
             if (isSelected)
               Container(
-                padding: const EdgeInsets.all(4),
+                padding: const EdgeInsets.all(5),
                 decoration: const BoxDecoration(
                   color: PulseColors.accent,
                   shape: BoxShape.circle,

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../../../../core/theme/pulse_colors.dart';
-import '../../../../core/widgets/rally_text_logo.dart';
+import '../../../../core/widgets/pulse_logo.dart';
 import '../../../../core/widgets/google_logo_widget.dart';
 import '../../../../core/widgets/pulse_toast.dart';
 import '../../../home/presentation/screens/home_screen.dart';
@@ -222,10 +222,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            // Brand Logo
-                            const RallyTextLogo(
-                              fontSize: 28,
-                              showSubtitle: false,
+                            // Official Brand Mascot Logo
+                            const Center(
+                              child: PulseLogo(size: 90),
                             ),
                             const SizedBox(height: 16),
 
@@ -268,6 +267,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                   keyboardType: TextInputType.emailAddress,
                                   style: TextStyle(color: textPrimaryColor, fontSize: 14),
                                   decoration: InputDecoration(
+                                    prefixIcon: Icon(
+                                      Icons.alternate_email_rounded,
+                                      color: textSecondaryColor.withValues(alpha: 0.7),
+                                      size: 20,
+                                    ),
                                     hintText: 'playersname@gmail.com',
                                     hintStyle: TextStyle(
                                       color: textSecondaryColor.withValues(alpha: 0.6),
@@ -279,21 +283,18 @@ class _LoginScreenState extends State<LoginScreen> {
                                       horizontal: 16,
                                       vertical: 14,
                                     ),
-                                    // 1. Default fallback state: No border
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(16),
                                       borderSide: BorderSide.none,
                                     ),
-                                    // 2. Unfocused state (not clicked): No border
                                     enabledBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(16),
                                       borderSide: BorderSide.none,
                                     ),
-                                    // 3. Focused state (clicked): Colored border appears
                                     focusedBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(16),
                                       borderSide: const BorderSide(
-                                        color: PulseColors.accent, // Your accent color
+                                        color: PulseColors.accent,
                                         width: 1.8,
                                       ),
                                     ),
@@ -321,8 +322,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                 controller: _passwordController,
                                 obscureText: !_isPasswordVisible,
                                 style: TextStyle(color: textPrimaryColor, fontSize: 14),
-                                decoration: InputDecoration(
-                                  hintText: '••••••••••••••••',
+                                  decoration: InputDecoration(
+                                    prefixIcon: Icon(
+                                      Icons.lock_outline_rounded,
+                                      color: textSecondaryColor.withValues(alpha: 0.7),
+                                      size: 20,
+                                    ),
+                                    hintText: '••••••••••••••••',
                                   hintStyle: TextStyle(
                                     color: textSecondaryColor.withValues(alpha: 0.6),
                                     fontSize: 14,

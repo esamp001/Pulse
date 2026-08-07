@@ -2,7 +2,8 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/theme/pulse_colors.dart';
-import '../../../../core/widgets/rally_text_logo.dart';
+import '../../../../core/theme/pulse_sport_icons.dart';
+import '../../../../core/widgets/pulse_logo.dart';
 import '../../../home/presentation/screens/home_screen.dart';
 import '../../models/user_model.dart';
 import '../../services/auth_service.dart';
@@ -35,10 +36,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   int _selectedRating = 1200; // Default Intermediate
 
   final List<Map<String, dynamic>> _sports = [
-    {'name': 'Pickleball', 'icon': Icons.sports_tennis_rounded},
-    {'name': 'Tennis', 'icon': Icons.sports_tennis_outlined},
-    {'name': 'Table Tennis', 'icon': Icons.sports_score_rounded},
-    {'name': 'Badminton', 'icon': Icons.sports_handball_rounded},
+    {'name': 'Pickleball', 'icon': PulseSportIcons.pickleball},
+    {'name': 'Tennis', 'icon': PulseSportIcons.tennis},
+    {'name': 'Table Tennis', 'icon': PulseSportIcons.tableTennis},
+    {'name': 'Badminton', 'icon': PulseSportIcons.badminton},
   ];
 
   final List<Map<String, dynamic>> _ratings = [
@@ -222,7 +223,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           children: [
             const SizedBox(height: 16),
             const Center(
-              child: RallyTextLogo(fontSize: 28, showSubtitle: false),
+              child: PulseLogo(size: 48),
             ),
             const SizedBox(height: 16),
 
@@ -487,9 +488,29 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                   child: Row(
                     children: [
-                      Icon(
-                        sport['icon'] as IconData,
-                        color: isSelected ? PulseColors.accent : textSecondary,
+                      Container(
+                        width: 36,
+                        height: 36,
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          gradient: LinearGradient(
+                            colors: isSelected
+                                ? [PulseColors.accent, PulseColors.primary]
+                                : [
+                                    PulseColors.secondary.withValues(alpha: 0.3),
+                                    PulseColors.background,
+                                  ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                        ),
+                        child: Center(
+                          child: PulseSportIcons.buildWidget(
+                            sport['name'] as String,
+                            size: 26,
+                          ),
+                        ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
@@ -691,7 +712,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             child: _buildMinimalBadge(
                               label: 'PRIMARY SPORT',
                               value: _selectedSport,
-                              icon: Icons.sports_tennis_rounded,
+                              customIcon: PulseSportIcons.buildWidget(_selectedSport, size: 16),
                               isDark: isDark,
                             ),
                           ),
@@ -730,7 +751,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget _buildMinimalBadge({
     required String label,
     required String value,
-    required IconData icon,
+    Widget? customIcon,
+    IconData? icon,
     required bool isDark,
   }) {
     return Container(
@@ -744,7 +766,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         children: [
           Row(
             children: [
-              Icon(icon, size: 14, color: PulseColors.accent),
+              customIcon ?? Icon(icon, size: 14, color: PulseColors.accent),
               const SizedBox(width: 4),
               Expanded(
                 child: Text(

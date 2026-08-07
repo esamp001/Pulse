@@ -37,6 +37,14 @@ mobile/lib/
 - **NO DROP SHADOWS (`boxShadow` / `elevation`)**: Do NOT use `boxShadow`, `BoxShadow(...)`, `elevation`, or drop shadows on cards, buttons, dialogs, top app bars, or navigation bars across the mobile app.
 - **NO FORCED STYLING BORDERS**: Do NOT automatically add explicit outline borders (`Border.all(...)`, `borderSide`) purely for visual decoration. Cards, input fields, containers, and modals should rely on clean, borderless surface fills (reference: username/email input fields using `BorderSide.none`) rather than forced outline strokes. Use borders only when structurally required for visual separation.
 - **Notification Center Design**: Must use Bell Icon `🔔`, `All` / `Unread` filter tabs, plain text category labels (no colored background pills), and inline `Mark as read` action buttons. Only active, existing event triggers (`ACCOUNT`, `INVITE`, `RATING`, `VERIFIED`) are populated.
+- **Official Brand Mascot Logo**: `assets/images/official_logo_rally.png` (Rally Dog + Ball Mascot) is the official mascot logo asset used across authentication screens (`LoginScreen`, `RegisterScreen`) and global logo components (`PulseLogo`).
+
+### 5. Standardized Sport Icons
+All screens displaying sport choices or filters (e.g. `CreateMatchScreen`, `HomeScreen` sport preferences, `OnboardingScreen`, `RankingsScreen`) MUST consume sport icons from `PulseSportIcons` (`mobile/lib/core/theme/pulse_sport_icons.dart`):
+- **Pickleball**: `PulseSportIcons.pickleball` (`FontAwesomeSolid 0xf45d` - `fa-table-tennis-paddle-ball`)
+- **Tennis**: `PulseSportIcons.tennis` (`FontAwesomeSolid 0xf45e` - `fa-tennis-ball`)
+- **Table Tennis**: `PulseSportIcons.tableTennis` (`FontAwesomeSolid 0xf45d` - `fa-table-tennis-paddle-ball`)
+- **Badminton**: `PulseSportIcons.badminton` (`FontAwesomeSolid 0xf45b` - `fa-shuttlecock`)
 
 ---
 

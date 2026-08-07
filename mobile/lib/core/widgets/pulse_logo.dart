@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Reusable Pulse Logo Component
+/// Reusable Rally Official Logo Component (Dog + Ball Mascot Logo)
 class PulseLogo extends StatelessWidget {
   final double size;
 
@@ -12,7 +12,7 @@ class PulseLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Image.asset(
-      'assets/images/pulse_logo.png',
+      'assets/images/official_logo_rally.png',
       width: size,
       height: size,
       fit: BoxFit.contain,

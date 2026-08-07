@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/pulse_colors.dart';
+import '../../../../core/theme/pulse_sport_icons.dart';
 import '../../../../core/widgets/pulse_back_button.dart';
 import '../../../../core/widgets/pulse_toast.dart';
 import '../../../../main.dart';
@@ -34,30 +35,34 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
 
   bool get _isDarkMode => themeModeNotifier.value == ThemeMode.dark;
 
-  static const List<SportOption> _sports = [
+  static final List<SportOption> _sports = [
     SportOption(
       key: 'pickleball',
       title: 'Pickleball',
       subtitle: 'Fast-paced paddle sport on a court',
-      icon: Icons.sports_tennis,
+      icon: PulseSportIcons.pickleball,
+      imageAsset: PulseSportIcons.pickleballAsset,
     ),
     SportOption(
       key: 'tennis',
       title: 'Tennis',
       subtitle: 'Classic racket sport, sets & games',
-      icon: Icons.sports_tennis_outlined,
+      icon: PulseSportIcons.tennis,
+      imageAsset: PulseSportIcons.tennisAsset,
     ),
     SportOption(
       key: 'table_tennis',
       title: 'Table Tennis',
       subtitle: 'Ping pong indoor table competition',
-      icon: Icons.sports_score_rounded,
+      icon: PulseSportIcons.tableTennis,
+      imageAsset: PulseSportIcons.tableTennisAsset,
     ),
     SportOption(
       key: 'badminton',
       title: 'Badminton',
       subtitle: 'High-speed shuttlecock racket game',
-      icon: Icons.sports_handball,
+      icon: PulseSportIcons.badminton,
+      imageAsset: PulseSportIcons.badmintonAsset,
     ),
   ];
 
@@ -483,11 +488,11 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
                   filled: true,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: PulseColors.getBorder(_isDarkMode)),
+                    borderSide: BorderSide.none,
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: PulseColors.getBorder(_isDarkMode)),
+                    borderSide: BorderSide.none,
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -516,11 +521,11 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
                   filled: true,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: PulseColors.getBorder(_isDarkMode)),
+                    borderSide: BorderSide.none,
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: PulseColors.getBorder(_isDarkMode)),
+                    borderSide: BorderSide.none,
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),

@@ -39,7 +39,11 @@ dependencies:
   image_picker: ^1.1.2
   socket_io_client: ^3.1.6
   confetti: ^0.8.0
-
+  solar_icons: ^0.1.0
+  font_awesome_flutter: ^11.0.0
+  remixicon: ^4.9.3
+  hugeicons: ^1.1.7
+  google_fonts: ^6.2.1
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -64,6 +68,7 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/images/official_logo_rally.png
     - assets/images/find_court.png
     - assets/images/all_balls.png
     - assets/images/officiate.png

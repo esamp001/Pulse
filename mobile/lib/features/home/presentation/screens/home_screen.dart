@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/pulse_colors.dart';
+import '../../../../core/theme/pulse_sport_icons.dart';
 
 
 import '../../../../core/widgets/pulse_bottom_nav_bar.dart';
@@ -34,10 +35,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int _currentBottomNavIndex = 0;
-  double _bottomNavHiddenOffset = 0.0;
-  double _lastScrollOffset = 0.0;
-  bool _isSnapping = false;
-  static const double _maxNavOffset = 120.0;
 
   bool get _isDarkMode => themeModeNotifier.value == ThemeMode.dark;
 
@@ -215,53 +212,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void _onBottomNavTapped(int index) {
     setState(() {
       _currentBottomNavIndex = index;
-      _isSnapping = true;
-      _bottomNavHiddenOffset = 0.0;
     });
 
     if (index == 2) {
       _onCompeteNowPressed();
     }
-  }
-
-  bool _handleScrollNotification(ScrollNotification notification) {
-    if (notification.depth != 0) {
-      return false;
-    }
-
-    if (notification is ScrollUpdateNotification) {
-      final currentOffset = notification.metrics.pixels;
-      final scrollDelta = notification.scrollDelta ?? (currentOffset - _lastScrollOffset);
-
-      if (currentOffset <= 15 || notification.metrics.extentAfter <= 15) {
-        if (_bottomNavHiddenOffset != 0.0) {
-          setState(() {
-            _isSnapping = true;
-            _bottomNavHiddenOffset = 0.0;
-          });
-        }
-      } else if (scrollDelta != 0.0) {
-        final newOffset = (_bottomNavHiddenOffset + scrollDelta).clamp(0.0, _maxNavOffset);
-        if (newOffset != _bottomNavHiddenOffset) {
-          setState(() {
-            _isSnapping = false;
-            _bottomNavHiddenOffset = newOffset;
-          });
-        }
-      }
-      _lastScrollOffset = currentOffset;
-    } else if (notification is ScrollEndNotification) {
-      if (_bottomNavHiddenOffset > 0.0 && _bottomNavHiddenOffset < _maxNavOffset) {
-        final targetOffset = _bottomNavHiddenOffset > (_maxNavOffset / 2) ? _maxNavOffset : 0.0;
-        if (targetOffset != _bottomNavHiddenOffset) {
-          setState(() {
-            _isSnapping = true;
-            _bottomNavHiddenOffset = targetOffset;
-          });
-        }
-      }
-    }
-    return false;
   }
 
 
@@ -383,70 +338,58 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     final displayName = _user?.firstName ?? 'Elle';
 
-    return Scaffold(
-      key: _scaffoldKey,
-      extendBody: true,
-      backgroundColor: PulseColors.getBackground(_isDarkMode),
-      onEndDrawerChanged: (isOpened) {
-        if (!isOpened && mounted) {
-          setState(() {});
-        }
-      },
-      drawer: _buildAvatarSideModal(context),
-      endDrawer: NotificationSideDrawer(
-        isDarkMode: _isDarkMode,
-        user: _user,
-        activeMatch: _activeMatch,
-        isInvitationPending: _isInvitationPending,
-        historyMatches: _historyMatches,
-        onAcceptMatchInvitation: _acceptMatchInvitation,
-        onDeclineMatchInvitation: _declineMatchInvitation,
-      ),
-      body: Stack(
-        children: [
-          NotificationListener<ScrollNotification>(
-            onNotification: _handleScrollNotification,
-            child: IndexedStack(
-              index: _currentBottomNavIndex,
-              children: [
-                _buildHomeContent(displayName),
-                _buildHistoryTab(),
-                _buildHomeContent(displayName), // Compete tab focus
-                const RankingsScreen(),
-                _buildProfileTab(),
-              ],
-            ),
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: themeModeNotifier,
+      builder: (context, themeMode, child) {
+        final isDark = themeMode == ThemeMode.dark;
+        return Scaffold(
+          key: _scaffoldKey,
+          extendBody: true,
+          backgroundColor: PulseColors.getBackground(isDark),
+          onEndDrawerChanged: (isOpened) {
+            if (!isOpened && mounted) {
+              setState(() {});
+            }
+          },
+          drawer: _buildAvatarSideModal(context),
+          endDrawer: NotificationSideDrawer(
+            isDarkMode: isDark,
+            user: _user,
+            activeMatch: _activeMatch,
+            isInvitationPending: _isInvitationPending,
+            historyMatches: _historyMatches,
+            onAcceptMatchInvitation: _acceptMatchInvitation,
+            onDeclineMatchInvitation: _declineMatchInvitation,
           ),
-          AnimatedPositioned(
-            duration: _isSnapping ? const Duration(milliseconds: 220) : Duration.zero,
-            curve: Curves.easeOutCubic,
-            left: 0,
-            right: 0,
-            bottom: -_bottomNavHiddenOffset,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (_isInvitationPending && _activeMatch != null)
-                  MatchInvitationSnackbar(
-                    match: _activeMatch!,
-                    currentUserRoleLabel: _invitedUserRoleLabel,
-                    isDarkMode: _isDarkMode,
-                    onAccept: _acceptMatchInvitation,
-                    onDecline: _declineMatchInvitation,
-                  ),
-                PulseBottomNavBar(
-                  currentIndex: _currentBottomNavIndex,
-                  onTap: _onBottomNavTapped,
+          body: IndexedStack(
+            index: _currentBottomNavIndex,
+            children: [
+              _buildHomeContent(displayName),
+              _buildHistoryTab(),
+              _buildHomeContent(displayName), // Compete tab focus
+              const RankingsScreen(),
+              _buildProfileTab(),
+            ],
+          ),
+          bottomNavigationBar: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (_isInvitationPending && _activeMatch != null)
+                MatchInvitationSnackbar(
+                  match: _activeMatch!,
+                  currentUserRoleLabel: _invitedUserRoleLabel,
+                  isDarkMode: isDark,
+                  onAccept: _acceptMatchInvitation,
+                  onDecline: _declineMatchInvitation,
                 ),
-              ],
-            ),
+              PulseBottomNavBar(
+                currentIndex: _currentBottomNavIndex,
+                onTap: _onBottomNavTapped,
+              ),
+            ],
           ),
-
-
-        ],
-      ),
-
-
+        );
+      },
     );
   }
 
@@ -716,49 +659,45 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             mainAxisSpacing: 12,
             childAspectRatio: 1.15,
             children: [
-              // 1. Scan QR -> Soft Lilac / Purple Pastel (Card 1)
+              // 1. Scan QR (Card 1)
               PulseWidgetCard(
                 imagePath: 'assets/images/scan_qr.png',
                 title: 'Scan QR',
                 subtitle: 'Join Room',
                 pillText: 'FAST',
-                backgroundColor: const Color(0xFFF3E5F5),
                 isDarkMode: _isDarkMode,
                 onTap: () {
                   PulseToast.show(context, 'Opening QR Scanner');
                 },
               ),
-              // 2. Find Courts -> Soft Powder Blue Pastel (Card 2)
+              // 2. Find Courts (Card 2)
               PulseWidgetCard(
                 imagePath: 'assets/images/find_court.png',
                 title: 'Find Courts',
                 subtitle: 'Locate Courts',
                 pillText: 'NEARBY',
-                backgroundColor: const Color(0xFFD6E9FE),
                 isDarkMode: _isDarkMode,
                 onTap: () {
                   PulseToast.show(context, 'Locating nearby courts...');
                 },
               ),
-              // 3. Officiate -> Soft Warm Coral / Peach Pastel (Card 3)
+              // 3. Officiate (Card 3)
               PulseWidgetCard(
                 imagePath: 'assets/images/officiate.png',
                 title: 'Officiate',
                 subtitle: 'Neutral Ref',
                 pillText: 'LIVE',
-                backgroundColor: const Color(0xFFFFE0D6),
                 isDarkMode: _isDarkMode,
                 onTap: () {
                   PulseToast.show(context, 'Opening Officiate Mode');
                 },
               ),
-              // 4. Log Practice -> Soft Butter Yellow Pastel (Card 4)
+              // 4. Log Practice (Card 4)
               PulseWidgetCard(
                 imagePath: 'assets/images/all_balls.png',
                 title: 'Log Practice',
                 subtitle: 'Unrated Drills',
                 pillText: 'DRILLS',
-                backgroundColor: const Color(0xFFF9EAB8),
                 isDarkMode: _isDarkMode,
                 onTap: () {
                   PulseToast.show(context, 'Logging practice session...');
@@ -1131,7 +1070,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               shape: BoxShape.circle,
             ),
             child: const Icon(
-              Icons.history_rounded,
+              Icons.auto_graph_rounded,
               size: 26,
               color: PulseColors.accent,
             ),
@@ -1757,10 +1696,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   void _showSportPreferencesModal(BuildContext context) {
     final availableSports = [
-      {'name': 'Pickleball', 'key': 'pickleball', 'icon': Icons.sports_tennis_rounded},
-      {'name': 'Tennis', 'key': 'tennis', 'icon': Icons.sports_tennis_outlined},
-      {'name': 'Table Tennis', 'key': 'table_tennis', 'icon': Icons.sports_score_rounded},
-      {'name': 'Badminton', 'key': 'badminton', 'icon': Icons.sports_handball_rounded},
+      {'name': 'Pickleball', 'key': 'pickleball'},
+      {'name': 'Tennis', 'key': 'tennis'},
+      {'name': 'Table Tennis', 'key': 'table_tennis'},
+      {'name': 'Badminton', 'key': 'badminton'},
     ];
 
     final Map<String, int> draftRatings = Map<String, int>.from(
@@ -1912,7 +1851,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           children: availableSports.map((sport) {
                             final key = sport['key'] as String;
                             final name = sport['name'] as String;
-                            final icon = sport['icon'] as IconData;
                             final isConfigured = draftRatings.containsKey(key);
                             final isPrimary = key == primaryKey;
                             final eloVal = draftRatings[key];
@@ -1941,17 +1879,27 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                               child: Row(
                                 children: [
                                   Container(
-                                    padding: const EdgeInsets.all(10),
+                                    width: 48,
+                                    height: 48,
+                                    padding: const EdgeInsets.all(6),
                                     decoration: BoxDecoration(
-                                      color: PulseColors.getBackground(_isDarkMode),
                                       borderRadius: BorderRadius.circular(12),
+                                      gradient: LinearGradient(
+                                        colors: isConfigured
+                                            ? [
+                                                PulseColors.accent.withValues(alpha: 0.25),
+                                                PulseColors.primary.withValues(alpha: 0.15),
+                                              ]
+                                            : [
+                                                PulseColors.secondary.withValues(alpha: 0.2),
+                                                PulseColors.getBackground(_isDarkMode),
+                                              ],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ),
                                     ),
-                                    child: Icon(
-                                      icon,
-                                      color: isConfigured
-                                          ? PulseColors.accent
-                                          : PulseColors.getTextSecondary(_isDarkMode),
-                                      size: 22,
+                                    child: Center(
+                                      child: PulseSportIcons.buildWidget(key, size: 32),
                                     ),
                                   ),
                                   const SizedBox(width: 12),

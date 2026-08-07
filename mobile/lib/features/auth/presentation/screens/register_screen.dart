@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../../../../core/theme/pulse_colors.dart';
+import '../../../../core/widgets/pulse_logo.dart';
 import '../../../../core/widgets/google_logo_widget.dart';
 import '../../../../core/widgets/pulse_back_button.dart';
 import '../../../../core/widgets/pulse_toast.dart';
@@ -123,6 +124,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const SizedBox(height: 12),
+                  const Center(
+                    child: PulseLogo(size: 72),
+                  ),
+                  const SizedBox(height: 12),
                   Text(
                     'Create Account',
                     textAlign: TextAlign.center,
@@ -223,7 +228,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     decoration: InputDecoration(
                       labelText: 'Full Name',
                       hintText: 'John Doe',
-                      prefixIcon: const Icon(Icons.person_outline),
+                      prefixIcon: const Icon(Icons.person_outline_rounded),
                       fillColor: surfaceColor,
                     ),
                     validator: (value) {
@@ -243,7 +248,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     decoration: InputDecoration(
                       labelText: 'Email Address',
                       hintText: 'player@example.com',
-                      prefixIcon: const Icon(Icons.email_outlined),
+                      prefixIcon: const Icon(Icons.alternate_email_rounded),
                       fillColor: surfaceColor,
                     ),
                     validator: (value) {
@@ -266,13 +271,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     decoration: InputDecoration(
                       labelText: 'Password',
                       hintText: '••••••••',
-                      prefixIcon: const Icon(Icons.lock_outline),
+                      prefixIcon: const Icon(Icons.lock_outline_rounded),
                       fillColor: surfaceColor,
                       suffixIcon: IconButton(
                         icon: Icon(
                           _isPasswordVisible
                               ? Icons.visibility_off_outlined
                               : Icons.visibility_outlined,
+                          size: 20,
                         ),
                         onPressed: () {
                           setState(() {

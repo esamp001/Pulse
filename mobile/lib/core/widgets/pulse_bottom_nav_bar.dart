@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/pulse_colors.dart';
 
-/// Reusable Floating Capsule Bottom Navigation Dock for Pulse App
+/// Modern Native Bottom Navigation Bar for Pulse App with Popped Compete Button
 class PulseBottomNavBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -15,134 +15,180 @@ class PulseBottomNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final navBgColor = isDark ? PulseColors.darkSurface : Colors.white;
 
-    final dockBgColor = isDark ? const Color(0xFF141E20) : const Color(0xFF1A2B2E);
-    final borderColor = isDark ? const Color(0xFF2E4549) : const Color(0xFF2C4347);
-
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: Align(
-          alignment: Alignment.bottomCenter,
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Container(
-              height: 60,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: dockBgColor,
-                borderRadius: BorderRadius.circular(32),
-                border: Border.all(
-                  color: borderColor,
-                  width: 1.2,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
+    return Container(
+      color: navBgColor,
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 60,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _buildFloatingNavItem(
+                  _buildNavItem(
                     context: context,
                     index: 0,
-                    icon: Icons.home_outlined,
-                    activeIcon: Icons.home_rounded,
+                    icon: Icons.grid_view_rounded,
+                    inactiveIcon: Icons.grid_view_outlined,
                     label: 'Home',
+                    isDark: isDark,
                   ),
-                  const SizedBox(width: 6),
-                  _buildFloatingNavItem(
+                  _buildNavItem(
                     context: context,
                     index: 1,
-                    icon: Icons.history_outlined,
-                    activeIcon: Icons.history_rounded,
+                    icon: Icons.auto_graph_rounded,
+                    inactiveIcon: Icons.auto_graph_rounded,
                     label: 'History',
+                    isDark: isDark,
                   ),
-                  const SizedBox(width: 6),
-                  _buildCenterCompeteNavItem(
+                  _buildCenterCompeteItem(
                     context: context,
                     index: 2,
+                    isDark: isDark,
+                    navBgColor: navBgColor,
                   ),
-                  const SizedBox(width: 6),
-                  _buildFloatingNavItem(
+                  _buildNavItem(
                     context: context,
                     index: 3,
-                    icon: Icons.leaderboard_outlined,
-                    activeIcon: Icons.leaderboard_rounded,
+                    icon: Icons.emoji_events_rounded,
+                    inactiveIcon: Icons.emoji_events_outlined,
                     label: 'Rankings',
+                    isDark: isDark,
                   ),
-                  const SizedBox(width: 6),
-                  _buildFloatingNavItem(
+                  _buildNavItem(
                     context: context,
                     index: 4,
-                    icon: Icons.person_outline_rounded,
-                    activeIcon: Icons.person_rounded,
+                    icon: Icons.account_circle_rounded,
+                    inactiveIcon: Icons.account_circle_outlined,
                     label: 'Profile',
+                    isDark: isDark,
                   ),
                 ],
               ),
-            ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildCenterCompeteNavItem({
+  Widget _buildCenterCompeteItem({
     required BuildContext context,
     required int index,
+    required bool isDark,
+    required Color navBgColor,
   }) {
     final isSelected = currentIndex == index;
+    final activeColor = PulseColors.accent;
+    final inactiveColor = PulseColors.getTextSecondary(isDark);
 
-    return GestureDetector(
-      onTap: () => onTap(index),
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeInOut,
-        width: 46,
-        height: 46,
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.white : PulseColors.accent,
-          shape: BoxShape.circle,
-        ),
-        child: Center(
-          child: Icon(
-            Icons.bolt_rounded,
-            color: isSelected ? PulseColors.accent : Colors.white,
-            size: 25,
+    return Expanded(
+      child: InkWell(
+        onTap: () => onTap(index),
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+        child: OverflowBox(
+          maxHeight: 76,
+          alignment: Alignment.bottomCenter,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Transform.translate(
+                offset: const Offset(0, -6),
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: isSelected ? activeColor : PulseColors.getCard(isDark),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: navBgColor,
+                      width: 2.5,
+                    ),
+                  ),
+                  child: Center(
+                    child: Icon(
+                      Icons.stadium_rounded,
+                      color: isSelected ? Colors.white : activeColor,
+                      size: 22,
+                    ),
+                  ),
+                ),
+              ),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  'Compete',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    color: isSelected ? activeColor : inactiveColor,
+                    letterSpacing: -0.1,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(height: 3),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildFloatingNavItem({
+  Widget _buildNavItem({
     required BuildContext context,
     required int index,
     required IconData icon,
-    required IconData activeIcon,
+    required IconData inactiveIcon,
     required String label,
+    required bool isDark,
   }) {
     final isSelected = currentIndex == index;
+    final activeColor = isDark ? PulseColors.accent : PulseColors.primary;
+    final inactiveColor = PulseColors.getTextSecondary(isDark);
 
-    return GestureDetector(
-      onTap: () => onTap(index),
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeInOut,
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.transparent,
-          shape: BoxShape.circle,
-        ),
-        child: Center(
-          child: Icon(
-            isSelected ? activeIcon : icon,
-            color: isSelected ? const Color(0xFF142225) : Colors.white.withValues(alpha: 0.7),
-            size: isSelected ? 22 : 23,
-          ),
+    return Expanded(
+      child: InkWell(
+        onTap: () => onTap(index),
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isSelected ? icon : inactiveIcon,
+              color: isSelected ? activeColor : inactiveColor,
+              size: 24,
+            ),
+            const SizedBox(height: 4),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  color: isSelected ? activeColor : inactiveColor,
+                  letterSpacing: -0.1,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
+
+
+
+
+
