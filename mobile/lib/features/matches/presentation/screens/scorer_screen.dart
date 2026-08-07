@@ -11,7 +11,7 @@ import '../../../../main.dart';
 import '../../../auth/services/auth_service.dart';
 import '../../models/match_model.dart';
 import '../../services/match_service.dart';
-import 'match_confirmation_screen.dart';
+import 'post_match_screen.dart';
 
 class ScoreStateHistory {
   final int p1Score;
@@ -631,55 +631,6 @@ class _ScorerScreenState extends State<ScorerScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 18),
-
-                  // Score Breakdown Card (Borderless)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: PulseColors.getCard(_isDarkMode),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          'Final Score: $_p1SetsWon - $_p2SetsWon Sets',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: PulseColors.getTextPrimary(_isDarkMode),
-                          ),
-                        ),
-                        if (_completedSets.isNotEmpty) ...[
-                          const SizedBox(height: 10),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 6,
-                            alignment: WrapAlignment.center,
-                            children: _completedSets.map((setStr) {
-                              return Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                decoration: BoxDecoration(
-                                  color: PulseColors.getBackground(_isDarkMode),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  setStr,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: PulseColors.getTextSecondary(_isDarkMode),
-                                  ),
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-
                   const SizedBox(height: 20),
 
                   // Confirm Match Button -> Navigates to Post Match Screen
@@ -692,7 +643,7 @@ class _ScorerScreenState extends State<ScorerScreen> {
                         final userId = AuthService.currentUser?.id ?? '';
                         Navigator.of(context).pushReplacement(
                           MaterialPageRoute(
-                            builder: (context) => MatchConfirmationScreen(
+                            builder: (context) => PostMatchScreen(
                               match: _match,
                               currentUserId: userId,
                             ),

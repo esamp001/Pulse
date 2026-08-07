@@ -14,7 +14,7 @@ import 'package:pulse_app/features/matches/presentation/screens/match_lobby_scre
 import 'package:pulse_app/features/matches/presentation/screens/scorer_screen.dart';
 import 'package:pulse_app/features/notifications/presentation/widgets/notification_side_drawer.dart';
 import 'package:pulse_app/features/matches/presentation/widgets/invite_user_modal.dart';
-import 'package:pulse_app/features/matches/presentation/screens/match_confirmation_screen.dart';
+import 'package:pulse_app/features/matches/presentation/screens/post_match_screen.dart';
 
 /// Helper to configure test surface viewport size to small 280x520 resolution
 void setSmallestScreen280x520(WidgetTester tester) {
@@ -160,7 +160,7 @@ void main() {
       resetViewport(tester);
     });
 
-    testWidgets('MatchConfirmationScreen renders without pixel overflow on 280x520', (WidgetTester tester) async {
+    testWidgets('PostMatchScreen renders without pixel overflow on 280x520', (WidgetTester tester) async {
       setSmallestScreen280x520(tester);
       final finishedMatch = MatchModel(
         id: 'match-finished',
@@ -181,7 +181,7 @@ void main() {
       );
 
       await tester.pumpWidget(MaterialApp(
-        home: MatchConfirmationScreen(
+        home: PostMatchScreen(
           match: finishedMatch,
           currentUserId: 'user-1',
         ),

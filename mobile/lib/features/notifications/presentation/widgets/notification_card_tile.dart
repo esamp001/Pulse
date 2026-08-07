@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/pulse_colors.dart';
 import '../../../../core/widgets/pulse_toast.dart';
 import '../../../auth/services/auth_service.dart';
-import '../../../matches/presentation/screens/match_confirmation_screen.dart';
+import '../../../matches/presentation/screens/post_match_screen.dart';
 import '../../../matches/services/match_service.dart';
 import '../../domain/models/notification_item_model.dart';
 
@@ -36,7 +36,7 @@ class NotificationCardTile extends StatelessWidget {
               final userId = AuthService.currentUser?.id ?? '';
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (ctx) => MatchConfirmationScreen(
+                  builder: (ctx) => PostMatchScreen(
                     match: match,
                     currentUserId: userId,
                   ),

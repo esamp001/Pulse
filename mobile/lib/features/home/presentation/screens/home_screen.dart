@@ -16,7 +16,7 @@ import '../../../matches/models/match_model.dart';
 import '../../../matches/presentation/screens/create_match_screen.dart';
 import '../../../matches/presentation/screens/match_lobby_screen.dart';
 import '../../../matches/presentation/widgets/match_invitation_snackbar.dart';
-import '../../../matches/presentation/screens/match_confirmation_screen.dart';
+import '../../../matches/presentation/screens/post_match_screen.dart';
 import '../../../notifications/presentation/widgets/notification_side_drawer.dart';
 import '../../../notifications/services/notification_service.dart';
 import '../../../matches/services/match_service.dart';
@@ -235,7 +235,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         final userId = _user?.id ?? widget.user?.id ?? AuthService.currentToken ?? '';
         await Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (context) => MatchConfirmationScreen(
+            builder: (context) => PostMatchScreen(
               match: activeMatch,
               currentUserId: userId,
             ),
@@ -965,28 +965,32 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'MATCH HISTORY',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -0.4,
-                          color: PulseColors.getTextPrimary(_isDarkMode),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'MATCH HISTORY',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.4,
+                            color: PulseColors.getTextPrimary(_isDarkMode),
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Your verified match records & score logs',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: PulseColors.getTextSecondary(_isDarkMode),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Your verified match records & score logs',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: PulseColors.getTextSecondary(_isDarkMode),
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -1212,40 +1216,49 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Text(
-                    match.sportDisplayName.toUpperCase(),
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.8,
-                      color: PulseColors.getTextSecondary(_isDarkMode),
+              Expanded(
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        match.sportDisplayName.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.8,
+                          color: PulseColors.getTextSecondary(_isDarkMode),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '•  $dateStr',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: PulseColors.getTextSecondary(_isDarkMode),
+                    const SizedBox(width: 4),
+                    Text(
+                      '•  $dateStr',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: PulseColors.getTextSecondary(_isDarkMode),
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: outcomeBg,
-                  borderRadius: BorderRadius.circular(12),
+                  ],
                 ),
-                child: Text(
-                  outcomeText,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.6,
-                    color: outcomeColor,
+              ),
+              const SizedBox(width: 8),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: outcomeBg,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    outcomeText,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.6,
+                      color: outcomeColor,
+                    ),
                   ),
                 ),
               ),
@@ -1297,13 +1310,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               ),
 
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Text(
-                  'VS',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w900,
-                    color: PulseColors.getTextSecondary(_isDarkMode),
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    'VS',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                      color: PulseColors.getTextSecondary(_isDarkMode),
+                    ),
                   ),
                 ),
               ),
@@ -1359,22 +1375,29 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
           // Bottom Meta Info (Venue & Referee)
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                match.venueName.isNotEmpty ? match.venueName : 'Verified Court',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: PulseColors.getTextSecondary(_isDarkMode),
+              Expanded(
+                child: Text(
+                  match.venueName.isNotEmpty ? match.venueName : 'Verified Court',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: PulseColors.getTextSecondary(_isDarkMode),
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              Text(
-                'Verified by $scorerName',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: PulseColors.getTextSecondary(_isDarkMode),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Verified by $scorerName',
+                  textAlign: TextAlign.end,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: PulseColors.getTextSecondary(_isDarkMode),
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],

@@ -3,11 +3,11 @@ import '../../../../core/theme/pulse_colors.dart';
 import '../../../../core/theme/pulse_sport_icons.dart';
 import '../../models/match_model.dart';
 
-class MatchConfirmationScreen extends StatelessWidget {
+class PostMatchScreen extends StatelessWidget {
   final MatchModel match;
   final String currentUserId;
 
-  const MatchConfirmationScreen({
+  const PostMatchScreen({
     super.key,
     required this.match,
     required this.currentUserId,
