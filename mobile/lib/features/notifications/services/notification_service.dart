@@ -1,17 +1,17 @@
-import 'dart:convert';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../domain/models/notification_item_model.dart';
 import '../../../features/auth/models/user_model.dart';
 import '../../../features/auth/services/auth_service.dart';
 import '../../../features/matches/models/match_model.dart';
+import '../../../../core/network/api_client.dart';
 
 /// Notification Service for handling backend PostgreSQL & dynamic notifications
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
   NotificationService._internal();
+
+  final ApiClient _apiClient = ApiClient();
 
   static const String _prefReadIdsKey = 'pulse_read_notification_ids';
   final List<NotificationItemModel> _notifications = [];
@@ -35,13 +35,7 @@ class NotificationService {
     } catch (_) {}
   }
 
-  static String get _notificationsUrl {
-    final baseUrl = dotenv.get('API_BASE_URL', fallback: 'http://localhost:3000/api/v1/auth');
-    if (baseUrl.endsWith('/auth')) {
-      return baseUrl.replaceAll('/auth', '/notifications');
-    }
-    return '$baseUrl/notifications';
-  }
+
 
   List<NotificationItemModel> getNotifications({bool unreadOnly = false}) {
     if (unreadOnly) {
@@ -59,31 +53,20 @@ class NotificationService {
     final token = AuthService.currentToken;
     if (token != null) {
       try {
-        final response = await http.get(
-          Uri.parse(_notificationsUrl),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $token',
-          },
-        );
-
-        if (response.statusCode == 200) {
-          final body = jsonDecode(response.body);
-          final List<dynamic> list = body['data'] ?? [];
-          if (list.isNotEmpty) {
-            _notifications.clear();
-            for (final jsonItem in list) {
-              final model = NotificationItemModel.fromJson(jsonItem);
-              if (_readIds.contains(model.id)) {
-                model.isUnread = false;
-              } else if (!model.isUnread) {
-                _readIds.add(model.id);
-              }
-              _notifications.add(model);
+        final data = await _apiClient.get('/notifications');
+        if (data is List && data.isNotEmpty) {
+          _notifications.clear();
+          for (final jsonItem in data) {
+            final model = NotificationItemModel.fromJson(jsonItem);
+            if (_readIds.contains(model.id)) {
+              model.isUnread = false;
+            } else if (!model.isUnread) {
+              _readIds.add(model.id);
             }
-            await _saveReadIdsToStorage();
-            return List.unmodifiable(_notifications);
+            _notifications.add(model);
           }
+          await _saveReadIdsToStorage();
+          return List.unmodifiable(_notifications);
         }
       } catch (e) {
         // Fallback to local dynamic generator if offline or server connecting
@@ -107,13 +90,7 @@ class NotificationService {
     final token = AuthService.currentToken;
     if (token != null && !id.startsWith('account_') && !id.startsWith('welcome_') && !id.startsWith('rating_') && !id.startsWith('match_')) {
       try {
-        await http.patch(
-          Uri.parse('$_notificationsUrl/$id/read'),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $token',
-          },
-        );
+        await _apiClient.patch('/notifications/$id/read');
       } catch (_) {}
     }
   }
@@ -128,13 +105,7 @@ class NotificationService {
     final token = AuthService.currentToken;
     if (token != null) {
       try {
-        await http.patch(
-          Uri.parse('$_notificationsUrl/read-all'),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $token',
-          },
-        );
+        await _apiClient.patch('/notifications/read-all');
       } catch (_) {}
     }
   }

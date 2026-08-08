@@ -1,48 +1,44 @@
-import 'dart:convert';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:http/http.dart' as http;
-import '../models/user_model.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import '../models/user_model.dart';
 import '../../../core/services/socket_service.dart';
+import '../../../core/network/api_client.dart';
 
 class AuthService {
   // Static session state cache
   static String? _currentToken;
   static UserModel? _currentUser;
 
-  // Base URL for backend API loaded from .env
-  static String get baseUrl => dotenv.get('API_BASE_URL');
+  final ApiClient _apiClient = ApiClient();
 
   /// Active session getters
   static String? get currentToken => _currentToken;
   static UserModel? get currentUser => _currentUser;
+
+   /// Process authentication data
+    void _processAuthData(dynamic data) {
+    if (data is Map<String, dynamic>) {
+      if (data['token'] != null) {
+        _currentToken = data['token'];
+      }
+      if (data['user'] != null) {
+        _currentUser = UserModel.fromJson(data['user']);
+      }
+    }
+  }
 
   /// Authenticate user via Google OAuth details
   Future<Map<String, dynamic>> googleAuthenticate({
     required String email,
     required String name,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/google'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'email': email, 'name': name}),
-    );
+    final responseData = await _apiClient.post('/auth/google', body: {
+      'email': email,
+      'name': name,
+    });
 
-    if (response.body.startsWith('<!DOCTYPE') ||
-        response.body.startsWith('<html')) {
-      throw Exception(
-        'Server returned HTML 404/500 instead of JSON. Status: ${response.statusCode}',
-      );
-    }
-
-    final responseData = jsonDecode(response.body);
-
-    if (response.statusCode == 200) {
-      _processAuthResponse(responseData);
-      return responseData;
-    } else {
-      throw Exception(responseData['error'] ?? 'Google authentication failed');
-    }
+    final fullResponse = {'data': responseData};
+    _processAuthData(responseData);
+    return fullResponse;
   }
 
   /// Register standard user
@@ -51,24 +47,15 @@ class AuthService {
     required String email,
     String? password,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/register'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'name': name,
-        'email': email,
-        if (password != null && password.isNotEmpty) 'password': password,
-      }),
-    );
+    final responseData = await _apiClient.post('/auth/register', body: {
+      'name': name,
+      'email': email,
+      if (password != null && password.isNotEmpty) 'password': password,
+    });
 
-    final responseData = jsonDecode(response.body);
-
-    if (response.statusCode == 201) {
-      _processAuthResponse(responseData);
-      return responseData;
-    } else {
-      throw Exception(responseData['error'] ?? 'Registration failed');
-    }
+    final fullResponse = {'data': responseData};
+    _processAuthData(responseData);
+    return fullResponse;
   }
 
   /// Login standard user
@@ -76,45 +63,22 @@ class AuthService {
     required String email,
     String? password,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/login'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'email': email,
-        if (password != null && password.isNotEmpty) 'password': password,
-      }),
-    );
+    final responseData = await _apiClient.post('/auth/login', body: {
+      'email': email,
+      if (password != null && password.isNotEmpty) 'password': password,
+    });
 
-    final responseData = jsonDecode(response.body);
-
-    if (response.statusCode == 200) {
-      _processAuthResponse(responseData);
-      return responseData;
-    } else {
-      throw Exception(responseData['error'] ?? 'Login failed');
-    }
+    final fullResponse = {'data': responseData};
+    _processAuthData(responseData);
+    return fullResponse;
   }
 
-  /// Fetch authenticated user profile from backend GET /me
+  /// Fetch authenticated user profile from backend GET /auth/me
   Future<UserModel> fetchCurrentUser() async {
-    final token = _currentToken;
-    if (token == null) {
-      throw Exception('No active session token');
-    }
-
-    final response = await http.get(
-      Uri.parse('$baseUrl/me'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
-
-    final responseData = jsonDecode(response.body);
-
-    if (response.statusCode == 200 && responseData['data']?['user'] != null) {
-      final user = UserModel.fromJson(responseData['data']['user']);
-      // Preserve existing local sportRatings if backend response lacks sport_ratings field
+    final data = await _apiClient.get('/auth/me');
+    
+    if (data is Map<String, dynamic> && data['user'] != null) {
+      final user = UserModel.fromJson(data['user']);
       final existingRatings = _currentUser?.sportRatings;
       final finalUser = (existingRatings != null && existingRatings.length > 1 && user.sportRatings.length <= 1)
           ? user.copyWith(sportRatings: Map<String, int>.from(existingRatings))
@@ -122,9 +86,8 @@ class AuthService {
 
       _currentUser = finalUser;
       return finalUser;
-    } else {
-      throw Exception(responseData['error'] ?? 'Failed to fetch user session');
     }
+    throw Exception('Failed to fetch user session');
   }
 
   /// Complete first-time user onboarding
@@ -134,40 +97,25 @@ class AuthService {
     required int rating,
     String? avatarUrl,
   }) async {
-    final token = _currentToken;
-    if (token == null) {
-      throw Exception('No active session token');
-    }
-
     final sportKey = primarySport.toLowerCase();
-    final response = await http.patch(
-      Uri.parse('$baseUrl/onboard'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
-        if (name != null && name.isNotEmpty) 'name': name,
-        'primary_sport': sportKey,
-        'rating': rating,
-        'sport_ratings': {sportKey: rating},
-        if (avatarUrl != null && avatarUrl.isNotEmpty) 'avatar_url': avatarUrl,
-      }),
-    );
+    final data = await _apiClient.patch('/auth/onboard', body: {
+      if (name != null && name.isNotEmpty) 'name': name,
+      'primary_sport': sportKey,
+      'rating': rating,
+      'sport_ratings': {sportKey: rating},
+      if (avatarUrl != null && avatarUrl.isNotEmpty) 'avatar_url': avatarUrl,
+    });
 
-    final responseData = jsonDecode(response.body);
-
-    if (response.statusCode == 200 && responseData['data']?['user'] != null) {
-      final user = UserModel.fromJson(responseData['data']['user']);
+    if (data is Map<String, dynamic> && data['user'] != null) {
+      final user = UserModel.fromJson(data['user']);
       final finalUser = user.copyWith(sportRatings: {sportKey: rating});
       _currentUser = finalUser;
       return finalUser;
-    } else {
-      throw Exception(responseData['error'] ?? 'Failed to complete onboarding');
     }
+    throw Exception('Failed to complete onboarding');
   }
 
-  /// Update user profile details (name, avatarUrl, coverPhotoUrl, phoneNumber, location, bio)
+  /// Update user profile details
   Future<UserModel> updateProfile({
     String? name,
     String? avatarUrl,
@@ -176,72 +124,42 @@ class AuthService {
     String? location,
     String? bio,
   }) async {
-    final token = _currentToken;
-    if (token == null) {
-      throw Exception('No active session token');
-    }
+    final data = await _apiClient.patch('/auth/onboard', body: {
+      if (name != null && name.isNotEmpty) 'name': name,
+      'avatar_url': avatarUrl,
+      'cover_photo_url': coverPhotoUrl,
+      'phone_number': phoneNumber,
+      'location': location,
+      'bio': bio,
+    });
 
-    final response = await http.patch(
-      Uri.parse('$baseUrl/onboard'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
-        if (name != null && name.isNotEmpty) 'name': name,
-        'avatar_url': ? avatarUrl,
-        'cover_photo_url': ? coverPhotoUrl,
-        'phone_number': ? phoneNumber,
-        'location': ? location,
-        'bio': ? bio,
-      }),
-    );
-
-    final responseData = jsonDecode(response.body);
-
-    if (response.statusCode == 200 && responseData['data']?['user'] != null) {
-      final user = UserModel.fromJson(responseData['data']['user']);
+    if (data is Map<String, dynamic> && data['user'] != null) {
+      final user = UserModel.fromJson(data['user']);
       final existingRatings = _currentUser?.sportRatings;
       final finalUser = (existingRatings != null && existingRatings.length > 1 && user.sportRatings.length <= 1)
           ? user.copyWith(sportRatings: Map<String, int>.from(existingRatings))
           : user;
       _currentUser = finalUser;
       return finalUser;
-    } else {
-      throw Exception(responseData['error'] ?? 'Failed to update profile');
     }
+    throw Exception('Failed to update profile');
   }
 
   /// Update user sport preferences and per-sport ELO ratings
   Future<UserModel> updateSportPreferences(Map<String, int> sportRatings) async {
-    final token = _currentToken;
-    if (token == null) {
-      throw Exception('No active session token');
-    }
+    final data = await _apiClient.patch('/auth/onboard', body: {
+      'sport_ratings': sportRatings,
+    });
 
-    final response = await http.patch(
-      Uri.parse('$baseUrl/onboard'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
-        'sport_ratings': sportRatings,
-      }),
-    );
-
-    final responseData = jsonDecode(response.body);
-
-    if (response.statusCode == 200 && responseData['data']?['user'] != null) {
-      final backendUser = UserModel.fromJson(responseData['data']['user']);
+    if (data is Map<String, dynamic> && data['user'] != null) {
+      final backendUser = UserModel.fromJson(data['user']);
       final updatedUser = backendUser.copyWith(
         sportRatings: Map<String, int>.from(sportRatings),
       );
       _currentUser = updatedUser;
       return updatedUser;
-    } else {
-      throw Exception(responseData['error'] ?? 'Failed to update sport preferences');
     }
+    throw Exception('Failed to update sport preferences');
   }
 
   /// Update or set user password
@@ -249,34 +167,18 @@ class AuthService {
     String? currentPassword,
     required String newPassword,
   }) async {
-    final token = _currentToken;
+    final data = await _apiClient.put('/auth/password', body: {
+      if (currentPassword != null && currentPassword.isNotEmpty)
+        'current_password': currentPassword,
+      'new_password': newPassword,
+    });
 
-    if (token == null) {
-      throw Exception('No active session token');
-    }
-
-    final response = await http.put(
-      Uri.parse('$baseUrl/password'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
-        if (currentPassword != null && currentPassword.isNotEmpty)
-          'current_password': currentPassword,
-        'new_password': newPassword,
-      }),
-    );
-
-    final responseData = jsonDecode(response.body);
-
-    if (response.statusCode == 200 && responseData['data']?['user'] != null) {
-      final user = UserModel.fromJson(responseData['data']['user']);
+    if (data is Map<String, dynamic> && data['user'] != null) {
+      final user = UserModel.fromJson(data['user']);
       _currentUser = user;
       return user;
-    } else {
-      throw Exception(responseData['error'] ?? 'Failed to update password');
     }
+    throw Exception('Failed to update password');
   }
 
   /// Upload user avatar image bytes via Cloudflare R2 presigned URL
@@ -284,84 +186,22 @@ class AuthService {
     List<int> imageBytes, {
     String mimeType = 'image/jpeg',
   }) async {
-    final token = _currentToken;
-    if (token == null) {
-      throw Exception('No active session token');
-    }
+    final presignedData = await _apiClient.post('/upload/presigned-url', body: {
+      'contentType': mimeType,
+    });
 
-    final rootUrl = baseUrl.replaceAll('/auth', '');
-    final presignedResponse = await http.post(
-      Uri.parse('$rootUrl/upload/presigned-url'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({'contentType': mimeType}),
-    );
+    final String uploadUrl = presignedData['uploadUrl'];
+    final String avatarUrl = presignedData['avatarUrl'];
 
-    if (presignedResponse.statusCode != 200) {
-      final err = jsonDecode(presignedResponse.body);
-      throw Exception(err['error'] ?? 'Failed to request upload URL');
-    }
-
-    final data = jsonDecode(presignedResponse.body)['data'];
-    final String uploadUrl = data['uploadUrl'];
-    final String avatarUrl = data['avatarUrl'];
-
-    // Upload directly to Cloudflare R2 via presigned URL
-    final uploadResponse = await http.put(
-      Uri.parse(uploadUrl),
-      headers: {'Content-Type': mimeType},
-      body: imageBytes,
-    );
-
-    if (uploadResponse.statusCode == 200 ||
-        uploadResponse.statusCode == 204 ||
-        uploadResponse.statusCode == 201) {
-      return avatarUrl;
-    } else {
-      throw Exception('Failed to upload image file to storage');
-    }
-  }
-
-  void _processAuthResponse(Map<String, dynamic> responseData) {
-    final data = responseData['data'];
-
-    if (data != null) {
-      // Check if token is available
-      if (data['token'] != null) {
-        _currentToken = data['token']; // Assigned at the session state
-      }
-
-      // Check if user is available
-      if (data['user'] != null) {
-        _currentUser = UserModel.fromJson(data['user']); // Signed-in user
-      }
-    }
+    // Direct binary PUT to Cloudflare R2 presigned URL
+    await _apiClient.put(uploadUrl, body: imageBytes, headers: {'Content-Type': mimeType});
+    return avatarUrl;
   }
 
   /// Permanently delete authenticated user account and clear session
   Future<void> deleteAccount() async {
-    final token = _currentToken;
-    if (token == null) {
-      throw Exception('No active session token');
-    }
-
-    final response = await http.delete(
-      Uri.parse('$baseUrl/me'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
-
-    final responseData = jsonDecode(response.body);
-
-    if (response.statusCode == 200) {
-      await logout();
-    } else {
-      throw Exception(responseData['error'] ?? 'Failed to delete account');
-    }
+    await _apiClient.delete('/auth/me');
+    await logout();
   }
 
   /// Clear active user session & sign out Google OAuth

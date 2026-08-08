@@ -1,19 +1,8 @@
-import 'dart:convert';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:http/http.dart' as http;
-import '../../auth/services/auth_service.dart';
+import '../../../core/network/api_client.dart';
 import '../models/match_model.dart';
 
 class MatchService {
-  /// Base API URL for matches endpoints
-  static String get _matchesUrl {
-    final baseUrl = dotenv.get('API_BASE_URL', fallback: 'http://localhost:3000/api/v1/auth');
-    // Replace '/auth' with '/matches' if present, or format correctly
-    if (baseUrl.endsWith('/auth')) {
-      return baseUrl.replaceAll('/auth', '/matches');
-    }
-    return '$baseUrl/matches';
-  }
+  final ApiClient _apiClient = ApiClient();
 
   /// Create a new match on backend
   Future<MatchModel> createMatch({
@@ -25,39 +14,16 @@ class MatchService {
     int pointsToWinSet = 11,
     bool winByTwo = true,
   }) async {
-    final token = AuthService.currentToken;
-    if (token == null) {
-      throw Exception('Authentication token missing. Please log in again.');
-    }
-
-    final response = await http.post(
-      Uri.parse(_matchesUrl),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
-        'sport': sport,
-        'venue_name': venueName,
-        if (location != null && location.isNotEmpty) 'location': location,
-        'scheduled_at': scheduledAt.toIso8601String(),
-        'total_sets': totalSets,
-        'points_to_win_set': pointsToWinSet,
-        'win_by_two': winByTwo,
-      }),
-    );
-
-    if (response.body.startsWith('<!DOCTYPE') || response.body.startsWith('<html')) {
-      throw Exception('Server error (HTML response). Status code: ${response.statusCode}');
-    }
-
-    final responseData = jsonDecode(response.body);
-
-    if (response.statusCode == 201) {
-      return MatchModel.fromJson(responseData['data']);
-    } else {
-      throw Exception(responseData['error'] ?? 'Failed to create match');
-    }
+    final data = await _apiClient.post('/matches', body: {
+      'sport': sport,
+      'venue_name': venueName,
+      if (location != null && location.isNotEmpty) 'location': location,
+      'scheduled_at': scheduledAt.toIso8601String(),
+      'total_sets': totalSets,
+      'points_to_win_set': pointsToWinSet,
+      'win_by_two': winByTwo,
+    });
+    return MatchModel.fromJson(data);
   }
 
   /// Finalize match and declare winner (with True Elo rating change)
@@ -68,83 +34,32 @@ class MatchService {
     int player2SetsWon = 0,
     String? setScores,
   }) async {
-    final token = AuthService.currentToken;
-    if (token == null) {
-      throw Exception('Authentication token missing. Please log in again.');
-    }
+    final data = await _apiClient.post('/matches/$matchId/complete', body: {
+      'winner_id': winnerId,
+      'player1_sets_won': player1SetsWon,
+      'player2_sets_won': player2SetsWon,
+      'set_scores': setScores,
+    });
 
-    final response = await http.post(
-      Uri.parse('$_matchesUrl/$matchId/complete'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
-        'winner_id': winnerId,
-        'player1_sets_won': player1SetsWon,
-        'player2_sets_won': player2SetsWon,
-        'set_scores': setScores,
-      }),
-    );
-
-    final responseData = jsonDecode(response.body);
-    if (response.statusCode == 200) {
-      final matchData = responseData['data'];
-      return {
-        'match': MatchModel.fromJson(matchData),
-        'ratingChange': matchData['ratingChange'] ?? 25,
-      };
-    } else {
-      throw Exception(responseData['error'] ?? 'Failed to finalize match');
-    }
+    return {
+      'match': MatchModel.fromJson(data),
+      'ratingChange': data['ratingChange'] ?? 25,
+    };
   }
 
   /// Fetch user matches
   Future<List<MatchModel>> fetchUserMatches() async {
-    final token = AuthService.currentToken;
-    if (token == null) {
-      throw Exception('Authentication token missing. Please log in again.');
+    final data = await _apiClient.get('/matches');
+    if (data is List) {
+      return data.map((item) => MatchModel.fromJson(item as Map<String, dynamic>)).toList();
     }
-
-    final response = await http.get(
-      Uri.parse(_matchesUrl),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
-
-    if (response.statusCode == 200) {
-      final responseData = jsonDecode(response.body);
-      final List<dynamic> list = responseData['data'] ?? [];
-      return list.map((item) => MatchModel.fromJson(item as Map<String, dynamic>)).toList();
-    } else {
-      final responseData = jsonDecode(response.body);
-      throw Exception(responseData['error'] ?? 'Failed to fetch matches');
-    }
+    return [];
   }
 
   /// Get match details by ID
   Future<MatchModel> getMatchById(String matchId) async {
-    final token = AuthService.currentToken;
-    if (token == null) {
-      throw Exception('Authentication token missing. Please log in again.');
-    }
-
-    final response = await http.get(
-      Uri.parse('$_matchesUrl/$matchId'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
-
-    final responseData = jsonDecode(response.body);
-    if (response.statusCode == 200) {
-      return MatchModel.fromJson(responseData['data']);
-    } else {
-      throw Exception(responseData['error'] ?? 'Failed to fetch match details');
-    }
+    final data = await _apiClient.get('/matches/$matchId');
+    return MatchModel.fromJson(data);
   }
 
   /// Assign participant (player2 or scorer) to match
@@ -153,78 +68,29 @@ class MatchService {
     required String role,
     required String targetUserId,
   }) async {
-    final token = AuthService.currentToken;
-    if (token == null) {
-      throw Exception('Authentication token missing. Please log in again.');
-    }
-
-    final response = await http.patch(
-      Uri.parse('$_matchesUrl/$matchId/participants'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
-        'role': role,
-        'user_id': targetUserId,
-      }),
-    );
-
-    final responseData = jsonDecode(response.body);
-    if (response.statusCode == 200) {
-      return MatchModel.fromJson(responseData['data']);
-    } else {
-      throw Exception(responseData['error'] ?? 'Failed to assign participant');
-    }
+    final data = await _apiClient.patch('/matches/$matchId/participants', body: {
+      'role': role,
+      'user_id': targetUserId,
+    });
+    return MatchModel.fromJson(data);
   }
 
   /// Search registered users for invitation
   Future<List<MatchParticipantModel>> searchUsers(String query) async {
-    final token = AuthService.currentToken;
-    if (token == null) {
-      throw Exception('Authentication token missing. Please log in again.');
-    }
-
     final encodedQuery = Uri.encodeComponent(query);
-    final response = await http.get(
-      Uri.parse('$_matchesUrl/users/search?q=$encodedQuery'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
-
-    if (response.statusCode == 200) {
-      final responseData = jsonDecode(response.body);
-      final List<dynamic> list = responseData['data'] ?? [];
-      return list.map((item) => MatchParticipantModel.fromJson(item as Map<String, dynamic>)).toList();
-    } else {
-      final responseData = jsonDecode(response.body);
-      throw Exception(responseData['error'] ?? 'Failed to search users');
+    final data = await _apiClient.get('/matches/users/search?q=$encodedQuery');
+    if (data is List) {
+      return data.map((item) => MatchParticipantModel.fromJson(item as Map<String, dynamic>)).toList();
     }
+    return [];
   }
 
   /// Get current user's active match (if any)
   Future<MatchModel?> getActiveMatch() async {
-    final token = AuthService.currentToken;
-    if (token == null) {
-      return null;
-    }
-
     try {
-      final response = await http.get(
-        Uri.parse('$_matchesUrl/active'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
-        if (responseData['data'] != null) {
-          return MatchModel.fromJson(responseData['data']);
-        }
+      final data = await _apiClient.get('/matches/active');
+      if (data != null && data is Map<String, dynamic>) {
+        return MatchModel.fromJson(data);
       }
       return null;
     } catch (_) {
@@ -234,69 +100,19 @@ class MatchService {
 
   /// Exit or cancel match room
   Future<void> exitMatch(String matchId) async {
-    final token = AuthService.currentToken;
-    if (token == null) {
-      throw Exception('Authentication token missing. Please log in again.');
-    }
-
-    final response = await http.delete(
-      Uri.parse('$_matchesUrl/$matchId/exit'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
-
-    if (response.statusCode != 200) {
-      final responseData = jsonDecode(response.body);
-      throw Exception(responseData['error'] ?? 'Failed to exit match room');
-    }
+    await _apiClient.delete('/matches/$matchId/exit');
   }
 
   /// Accept match invitation
   Future<MatchModel> acceptInvitation(String matchId) async {
-    final token = AuthService.currentToken;
-    if (token == null) {
-      throw Exception('Authentication token missing. Please log in again.');
-    }
-
-    final response = await http.patch(
-      Uri.parse('$_matchesUrl/$matchId/accept'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
-
-    final responseData = jsonDecode(response.body);
-    if (response.statusCode == 200) {
-      return MatchModel.fromJson(responseData['data']);
-    } else {
-      throw Exception(responseData['error'] ?? 'Failed to accept invitation');
-    }
+    final data = await _apiClient.patch('/matches/$matchId/accept');
+    return MatchModel.fromJson(data);
   }
 
   /// Decline match invitation
   Future<MatchModel> declineInvitation(String matchId) async {
-    final token = AuthService.currentToken;
-    if (token == null) {
-      throw Exception('Authentication token missing. Please log in again.');
-    }
-
-    final response = await http.patch(
-      Uri.parse('$_matchesUrl/$matchId/decline'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
-
-    final responseData = jsonDecode(response.body);
-    if (response.statusCode == 200) {
-      return MatchModel.fromJson(responseData['data']);
-    } else {
-      throw Exception(responseData['error'] ?? 'Failed to decline invitation');
-    }
+    final data = await _apiClient.patch('/matches/$matchId/decline');
+    return MatchModel.fromJson(data);
   }
 
   /// Kick participant (player2 or scorer) from match room
@@ -304,25 +120,8 @@ class MatchService {
     required String matchId,
     required String role,
   }) async {
-    final token = AuthService.currentToken;
-    if (token == null) {
-      throw Exception('Authentication token missing. Please log in again.');
-    }
-
-    final response = await http.delete(
-      Uri.parse('$_matchesUrl/$matchId/participants/$role'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
-
-    final responseData = jsonDecode(response.body);
-    if (response.statusCode == 200) {
-      return MatchModel.fromJson(responseData['data']);
-    } else {
-      throw Exception(responseData['error'] ?? 'Failed to kick participant');
-    }
+    final data = await _apiClient.delete('/matches/$matchId/participants/$role');
+    return MatchModel.fromJson(data);
   }
 
   /// Update match status (e.g. READY -> LIVE, LIVE -> FINISHED)
@@ -330,54 +129,18 @@ class MatchService {
     required String matchId,
     required String status,
   }) async {
-    final token = AuthService.currentToken;
-    if (token == null) {
-      throw Exception('Authentication token missing. Please log in again.');
-    }
-
-    final response = await http.patch(
-      Uri.parse('$_matchesUrl/$matchId/status'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
-        'status': status,
-      }),
-    );
-
-    final responseData = jsonDecode(response.body);
-    if (response.statusCode == 200) {
-      return MatchModel.fromJson(responseData['data']);
-    } else {
-      throw Exception(responseData['error'] ?? 'Failed to update match status');
-    }
+    final data = await _apiClient.patch('/matches/$matchId/status', body: {
+      'status': status,
+    });
+    return MatchModel.fromJson(data);
   }
 
   /// Join an active match using a 6-digit court PIN code
   Future<MatchModel> joinMatchByPin(String pinCode) async {
-    final token = AuthService.currentToken;
-    if (token == null) {
-      throw Exception('Authentication token missing. Please log in again.');
-    }
-
-    final response = await http.post(
-      Uri.parse('$_matchesUrl/join-by-pin'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
-        'pin': pinCode.trim(),
-      }),
-    );
-
-    final responseData = jsonDecode(response.body);
-    if (response.statusCode == 200 && responseData['data'] != null) {
-      return MatchModel.fromJson(responseData['data']);
-    } else {
-      throw Exception(responseData['error'] ?? 'Failed to join match by PIN');
-    }
+    final data = await _apiClient.post('/matches/join-by-pin', body: {
+      'pin': pinCode.trim(),
+    });
+    return MatchModel.fromJson(data);
   }
 
   /// Switch participant role slot inside match lobby room
@@ -385,28 +148,9 @@ class MatchService {
     required String matchId,
     required String targetRole,
   }) async {
-    final token = AuthService.currentToken;
-    if (token == null) {
-      throw Exception('Authentication token missing. Please log in again.');
-    }
-
-    final response = await http.patch(
-      Uri.parse('$_matchesUrl/$matchId/switch-role'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
-        'target_role': targetRole,
-      }),
-    );
-
-    final responseData = jsonDecode(response.body);
-    if (response.statusCode == 200 && responseData['data'] != null) {
-      return MatchModel.fromJson(responseData['data']);
-    } else {
-      throw Exception(responseData['error'] ?? 'Failed to switch role in match room');
-    }
+    final data = await _apiClient.patch('/matches/$matchId/switch-role', body: {
+      'target_role': targetRole,
+    });
+    return MatchModel.fromJson(data);
   }
 }
-

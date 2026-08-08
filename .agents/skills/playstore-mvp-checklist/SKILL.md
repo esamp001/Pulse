@@ -21,10 +21,10 @@ When deploying builds:
 
 ---
 
-## 🚀 Top 6 MVP 1.0.0 Feature Roadmap & Status Tracker
+## 🚀 Top MVP 1.0.0 Feature Roadmap & Status Tracker
 
-**Total Initial Scope:** `10 - 13 Working Days`  
-**Remaining Effort:** `~3 - 5 Working Days`
+**Total Initial Scope:** `11 - 14.5 Working Days`  
+**Remaining Effort:** `~4 - 6.5 Working Days`
 
 ### Implementation Status Matrix
 
@@ -34,8 +34,9 @@ When deploying builds:
 | 2️⃣ | **Post-Match Player Confirmation & Dispute** | 2–3 Days | Core Trust & ELO Rating System | ✅ **COMPLETED** (`971ea99`, `3eebc0b`) |
 | 3️⃣ | **QR Code / 6-Digit PIN Match Join** | 2 Days | Court UX & Quick Lobby Join | ✅ **COMPLETED** (`440f225`) |
 | 4️⃣ | **Mobile Push Notifications (FCM)** | 2–3 Days | Off-App Invites & User Retention | ⏳ Pending Setup |
-| 5️⃣ | **Detailed Scorecard & Match Replay** | 1.5–2 Days | Post-Match Stats Breakdown | 🔄 In Progress / Enhancing |
-| 6️⃣ | **Network Disconnection & Signal Banner** | 1–1.5 Days | Outdoor Sports Court Resilience | ⏳ Pending |
+| 5️⃣ | **Network Disconnection & Signal Banner** | 1–1.5 Days | Outdoor Sports Court Resilience | ⏳ Pending |
+| 6️⃣ | **Post-Match Victory Card / Social Share Generator** | 1–1.5 Days | Viral Growth & Social Media Sharing | ⏳ Pending |
+| 7️⃣ | **Find Nearby Players & Courts Map (UI Teaser)** | 0.5 Days | UX Teaser & Future Feature Preview | ⏳ Pending UI |
 
 ---
 
@@ -61,15 +62,19 @@ When deploying builds:
 - [ ] Triggers for match invites, scorer invites, match outcome verification requests, and dispute alerts.
 - [ ] Flutter FCM payload listener with deep linking to target match lobby screen when notification is tapped.
 
-### 5. 📊 Detailed Match Scorecard & Match Replay — 🔄 IN PROGRESS
-- [ ] Scorecard Screen route showing set-by-set breakdown (e.g. Set 1: 11-8, Set 2: 9-11, Set 3: 11-5).
-- [ ] Match metadata: duration, referee/scorer name, court/location, and timestamp.
-- [ ] Chronological match point timeline / log viewer.
-
-### 6. ⚠️ Network Disconnection & Signal Recovery Banner — ⏳ NEXT
+### 5. ⚠️ Network Disconnection & Signal Recovery Banner — ⏳ NEXT
 - [ ] Socket.IO connectivity listener in `scorer_screen.dart` & live match widgets.
 - [ ] Sticky top status banner: "Reconnecting to live match..." with warning styling (`PulseColors.warning`).
 - [ ] Local offline queue for storing score events while offline.
+
+### 6. 📸 Post-Match Victory Card / Social Share Generator — ⏳ NEXT
+- [ ] Flutter `RepaintBoundary` widget to generate pixel-perfect PNG card of final match outcome.
+- [ ] Sleek branded card template showing final score, player avatars, ELO points gained (+15 ELO), and MVP badge.
+- [ ] Native one-tap share trigger (`share_plus`) targeting Instagram Stories, WhatsApp, and TikTok.
+
+### 7. 📍 Find Nearby Players & Courts Map (UI Teaser) — ⏳ NEXT
+- [ ] Add "Find Players Nearby" card/button on Home / Explore tab with map visual cue.
+- [ ] Display clean, modern "Coming Soon in v1.1" modal/sheet preview when tapped.
 
 ---
 

@@ -25,6 +25,7 @@ import '../../../help/presentation/screens/help_rules_screen.dart';
 import '../../../profile/presentation/screens/account_settings_screen.dart';
 import '../../../profile/presentation/screens/edit_profile_screen.dart';
 import '../../../rankings/presentation/screens/rankings_screen.dart';
+import '../../../community/services/community_service.dart';
 
 class HomeScreen extends StatefulWidget {
   final UserModel? user;
@@ -51,6 +52,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   List<MatchModel> _historyMatches = [];
   bool _isLoadingHistory = false;
   String _historySportFilter = 'ALL';
+  bool _isCommunityNotified = false;
   final AuthService _authService = AuthService();
   final MatchService _matchService = MatchService();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
@@ -69,6 +71,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _fetchMatchHistory();
     _setupRealtimeActiveMatchListener();
     _loadInitialNotifications();
+    _fetchCommunityWaitlistStatus();
+  }
+
+  Future<void> _fetchCommunityWaitlistStatus() async {
+    final status = await CommunityService().fetchWaitlistStatus();
+    if (mounted) {
+      setState(() {
+        _isCommunityNotified = status;
+      });
+    }
   }
 
   @override
@@ -680,7 +692,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             physics: const NeverScrollableScrollPhysics(),
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
-            childAspectRatio: 1.15,
+            childAspectRatio: 1.22,
             children: [
               // 1. Join with PIN (Card 1)
               PulseWidgetCard(
@@ -727,75 +739,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             ],
           ),
 
+          const SizedBox(height: 10),
 
-
-          const SizedBox(height: 24),
-
-          // 6. Featured Tournament / Event Banner
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: PulseColors.getSurface(_isDarkMode),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: PulseColors.getBorder(_isDarkMode),
-                width: 1.8,
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: PulseColors.accent.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: const Icon(
-                    Icons.stars_rounded,
-                    color: PulseColors.accent,
-                    size: 26,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'LOCAL LEAGUES & TOURNAMENTS',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          color: PulseColors.getTextSecondary(_isDarkMode),
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '10K Summer Ladder Cup',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: PulseColors.getTextPrimary(_isDarkMode),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: PulseColors.getTextSecondary(_isDarkMode),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // 7. Community Pulse / Nearby Challenges Section
+          // 6. Community Teaser Card (Coming Soon UX)
           Text(
-            'Community Pulse',
+            'Community',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w800,
@@ -803,107 +751,138 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               letterSpacing: -0.3,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
 
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               color: PulseColors.getSurface(_isDarkMode),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: PulseColors.getBorder(_isDarkMode),
-                width: 1.8,
-              ),
             ),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
                     CircleAvatar(
                       radius: 18,
-                      backgroundColor: PulseColors.primary.withValues(
-                        alpha: 0.2,
-                      ),
+                      backgroundColor: PulseColors.accent.withValues(alpha: 0.15),
                       child: const Icon(
-                        Icons.people_alt_rounded,
-                        size: 18,
+                        Icons.groups_rounded,
+                        size: 20,
                         color: PulseColors.accent,
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Open Doubles Lobby Nearby',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: PulseColors.getTextPrimary(_isDarkMode),
-                            ),
-                          ),
-                          Text(
-                            'Need 1 player @ BGC Courts • 1.2 km away',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: PulseColors.getTextSecondary(_isDarkMode),
-                            ),
-                          ),
-                        ],
+                      child: Text(
+                        'Rally Community',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: PulseColors.getTextPrimary(_isDarkMode),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    TextButton(
-                      onPressed: () {
-                        PulseToast.show(context, 'Joined open lobby invitation!');
-                      },
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: PulseColors.accent.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
                       child: const Text(
-                        'JOIN',
+                        'COMING SOON',
                         style: TextStyle(
-                          fontWeight: FontWeight.bold,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.6,
                           color: PulseColors.accent,
                         ),
                       ),
                     ),
                   ],
                 ),
-                Divider(height: 20, color: PulseColors.getBorder(_isDarkMode)),
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 18,
-                      backgroundColor: Colors.green.withValues(alpha: 0.2),
-                      child: const Icon(
-                        Icons.check_circle_rounded,
-                        size: 18,
-                        color: Colors.green,
+                const SizedBox(height: 12),
+                Text(
+                  'Clubs, local player discussions, and community challenges are coming soon to Rally. Get notified when we launch!',
+                  style: TextStyle(
+                    fontSize: 13,
+                    height: 1.4,
+                    color: PulseColors.getTextSecondary(_isDarkMode),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton(
+                    onPressed: () async {
+                      final targetState = !_isCommunityNotified;
+                      setState(() {
+                        _isCommunityNotified = targetState;
+                      });
+                      if (targetState) {
+                        PulseToast.showSuccess(
+                          context,
+                          "You're on the waitlist! We'll notify you when Community launches.",
+                        );
+                        final success = await CommunityService().subscribeWaitlist(email: _user?.email);
+                        if (!success && mounted) {
+                          setState(() => _isCommunityNotified = false);
+                        }
+                      } else {
+                        PulseToast.show(
+                          context,
+                          'Removed from launch notifications.',
+                        );
+                        await CommunityService().unsubscribeWaitlist(email: _user?.email);
+                      }
+                    },
+                    style: TextButton.styleFrom(
+                      backgroundColor: _isCommunityNotified
+                          ? (_isDarkMode
+                              ? const Color(0xFF1E293B)
+                              : const Color(0xFFE2E8F0))
+                          : PulseColors.accent,
+                      foregroundColor: _isCommunityNotified
+                          ? PulseColors.getTextPrimary(_isDarkMode)
+                          : Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Marcus D. defeated Dave K.',
-                            style: TextStyle(
-                              fontSize: 14,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          _isCommunityNotified
+                              ? Icons.check_circle_rounded
+                              : Icons.notifications_active_rounded,
+                          size: 18,
+                          color: _isCommunityNotified
+                              ? Colors.green
+                              : Colors.white,
+                        ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            _isCommunityNotified
+                                ? "You're on the Waitlist"
+                                : 'Get Notified on Launch',
+                            style: const TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: PulseColors.getTextPrimary(_isDarkMode),
+                              fontSize: 13,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          Text(
-                            'Score: 2-1 (11-9, 8-11, 11-7) • +12 ELO',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: PulseColors.getTextSecondary(_isDarkMode),
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ],
             ),
