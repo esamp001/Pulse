@@ -149,8 +149,112 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
   }
 
   void _copyMatchCode() {
-    Clipboard.setData(ClipboardData(text: _match.id));
-    PulseToast.show(context, 'Match Code copied to clipboard!');
+    final pin = _match.formattedPinCode;
+    Clipboard.setData(ClipboardData(text: pin));
+    PulseToast.show(context, 'Match PIN $pin copied to clipboard!');
+  }
+
+  Future<void> _handleSwitchRole(String targetRole) async {
+    final roleLabel = targetRole == 'player2' ? 'Player 2' : 'Neutral Scorer';
+    try {
+      final updatedMatch = await _matchService.switchParticipantRole(
+        matchId: _match.id,
+        targetRole: targetRole,
+      );
+      if (mounted) {
+        setState(() {
+          _match = updatedMatch;
+        });
+        PulseToast.showSuccess(context, 'Switched to $roleLabel slot!');
+      }
+    } catch (e) {
+      if (mounted) {
+        PulseToast.showError(context, e.toString().replaceAll('Exception: ', ''));
+      }
+    }
+  }
+
+  Future<void> _confirmAndSwitchRole(String targetRole) async {
+    final currentUserId = AuthService.currentUser?.id;
+    if (currentUserId == null) return;
+
+    final targetLabel = targetRole == 'player2' ? 'Player 2 (Opponent)' : 'Neutral Scorer';
+    String currentRoleLabel = 'Participant';
+    if (_match.player1Id == currentUserId) {
+      currentRoleLabel = 'Player 1 (Host)';
+    } else if (_match.player2Id == currentUserId) {
+      currentRoleLabel = 'Player 2 (Opponent)';
+    } else if (_match.scorerId == currentUserId) {
+      currentRoleLabel = 'Neutral Scorer';
+    }
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: PulseColors.getSurface(_isDarkMode),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+            side: BorderSide(color: PulseColors.getBorder(_isDarkMode)),
+          ),
+          title: Row(
+            children: [
+              const Icon(Icons.swap_horiz_rounded, color: PulseColors.accent, size: 24),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Switch Slot Role?',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: PulseColors.getTextPrimary(_isDarkMode),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            'Are you sure you want to move from $currentRoleLabel to $targetLabel?',
+            style: TextStyle(
+              fontSize: 14,
+              height: 1.4,
+              color: PulseColors.getTextSecondary(_isDarkMode),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  color: PulseColors.getTextSecondary(_isDarkMode),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: PulseColors.accent,
+                foregroundColor: Colors.white,
+                elevation: 0, // STRICT NO DROP SHADOW RULE
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: const Text(
+                'Confirm Move',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm == true) {
+      await _handleSwitchRole(targetRole);
+    }
   }
 
   Future<void> _handleExitLobby() async {
@@ -361,7 +465,7 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
   Widget build(BuildContext context) {
     final currentUserId = AuthService.currentUser?.id;
     final isCurrentUserHost = _match.creatorId == currentUserId || _match.player1Id == currentUserId;
-
+    
     final isReady = _match.status == 'READY' ||
         (_match.player2Id != null &&
          _match.player2Accepted &&
@@ -486,9 +590,125 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
               ),
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
 
-            // Match Info Summary Card
+            // High-Visibility Court Join PIN Card (Option A with Copy PIN)
+            if (['WAITING', 'READY'].contains(_match.status)) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: PulseColors.getSurface(_isDarkMode),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: PulseColors.accent.withValues(alpha: 0.4),
+                    width: 1.5,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.key_rounded,
+                            size: 16,
+                            color: PulseColors.accent,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'COURT JOIN PIN CODE',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 1.0,
+                              color: PulseColors.getTextSecondary(_isDarkMode),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // 6 Large Segmented Digit Boxes (Grouped 3 + 3)
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Builder(
+                        builder: (context) {
+                          final pin = _match.formattedPinCode;
+                          final chars = pin.padRight(6, '0').split('');
+                          return Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              for (int i = 0; i < 6; i++) ...[
+                                if (i == 3) const SizedBox(width: 12),
+                                Container(
+                                  width: 38,
+                                  height: 46,
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    color: PulseColors.getBackground(_isDarkMode),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: PulseColors.accent.withValues(alpha: 0.5),
+                                      width: 1.2,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    chars[i],
+                                    style: const TextStyle(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w900,
+                                      color: PulseColors.accent,
+                                    ),
+                                  ),
+                                ),
+                                if (i < 5 && i != 2) const SizedBox(width: 6),
+                              ],
+                            ],
+                          );
+                        },
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Copy PIN Only Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 44,
+                      child: OutlinedButton.icon(
+                        onPressed: _copyMatchCode,
+                        icon: const Icon(Icons.copy_rounded, size: 16),
+                        label: const Text(
+                          'Copy PIN',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: PulseColors.accent,
+                          side: BorderSide(
+                            color: PulseColors.accent.withValues(alpha: 0.5),
+                            width: 1.2,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+
+            // Match Info Summary Card (Retains Sport, Location, Date, Set & Points)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
@@ -504,57 +724,18 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
+                      const Icon(Icons.sports_tennis_rounded, color: PulseColors.primary, size: 20),
+                      const SizedBox(width: 8),
                       Expanded(
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: Row(
-                            children: [
-                              const Icon(Icons.sports_tennis_rounded, color: PulseColors.primary, size: 20),
-                              const SizedBox(width: 8),
-                              Text(
-                                _match.sportDisplayName,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w900,
-                                  color: PulseColors.getTextPrimary(_isDarkMode),
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
+                        child: Text(
+                          _match.sportDisplayName,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                            color: PulseColors.getTextPrimary(_isDarkMode),
                           ),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      InkWell(
-                        onTap: _copyMatchCode,
-                        borderRadius: BorderRadius.circular(8),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: PulseColors.primary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: PulseColors.primary.withValues(alpha: 0.3)),
-                          ),
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Row(
-                              children: [
-                                Text(
-                                  'ID: ${_match.id.length > 8 ? _match.id.substring(0, 8) : _match.id}',
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: PulseColors.primary,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                const Icon(Icons.copy_rounded, size: 12, color: PulseColors.primary),
-                              ],
-                            ),
-                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -633,12 +814,23 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
             const SizedBox(height: 12),
 
             // 1. Player 1 Card (Host)
-            _buildParticipantCard(
-              title: 'PLAYER 1 (HOST)',
-              participant: _match.player1,
-              isHostCard: true,
-              roleKey: 'player1',
-            ),
+            _match.player1 != null
+                ? _buildParticipantCard(
+                    title: 'PLAYER 1 (HOST)',
+                    participant: _match.player1,
+                    isHostCard: true,
+                    roleKey: 'player1',
+                    currentUserId: currentUserId,
+                  )
+                : _buildEmptySlotCard(
+                    title: 'PLAYER 1 (HOST)',
+                    subtitle: 'Move to compete as Player 1',
+                    icon: Icons.person_add_alt_1_rounded,
+                    onTapInvite: () => _openInviteModal('player1'),
+                    onMoveHere: (currentUserId != null && currentUserId != _match.player1Id)
+                        ? () => _confirmAndSwitchRole('player1')
+                        : null,
+                  ),
 
             const SizedBox(height: 12),
 
@@ -651,12 +843,16 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                     roleKey: 'player2',
                     canKick: isCurrentUserHost,
                     onKick: () => _handleKickParticipant('player2', _match.player2?.name ?? 'Player 2'),
+                    currentUserId: currentUserId,
                   )
                 : _buildEmptySlotCard(
                     title: 'PLAYER 2 (OPPONENT)',
                     subtitle: 'Invite Player 2 to join match',
                     icon: Icons.person_add_alt_1_rounded,
-                    onTap: () => _openInviteModal('player2'),
+                    onTapInvite: () => _openInviteModal('player2'),
+                    onMoveHere: (currentUserId != null && currentUserId != _match.player2Id)
+                        ? () => _confirmAndSwitchRole('player2')
+                        : null,
                   ),
 
             const SizedBox(height: 12),
@@ -670,12 +866,16 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                     roleKey: 'scorer',
                     canKick: isCurrentUserHost,
                     onKick: () => _handleKickParticipant('scorer', _match.scorer?.name ?? 'Scorer'),
+                    currentUserId: currentUserId,
                   )
                 : _buildEmptySlotCard(
                     title: 'NEUTRAL SCORER',
                     subtitle: 'Assign a referee to record live score',
                     icon: Icons.sports_score_rounded,
-                    onTap: () => _openInviteModal('scorer'),
+                    onTapInvite: () => _openInviteModal('scorer'),
+                    onMoveHere: (currentUserId != null && currentUserId != _match.scorerId)
+                        ? () => _confirmAndSwitchRole('scorer')
+                        : null,
                   ),
 
             const SizedBox(height: 36),
@@ -730,8 +930,6 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
               ),
             ),
             const SizedBox(height: 12),
-
-
           ],
         ),
       ),
@@ -745,11 +943,13 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
     required String roleKey,
     bool canKick = false,
     VoidCallback? onKick,
+    String? currentUserId,
   }) {
     final displayName = participant?.name ?? 'Assigned User';
     final ratingText = '${participant?.rating ?? 1200} ELO';
     final initials = participant?.initials ?? '?';
     final avatarUrl = participant?.avatarUrl;
+    final bool isCurrentUser = currentUserId != null && participant?.id == currentUserId;
 
     final bool isAccepted = isHostCard ||
         (roleKey == 'player2' ? _match.player2Accepted : _match.scorerAccepted);
@@ -758,20 +958,22 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
       decoration: BoxDecoration(
-        color: PulseColors.getSurface(_isDarkMode),
-        borderRadius: BorderRadius.circular(16),
+        color: isCurrentUser
+            ? PulseColors.accent.withValues(alpha: _isDarkMode ? 0.08 : 0.04)
+            : PulseColors.getSurface(_isDarkMode),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: PulseColors.getBorder(_isDarkMode),
-          width: 1.5,
+          color: isCurrentUser ? PulseColors.accent : PulseColors.getBorder(_isDarkMode),
+          width: isCurrentUser ? 2.2 : 1.5,
         ),
       ),
       child: Row(
         children: [
           // Avatar representation (Network image or initials avatar)
           CircleAvatar(
-            radius: 24,
+            radius: 26,
             backgroundColor: isHostCard
                 ? PulseColors.accent.withValues(alpha: 0.2)
                 : PulseColors.primary.withValues(alpha: 0.2),
@@ -782,14 +984,14 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                     style: TextStyle(
                       color: isHostCard ? PulseColors.accent : PulseColors.primary,
                       fontWeight: FontWeight.bold,
-                      fontSize: 18,
+                      fontSize: 19,
                     ),
                   )
                 : null,
           ),
           const SizedBox(width: 14),
 
-          // User details
+          // User details (Title, Name, ELO Rating at bottom)
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -813,14 +1015,28 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                       if (isHostCard) ...[
                         const SizedBox(width: 6),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
                             color: PulseColors.accent,
-                            borderRadius: BorderRadius.circular(4),
+                            borderRadius: BorderRadius.circular(6),
                           ),
                           child: const Text(
                             'HOST',
-                            style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.white),
+                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 0.5),
+                          ),
+                        ),
+                      ],
+                      if (isCurrentUser) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: PulseColors.primary,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text(
+                            'YOU',
+                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 0.5),
                           ),
                         ),
                       ],
@@ -831,71 +1047,67 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                 Text(
                   displayName,
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 15,
                     fontWeight: FontWeight.bold,
                     color: PulseColors.getTextPrimary(_isDarkMode),
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
+                const SizedBox(height: 4),
+                // ELO Rating moved to the bottom under user name
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: PulseColors.accent.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: PulseColors.accent.withValues(alpha: 0.3)),
+                  ),
+                  child: Text(
+                    ratingText,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: PulseColors.accent,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
 
-          // Rating Badge & Status
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          // Status & Kick action
+          Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                width: 8,
+                height: 8,
                 decoration: BoxDecoration(
-                  color: PulseColors.accent.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: PulseColors.accent.withValues(alpha: 0.3)),
-                ),
-                child: Text(
-                  ratingText,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: PulseColors.accent,
-                  ),
+                  color: statusColor,
+                  shape: BoxShape.circle,
                 ),
               ),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: statusColor,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    statusText,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: statusColor,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
+              const SizedBox(width: 4),
+              Text(
+                statusText,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: statusColor,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
+              if (canKick && onKick != null) ...[
+                const SizedBox(width: 6),
+                IconButton(
+                  icon: const Icon(Icons.person_remove_rounded, size: 20, color: PulseColors.error),
+                  tooltip: 'Kick participant',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                  onPressed: onKick,
+                ),
+              ],
             ],
           ),
-
-          if (canKick && onKick != null) ...[
-            const SizedBox(width: 8),
-            IconButton(
-              icon: const Icon(Icons.person_remove_rounded, size: 20, color: PulseColors.error),
-              tooltip: 'Kick participant',
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-              onPressed: onKick,
-            ),
-          ],
         ],
       ),
     );
@@ -905,29 +1117,28 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
     required String title,
     required String subtitle,
     required IconData icon,
-    required VoidCallback? onTap,
+    required VoidCallback? onTapInvite,
+    VoidCallback? onMoveHere,
   }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: PulseColors.getCard(_isDarkMode),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: PulseColors.accent.withValues(alpha: 0.5),
-              width: 1.5,
-            ),
-          ),
-          child: Row(
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: PulseColors.getCard(_isDarkMode),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: PulseColors.accent.withValues(alpha: 0.4),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
               Container(
-                width: 48,
-                height: 48,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
                   color: PulseColors.accent.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
@@ -949,7 +1160,7 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                         letterSpacing: 0.8,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 3),
                     Text(
                       subtitle,
                       style: TextStyle(
@@ -957,28 +1168,82 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                         fontWeight: FontWeight.bold,
                         color: PulseColors.getTextPrimary(_isDarkMode),
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: PulseColors.accent,
-                  borderRadius: BorderRadius.circular(8),
+            ],
+          ),
+
+          const SizedBox(height: 14),
+
+          // Bottom Action Row: Move Here + Invite Buttons
+          Row(
+            children: [
+              if (onMoveHere != null) ...[
+                Expanded(
+                  child: SizedBox(
+                    height: 38,
+                    child: OutlinedButton.icon(
+                      onPressed: onMoveHere,
+                      icon: const Icon(Icons.swap_horiz_rounded, size: 16),
+                      label: const FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          'Move Here',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: PulseColors.primary,
+                        side: BorderSide(
+                          color: PulseColors.primary.withValues(alpha: 0.5),
+                          width: 1.2,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
-                child: const Text(
-                  '+ Invite',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                const SizedBox(width: 10),
+              ],
+              Expanded(
+                child: SizedBox(
+                  height: 38,
+                  child: ElevatedButton.icon(
+                    onPressed: onTapInvite,
+                    icon: const Icon(Icons.person_add_rounded, size: 16),
+                    label: const FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        'Invite',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: PulseColors.accent,
+                      foregroundColor: Colors.white,
+                      elevation: 0, // STRICT NO DROP SHADOW RULE
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
                   ),
                 ),
               ),
             ],
           ),
-        ),
+        ],
       ),
     );
   }

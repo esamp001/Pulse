@@ -682,16 +682,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             mainAxisSpacing: 12,
             childAspectRatio: 1.15,
             children: [
-              // 1. Scan QR (Card 1)
+              // 1. Join with PIN (Card 1)
               PulseWidgetCard(
                 imagePath: 'assets/images/scan_qr.png',
-                title: 'Scan QR',
-                subtitle: 'Join Room',
-                pillText: 'FAST',
+                title: 'Join with PIN',
+                subtitle: '6-Digit Court Code',
+                pillText: 'PIN',
                 isDarkMode: _isDarkMode,
-                onTap: () {
-                  PulseToast.show(context, 'Opening QR Scanner');
-                },
+                onTap: () => _showJoinMatchByPinModal(context),
               ),
               // 2. Find Courts (Card 2)
               PulseWidgetCard(
@@ -2430,6 +2428,191 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _user = updatedUser;
       });
     }
+  }
+
+  void _showJoinMatchByPinModal(BuildContext context) {
+    final pinController = TextEditingController();
+    bool isJoining = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (modalContext) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Container(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+                top: 20,
+                left: 24,
+                right: 24,
+              ),
+              decoration: BoxDecoration(
+                color: PulseColors.getSurface(_isDarkMode),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(28),
+                ),
+                border: Border.all(
+                  color: PulseColors.getBorder(_isDarkMode),
+                  width: 1.5,
+                ),
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: PulseColors.getTextSecondary(_isDarkMode).withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: PulseColors.accent.withValues(alpha: 0.12),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.pin_rounded,
+                        color: PulseColors.accent,
+                        size: 32,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Enter Match PIN',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        color: PulseColors.getTextPrimary(_isDarkMode),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Enter the 6-digit court PIN code displayed on the host\'s phone to join room instantly.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: PulseColors.getTextSecondary(_isDarkMode),
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    TextField(
+                      controller: pinController,
+                      keyboardType: TextInputType.number,
+                      maxLength: 6,
+                      textAlign: TextAlign.center,
+                      enabled: !isJoining,
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 8,
+                        color: PulseColors.getTextPrimary(_isDarkMode),
+                      ),
+                      decoration: InputDecoration(
+                        counterText: '',
+                        hintText: '000000',
+                        hintStyle: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 8,
+                          color: PulseColors.getTextSecondary(_isDarkMode).withValues(alpha: 0.3),
+                        ),
+                        filled: true,
+                        fillColor: PulseColors.getBackground(_isDarkMode),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(
+                            color: PulseColors.getBorder(_isDarkMode),
+                            width: 1.2,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(
+                            color: PulseColors.accent,
+                            width: 2.0,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton(
+                        onPressed: isJoining
+                            ? null
+                            : () async {
+                                final pin = pinController.text.trim();
+                                if (pin.length != 6) {
+                                  PulseToast.showError(context, 'Please enter a 6-digit PIN code');
+                                  return;
+                                }
+
+                                setModalState(() => isJoining = true);
+                                try {
+                                  final joinedMatch = await _matchService.joinMatchByPin(pin);
+                                  if (mounted) {
+                                    Navigator.pop(modalContext);
+                                    PulseToast.showSuccess(context, 'Joined match room successfully!');
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => MatchLobbyScreen(match: joinedMatch),
+                                      ),
+                                    );
+                                  }
+                                } catch (e) {
+                                  setModalState(() => isJoining = false);
+                                  if (mounted) {
+                                    PulseToast.showError(
+                                      context,
+                                      e.toString().replaceAll('Exception: ', ''),
+                                    );
+                                  }
+                                }
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: PulseColors.accent,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: isJoining
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2.0,
+                                ),
+                              )
+                            : const Text(
+                                'Join Match Room',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   Widget _buildDrawerMenuItem({

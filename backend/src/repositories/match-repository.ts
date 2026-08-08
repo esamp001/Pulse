@@ -14,6 +14,7 @@ export interface CreateMatchParams {
 }
 
 export interface UpdateMatchParticipantsParams {
+  player1_id?: string | null;
   player2_id?: string | null;
   player2_accepted?: boolean;
   scorer_id?: string | null;
@@ -26,7 +27,22 @@ export interface UpdateMatchParticipantsParams {
 }
 
 class MatchRepository {
+  private async generateUniquePin(): Promise<string> {
+    for (let attempts = 0; attempts < 10; attempts++) {
+      const pin = Math.floor(100000 + Math.random() * 900000).toString();
+      const existing = await db<Match>('matches')
+        .where({ pin_code: pin })
+        .whereIn('status', ['WAITING', 'READY', 'LIVE'])
+        .first();
+      if (!existing) {
+        return pin;
+      }
+    }
+    return (Date.now() % 1000000).toString().padStart(6, '0');
+  }
+
   async create(data: CreateMatchParams): Promise<Match> {
+    const pin_code = await this.generateUniquePin();
     const [match] = (await db<Match>('matches')
       .insert({
         creator_id: data.creator_id,
@@ -38,6 +54,7 @@ class MatchRepository {
         total_sets: data.total_sets ?? 3,
         points_to_win_set: data.points_to_win_set ?? 11,
         win_by_two: data.win_by_two ?? true,
+        pin_code,
         status: 'WAITING',
       })
       .returning('*')) as Match[];
@@ -47,6 +64,14 @@ class MatchRepository {
 
   async findById(id: string): Promise<Match | undefined> {
     return db<Match>('matches').where({ id }).first();
+  }
+
+  async findByPin(pinCode: string): Promise<Match | undefined> {
+    return db<Match>('matches')
+      .where({ pin_code: pinCode.trim() })
+      .whereIn('status', ['WAITING', 'READY'])
+      .orderBy('created_at', 'desc')
+      .first();
   }
 
   private async getParticipantDetails(userId: string, matchSport: string) {
@@ -81,7 +106,9 @@ class MatchRepository {
 
     const matchSport = match.sport || 'pickleball';
     const [player1, player2, scorer] = await Promise.all([
-      this.getParticipantDetails(match.player1_id, matchSport),
+      match.player1_id
+        ? this.getParticipantDetails(match.player1_id, matchSport)
+        : Promise.resolve(null),
       match.player2_id
         ? this.getParticipantDetails(match.player2_id, matchSport)
         : Promise.resolve(null),
@@ -92,7 +119,7 @@ class MatchRepository {
 
     return {
       ...match,
-      player1: player1 || undefined,
+      player1: player1 || null,
       player2: player2 || null,
       scorer: scorer || null,
     };
@@ -103,6 +130,7 @@ class MatchRepository {
       updated_at: new Date(),
     };
 
+    if (params.player1_id !== undefined) updatePayload.player1_id = params.player1_id;
     if (params.player2_id !== undefined) updatePayload.player2_id = params.player2_id;
     if (params.player2_accepted !== undefined) updatePayload.player2_accepted = params.player2_accepted;
     if (params.scorer_id !== undefined) updatePayload.scorer_id = params.scorer_id;

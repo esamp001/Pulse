@@ -64,6 +64,62 @@ class MatchController {
     }
   };
 
+  joinMatchByPin = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized user' });
+        return;
+      }
+
+      const { pin, role } = req.body;
+      if (!pin) {
+        res.status(400).json({ error: '6-digit PIN code is required' });
+        return;
+      }
+
+      const match = await this.matchService.joinMatchByPin(userId, pin, role);
+      notifyUserActiveMatchUpdate([userId, match.creator_id, match.player1_id, match.player2_id, match.scorer_id]);
+
+      res.status(200).json({
+        message: 'Successfully joined match via PIN',
+        data: match,
+      });
+    } catch (error: any) {
+      console.error('[MatchController joinMatchByPin Error]:', error);
+      res.status(400).json({ error: error.message || 'Failed to join match by PIN' });
+    }
+  };
+
+  switchRole = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized user' });
+        return;
+      }
+
+      const { id } = req.params;
+      const { target_role } = req.body;
+
+      if (!target_role || (target_role !== 'player1' && target_role !== 'player2' && target_role !== 'scorer')) {
+        res.status(400).json({ error: 'target_role must be player1, player2, or scorer' });
+        return;
+      }
+
+      const match = await this.matchService.switchRole(id, userId, target_role);
+      notifyUserActiveMatchUpdate([userId, match.creator_id, match.player1_id, match.player2_id, match.scorer_id]);
+
+      res.status(200).json({
+        message: 'Successfully switched role in match room',
+        data: match,
+      });
+    } catch (error: any) {
+      console.error('[MatchController switchRole Error]:', error);
+      res.status(400).json({ error: error.message || 'Failed to switch role' });
+    }
+  };
+
   getUserMatches = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const userId = req.user?.userId;

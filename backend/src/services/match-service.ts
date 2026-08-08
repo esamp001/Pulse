@@ -320,6 +320,191 @@ class MatchService {
     return this.matchRepository.findByUserId(userId);
   }
 
+  async joinMatchByPin(userId: string, pinCode: string, requestedRole?: string): Promise<MatchWithDetails> {
+    const cleanPin = (pinCode || '').trim();
+    if (!cleanPin || cleanPin.length !== 6) {
+      throw new Error('Please enter a valid 6-digit match PIN');
+    }
+
+    const match = await this.matchRepository.findByPin(cleanPin);
+    if (!match) {
+      throw new Error('Invalid or expired match PIN code');
+    }
+
+    // Check if user is host or already in match
+    if (match.player1_id === userId || match.player2_id === userId || match.scorer_id === userId) {
+      const matchDetails = await this.matchRepository.findByIdWithDetails(match.id);
+      return matchDetails!;
+    }
+
+    if (!['WAITING', 'READY'].includes(match.status)) {
+      throw new Error('This match room is no longer open for joining');
+    }
+
+    let roleToAssign = requestedRole;
+    if (!roleToAssign) {
+      if (!match.player2_id) {
+        roleToAssign = 'player2';
+      } else if (!match.scorer_id) {
+        roleToAssign = 'scorer';
+      } else {
+        throw new Error('This match room is already full');
+      }
+    }
+
+    let nextPlayer2Id = match.player2_id;
+    let nextPlayer2Accepted = match.player2_accepted;
+    let nextScorerId = match.scorer_id;
+    let nextScorerAccepted = match.scorer_accepted;
+
+    if (roleToAssign === 'player2') {
+      if (match.player2_id) {
+        throw new Error('Player 2 slot is already occupied');
+      }
+      nextPlayer2Id = userId;
+      nextPlayer2Accepted = true; // Auto-accepted via explicit PIN court join
+    } else if (roleToAssign === 'scorer') {
+      if (match.scorer_id) {
+        throw new Error('Scorer slot is already occupied');
+      }
+      nextScorerId = userId;
+      nextScorerAccepted = true; // Auto-accepted via explicit PIN court join
+    }
+
+    const isAllReady = nextPlayer2Id && nextPlayer2Accepted && nextScorerId && nextScorerAccepted;
+    const nextStatus = isAllReady ? 'READY' : 'WAITING';
+
+    await this.matchRepository.updateParticipants(match.id, {
+      player2_id: nextPlayer2Id,
+      player2_accepted: nextPlayer2Accepted,
+      scorer_id: nextScorerId,
+      scorer_accepted: nextScorerAccepted,
+      status: nextStatus,
+    });
+
+    const updatedWithDetails = await this.matchRepository.findByIdWithDetails(match.id);
+    return updatedWithDetails!;
+  }
+
+  async switchRole(
+    matchId: string,
+    userId: string,
+    targetRole: 'player1' | 'player2' | 'scorer'
+  ): Promise<MatchWithDetails> {
+    const match = await this.matchRepository.findById(matchId);
+    if (!match) {
+      throw new Error('Match not found');
+    }
+
+    if (!['WAITING', 'READY'].includes(match.status)) {
+      throw new Error('Cannot switch role after match has started');
+    }
+
+    const isPlayer1 = match.player1_id === userId;
+    const isPlayer2 = match.player2_id === userId;
+    const isScorer = match.scorer_id === userId;
+
+    if (!isPlayer1 && !isPlayer2 && !isScorer) {
+      throw new Error('You are not a participant in this match room');
+    }
+
+    let nextPlayer1Id: string | null = match.player1_id;
+    let nextPlayer2Id = match.player2_id;
+    let nextPlayer2Accepted = match.player2_accepted;
+    let nextScorerId = match.scorer_id;
+    let nextScorerAccepted = match.scorer_accepted;
+
+    if (targetRole === 'player1') {
+      if (isPlayer1) {
+        const updated = await this.matchRepository.findByIdWithDetails(matchId);
+        return updated!;
+      }
+      if (match.player1_id && match.player1_id !== userId) {
+        throw new Error('Player 1 slot is already occupied');
+      }
+
+      if (isPlayer2) {
+        nextPlayer2Id = null;
+        nextPlayer2Accepted = false;
+      } else if (isScorer) {
+        nextScorerId = null;
+        nextScorerAccepted = false;
+      }
+
+      nextPlayer1Id = userId;
+    } else if (targetRole === 'player2') {
+      if (isPlayer2) {
+        const updated = await this.matchRepository.findByIdWithDetails(matchId);
+        return updated!;
+      }
+      if (match.player2_id && match.player2_id !== userId) {
+        throw new Error('Player 2 slot is already occupied');
+      }
+
+      const user = await this.userRepository.findById(userId);
+      if (user) {
+        const matchSportNorm = (match.sport || 'pickleball').toLowerCase().replace(/_/g, ' ').replace(/-/g, ' ').trim();
+        const targetRatings = user.sport_ratings || {};
+        const targetRatingKeys = Object.keys(targetRatings).map((k) => k.toLowerCase().replace(/_/g, ' ').replace(/-/g, ' ').trim());
+        const primaryNorm = (user.primary_sport || '').toLowerCase().replace(/_/g, ' ').replace(/-/g, ' ').trim();
+        const hasSport = targetRatingKeys.includes(matchSportNorm) || primaryNorm === matchSportNorm;
+        if (!hasSport) {
+          const sportLabel = matchSportNorm === 'table tennis' ? 'Table Tennis' : matchSportNorm[0].toUpperCase() + matchSportNorm.slice(1);
+          throw new Error(`Cannot switch to Player 2: You have not configured ${sportLabel} in your sport preferences.`);
+        }
+      }
+
+      if (isScorer) {
+        nextScorerId = null;
+        nextScorerAccepted = false;
+      } else if (isPlayer1) {
+        nextPlayer1Id = null;
+      }
+
+      nextPlayer2Id = userId;
+      nextPlayer2Accepted = true;
+    } else if (targetRole === 'scorer') {
+      if (isScorer) {
+        const updated = await this.matchRepository.findByIdWithDetails(matchId);
+        return updated!;
+      }
+      if (match.scorer_id && match.scorer_id !== userId) {
+        throw new Error('Scorer slot is already occupied');
+      }
+
+      if (isPlayer2) {
+        nextPlayer2Id = null;
+        nextPlayer2Accepted = false;
+      } else if (isPlayer1) {
+        if (match.player2_id) {
+          nextPlayer1Id = match.player2_id;
+          nextPlayer2Id = null;
+          nextPlayer2Accepted = false;
+        } else {
+          nextPlayer1Id = null;
+        }
+      }
+
+      nextScorerId = userId;
+      nextScorerAccepted = true;
+    }
+
+    const isAllReady = nextPlayer1Id && nextPlayer2Id && nextPlayer2Accepted && nextScorerId && nextScorerAccepted;
+    const nextStatus = isAllReady ? 'READY' : 'WAITING';
+
+    await this.matchRepository.updateParticipants(matchId, {
+      player1_id: nextPlayer1Id,
+      player2_id: nextPlayer2Id,
+      player2_accepted: nextPlayer2Accepted,
+      scorer_id: nextScorerId,
+      scorer_accepted: nextScorerAccepted,
+      status: nextStatus,
+    });
+
+    const updatedWithDetails = await this.matchRepository.findByIdWithDetails(matchId);
+    return updatedWithDetails!;
+  }
+
   async kickParticipant(
     matchId: string,
     requesterId: string,

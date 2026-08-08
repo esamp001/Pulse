@@ -87,6 +87,7 @@ class MatchModel {
   final int player1SetsWon;
   final int player2SetsWon;
   final String? setScores;
+  final String? pinCode;
 
   final MatchParticipantModel? player1;
   final MatchParticipantModel? player2;
@@ -112,6 +113,7 @@ class MatchModel {
     this.player1SetsWon = 0,
     this.player2SetsWon = 0,
     this.setScores,
+    this.pinCode,
     this.createdAt,
     this.updatedAt,
     this.player1,
@@ -142,6 +144,14 @@ class MatchModel {
   /// Display helper for win margin title
   String get winMarginTitle => winByTwo ? 'Win by 2 Points' : 'Standard';
 
+  /// Formatted PIN code for court joining
+  String get formattedPinCode {
+    if (pinCode != null && pinCode!.isNotEmpty) {
+      return pinCode!;
+    }
+    return id.length > 6 ? id.substring(0, 6).toUpperCase() : id.toUpperCase();
+  }
+
   factory MatchModel.fromJson(Map<String, dynamic> json) {
     return MatchModel(
       id: json['id'] as String? ?? '',
@@ -163,6 +173,7 @@ class MatchModel {
       player1SetsWon: json['player1_sets_won'] is int ? json['player1_sets_won'] as int : int.tryParse('${json['player1_sets_won']}') ?? 0,
       player2SetsWon: json['player2_sets_won'] is int ? json['player2_sets_won'] as int : int.tryParse('${json['player2_sets_won']}') ?? 0,
       setScores: json['set_scores'] as String?,
+      pinCode: json['pin_code'] as String? ?? json['pinCode'] as String?,
       createdAt: json['created_at'] != null ? DateTime.tryParse('${json['created_at']}') : null,
       updatedAt: json['updated_at'] != null ? DateTime.tryParse('${json['updated_at']}') : null,
       player1: json['player1'] != null && json['player1'] is Map<String, dynamic>

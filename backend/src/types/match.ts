@@ -21,6 +21,7 @@ export interface Match {
   player1_sets_won?: number;
   player2_sets_won?: number;
   set_scores?: string | null;
+  pin_code?: string | null;
   created_at: Date;
   updated_at: Date;
 }

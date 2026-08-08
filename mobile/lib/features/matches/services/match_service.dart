@@ -353,5 +353,60 @@ class MatchService {
       throw Exception(responseData['error'] ?? 'Failed to update match status');
     }
   }
+
+  /// Join an active match using a 6-digit court PIN code
+  Future<MatchModel> joinMatchByPin(String pinCode) async {
+    final token = AuthService.currentToken;
+    if (token == null) {
+      throw Exception('Authentication token missing. Please log in again.');
+    }
+
+    final response = await http.post(
+      Uri.parse('$_matchesUrl/join-by-pin'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'pin': pinCode.trim(),
+      }),
+    );
+
+    final responseData = jsonDecode(response.body);
+    if (response.statusCode == 200 && responseData['data'] != null) {
+      return MatchModel.fromJson(responseData['data']);
+    } else {
+      throw Exception(responseData['error'] ?? 'Failed to join match by PIN');
+    }
+  }
+
+  /// Switch participant role slot inside match lobby room
+  Future<MatchModel> switchParticipantRole({
+    required String matchId,
+    required String targetRole,
+  }) async {
+    final token = AuthService.currentToken;
+    if (token == null) {
+      throw Exception('Authentication token missing. Please log in again.');
+    }
+
+    final response = await http.patch(
+      Uri.parse('$_matchesUrl/$matchId/switch-role'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'target_role': targetRole,
+      }),
+    );
+
+    final responseData = jsonDecode(response.body);
+    if (response.statusCode == 200 && responseData['data'] != null) {
+      return MatchModel.fromJson(responseData['data']);
+    } else {
+      throw Exception(responseData['error'] ?? 'Failed to switch role in match room');
+    }
+  }
 }
 
