@@ -158,6 +158,10 @@ class AuthService {
     return this.formatUserResponse(updatedUser);
   }
 
+  async deleteAccount(userId: string): Promise<void> {
+    await this.userRepository.deleteUser(userId);
+  }
+
   private generateToken(userId: string): string {
     return jwt.sign({ userId }, config.jwtSecret, { expiresIn: config.jwtExpiresIn as jwt.SignOptions['expiresIn'] });
   }

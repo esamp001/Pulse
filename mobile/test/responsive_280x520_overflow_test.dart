@@ -7,6 +7,7 @@ import 'package:pulse_app/features/auth/presentation/screens/register_screen.dar
 import 'package:pulse_app/features/auth/presentation/screens/onboarding_screen.dart';
 import 'package:pulse_app/features/home/presentation/screens/home_screen.dart';
 import 'package:pulse_app/features/rankings/presentation/screens/rankings_screen.dart';
+import 'package:pulse_app/features/profile/presentation/screens/account_settings_screen.dart';
 import 'package:pulse_app/features/profile/presentation/screens/edit_profile_screen.dart';
 import 'package:pulse_app/features/help/presentation/screens/help_rules_screen.dart';
 import 'package:pulse_app/features/matches/presentation/screens/create_match_screen.dart';
@@ -187,6 +188,23 @@ void main() {
         ),
       ));
       await tester.pump();
+      resetViewport(tester);
+    });
+
+    testWidgets('AccountSettingsScreen with Delete Account Modal renders without pixel overflow on 280x520', (WidgetTester tester) async {
+      setSmallestScreen280x520(tester);
+      await tester.pumpWidget(MaterialApp(
+        home: AccountSettingsScreen(user: mockUser, isDarkMode: true),
+      ));
+      await tester.pump();
+
+      // Trigger Delete Account modal
+      final deleteBtn = find.text('Delete Account');
+      if (deleteBtn.evaluate().isNotEmpty) {
+        await tester.tap(deleteBtn.first, warnIfMissed: false);
+        await tester.pumpAndSettle();
+      }
+
       resetViewport(tester);
     });
   });

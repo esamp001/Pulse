@@ -174,6 +174,25 @@ class AuthController {
       res.status(400).json({ error: error.message || 'Failed to update password' });
     }
   };
+
+  deleteAccount = async (req: any, res: Response): Promise<void> => {
+    try {
+      const userId = req.user?.userId;
+
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      await this.authService.deleteAccount(userId);
+
+      res.status(200).json({
+        message: 'Account deleted successfully',
+      });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || 'Failed to delete account' });
+    }
+  };
 }
 
 export default AuthController;

@@ -22,6 +22,7 @@ import '../../../notifications/services/notification_service.dart';
 import '../../../matches/services/match_service.dart';
 import '../../../../core/services/socket_service.dart';
 import '../../../help/presentation/screens/help_rules_screen.dart';
+import '../../../profile/presentation/screens/account_settings_screen.dart';
 import '../../../profile/presentation/screens/edit_profile_screen.dart';
 import '../../../rankings/presentation/screens/rankings_screen.dart';
 
@@ -2326,6 +2327,26 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       onTap: () => _navigateToEditProfile(context, popDrawer: true),
                     ),
                     _buildDrawerMenuItem(
+                      icon: Icons.settings_outlined,
+                      title: 'Account Settings',
+                      subtitle: 'Email details, security & deletion',
+                      onTap: () {
+                        Navigator.pop(context);
+                        final user = _user ?? widget.user;
+                        if (user != null) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AccountSettingsScreen(
+                                user: user,
+                                isDarkMode: _isDarkMode,
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                    _buildDrawerMenuItem(
                       icon: Icons.sports_tennis_rounded,
                       title: 'Sport Preferences',
                       subtitle: 'Declare sports & starting ELO ratings',
@@ -2386,10 +2407,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       ),
     );
   }
-
-
-
-
 
   Future<void> _navigateToEditProfile(BuildContext context, {bool popDrawer = false}) async {
     if (popDrawer) {
@@ -3383,6 +3400,27 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   title: 'Password & Security Setup',
                   subtitle: 'Setup or update account password',
                   onTap: () => _showPasswordSetupModal(context),
+                ),
+
+                // Account Settings Tile
+                _buildDrawerMenuItem(
+                  icon: Icons.settings_outlined,
+                  title: 'Account Settings',
+                  subtitle: 'Email details, security & deletion',
+                  onTap: () {
+                    final user = _user ?? widget.user;
+                    if (user != null) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => AccountSettingsScreen(
+                            user: user,
+                            isDarkMode: _isDarkMode,
+                          ),
+                        ),
+                      );
+                    }
+                  },
                 ),
 
                 // Other Settings Menu Items

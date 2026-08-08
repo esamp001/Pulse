@@ -245,6 +245,45 @@ class UserRepository {
       });
     }
   }
+
+  async deleteUser(userId: string): Promise<void> {
+    try {
+      await db.transaction(async (trx) => {
+        // 1. Check if user is in active or queued match
+        const activeMatch = await trx('matches')
+          .whereIn('status', ['IN_PROGRESS', 'WAITING', 'READY', 'LIVE'])
+          .andWhere((builder) => {
+            builder
+              .where({ player1_id: userId })
+              .orWhere({ player2_id: userId })
+              .orWhere({ scorer_id: userId })
+              .orWhere({ creator_id: userId });
+          })
+          .first();
+
+        if (activeMatch) {
+          throw new Error('Cannot delete account while participating in an active or scheduled match. Please leave or complete the match first.');
+        }
+
+        // 2. Anonymize match participant references so historical match scores & stats remain intact
+        await trx('matches').where({ creator_id: userId }).update({ creator_id: null });
+        await trx('matches').where({ player1_id: userId }).update({ player1_id: null });
+        await trx('matches').where({ player2_id: userId }).update({ player2_id: null });
+        await trx('matches').where({ scorer_id: userId }).update({ scorer_id: null });
+        await trx('matches').where({ winner_id: userId }).update({ winner_id: null });
+
+        // 3. Delete user notifications & sport stats
+        await trx('notifications').where({ user_id: userId }).delete();
+        await trx('user_sport_stats').where({ user_id: userId }).delete();
+
+        // 4. Delete user record
+        await trx('users').where({ id: userId }).delete();
+      });
+    } catch (err) {
+      console.error('[User Account Deletion Error]:', err);
+      throw err;
+    }
+  }
 }
 
 export default UserRepository;

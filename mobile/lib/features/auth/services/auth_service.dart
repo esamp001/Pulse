@@ -340,6 +340,30 @@ class AuthService {
     }
   }
 
+  /// Permanently delete authenticated user account and clear session
+  Future<void> deleteAccount() async {
+    final token = _currentToken;
+    if (token == null) {
+      throw Exception('No active session token');
+    }
+
+    final response = await http.delete(
+      Uri.parse('$baseUrl/me'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    final responseData = jsonDecode(response.body);
+
+    if (response.statusCode == 200) {
+      await logout();
+    } else {
+      throw Exception(responseData['error'] ?? 'Failed to delete account');
+    }
+  }
+
   /// Clear active user session & sign out Google OAuth
   static Future<void> logout() async {
     SocketService().disconnect();
