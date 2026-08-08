@@ -376,11 +376,14 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
         leading: Center(
           child: PulseBackButton(isDarkMode: _isDarkMode),
         ),
-        title: Text(
-          'Create Match',
-          style: TextStyle(
-            color: PulseColors.getTextPrimary(_isDarkMode),
-            fontWeight: FontWeight.bold,
+        title: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            'Create Match',
+            style: TextStyle(
+              color: PulseColors.getTextPrimary(_isDarkMode),
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
         iconTheme: IconThemeData(

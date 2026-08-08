@@ -489,16 +489,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             Row(
                               children: [
                                 Flexible(
-                                  child: Text(
-                                    'Welcome back, $firstName',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w900,
-                                      letterSpacing: -0.4,
-                                      color: PulseColors.getTextPrimary(_isDarkMode),
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: Alignment.centerLeft,
+                                    child: Text(
+                                      'Welcome back, $firstName',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w900,
+                                        letterSpacing: -0.4,
+                                        color: PulseColors.getTextPrimary(_isDarkMode),
+                                      ),
+                                      maxLines: 1,
                                     ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                                 if (_isLoadingUser) ...[
@@ -515,15 +518,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                               ],
                             ),
                             const SizedBox(height: 2),
-                            Text(
-                              'Ready for your next verified match?',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                color: PulseColors.getTextSecondary(_isDarkMode),
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                'Ready for your next verified match?',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: PulseColors.getTextSecondary(_isDarkMode),
+                                ),
+                                maxLines: 1,
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
@@ -703,37 +709,40 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 isDarkMode: _isDarkMode,
                 onTap: () => _showJoinMatchByPinModal(context),
               ),
-              // 2. Find Courts (Card 2)
-              PulseWidgetCard(
-                imagePath: 'assets/images/find_court.png',
-                title: 'Find Courts',
-                subtitle: 'Locate Courts',
-                pillText: 'NEARBY',
-                isDarkMode: _isDarkMode,
-                onTap: () {
-                  PulseToast.show(context, 'Locating nearby courts...');
-                },
-              ),
-              // 3. Officiate (Card 3)
+              // 2. Match Players (Card 2) - Coming Soon
               PulseWidgetCard(
                 imagePath: 'assets/images/officiate.png',
-                title: 'Officiate',
-                subtitle: 'Neutral Ref',
-                pillText: 'LIVE',
+                title: 'Match Players',
+                subtitle: 'Nearby Opponents',
+                pillText: 'RADAR',
                 isDarkMode: _isDarkMode,
+                isComingSoon: true,
                 onTap: () {
-                  PulseToast.show(context, 'Opening Officiate Mode');
+                  PulseToast.show(context, 'Match Players Radar is coming soon in v1.1!');
                 },
               ),
-              // 4. Log Practice (Card 4)
+              // 3. Find Court (Card 3) - Coming Soon
+              PulseWidgetCard(
+                imagePath: 'assets/images/find_court.png',
+                title: 'Find Court',
+                subtitle: 'Locate Venues',
+                pillText: 'NEARBY',
+                isDarkMode: _isDarkMode,
+                isComingSoon: true,
+                onTap: () {
+                  PulseToast.show(context, 'Court Finder Map is coming soon in v1.1!');
+                },
+              ),
+              // 4. Share Victory (Card 4) - Coming Soon
               PulseWidgetCard(
                 imagePath: 'assets/images/all_balls.png',
-                title: 'Log Practice',
-                subtitle: 'Unrated Drills',
-                pillText: 'DRILLS',
+                title: 'Share Victory',
+                subtitle: 'Flex Your ELO',
+                pillText: 'SHARE',
                 isDarkMode: _isDarkMode,
+                isComingSoon: true,
                 onTap: () {
-                  PulseToast.show(context, 'Logging practice session...');
+                  PulseToast.show(context, 'Victory Share Card Generator is coming soon in v1.1!');
                 },
               ),
             ],
@@ -945,25 +954,31 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'MATCH HISTORY',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -0.4,
-                            color: PulseColors.getTextPrimary(_isDarkMode),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'MATCH HISTORY',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.4,
+                              color: PulseColors.getTextPrimary(_isDarkMode),
+                            ),
                           ),
-                          overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 2),
-                        Text(
-                          'Your verified match records & score logs',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: PulseColors.getTextSecondary(_isDarkMode),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Your verified match records & score logs',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: PulseColors.getTextSecondary(_isDarkMode),
+                            ),
                           ),
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
@@ -1511,14 +1526,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           const SizedBox(height: 6),
 
           // Prominent Hero Rating Number
-          Text(
-            ratingNumber,
-            style: const TextStyle(
-              fontSize: 42,
-              fontWeight: FontWeight.w900,
-              height: 1.0,
-              letterSpacing: -1.5,
-              color: primaryTextColor,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              ratingNumber,
+              style: const TextStyle(
+                fontSize: 42,
+                fontWeight: FontWeight.w900,
+                height: 1.0,
+                letterSpacing: -1.5,
+                color: primaryTextColor,
+              ),
             ),
           ),
 
@@ -3166,24 +3185,28 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   Widget _buildProfileStatColumn(String value, String label, bool isDark) {
     return Column(
-      mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w900,
-            color: PulseColors.getTextPrimary(isDark),
-            letterSpacing: -0.5,
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            value,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+              color: PulseColors.getTextPrimary(isDark),
+            ),
           ),
         ),
         const SizedBox(height: 2),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w800,
-            color: PulseColors.getTextSecondary(isDark),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: PulseColors.getTextSecondary(isDark),
+            ),
           ),
         ),
       ],
@@ -3371,24 +3394,30 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             child: Column(
               children: [
                 // User Full Name (Bold Uppercase)
-                Text(
-                  fullName.toUpperCase(),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    color: PulseColors.getTextPrimary(_isDarkMode),
-                    letterSpacing: -0.3,
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    fullName.toUpperCase(),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      color: PulseColors.getTextPrimary(_isDarkMode),
+                      letterSpacing: -0.3,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  email,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: PulseColors.getTextSecondary(_isDarkMode),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    email,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: PulseColors.getTextSecondary(_isDarkMode),
+                    ),
                   ),
                 ),
 
