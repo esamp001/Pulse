@@ -26,6 +26,7 @@ import '../../../profile/presentation/screens/account_settings_screen.dart';
 import '../../../profile/presentation/screens/edit_profile_screen.dart';
 import '../../../rankings/presentation/screens/rankings_screen.dart';
 import '../../../community/services/community_service.dart';
+import '../widgets/share_victory_modal.dart';
 
 class HomeScreen extends StatefulWidget {
   final UserModel? user;
@@ -733,16 +734,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   PulseToast.show(context, 'Court Finder Map is coming soon in v1.1!');
                 },
               ),
-              // 4. Share Victory (Card 4) - Coming Soon
+              // 4. Share Victory (Card 4) - Active Feature
               PulseWidgetCard(
                 imagePath: 'assets/images/all_balls.png',
                 title: 'Share Victory',
                 subtitle: 'Flex Your ELO',
                 pillText: 'SHARE',
                 isDarkMode: _isDarkMode,
-                isComingSoon: true,
                 onTap: () {
-                  PulseToast.show(context, 'Victory Share Card Generator is coming soon in v1.1!');
+                  ShareVictoryModal.show(
+                    context,
+                    userName: _user?.name ?? 'Rally Player',
+                    currentElo: _user?.rating ?? 1200,
+                    sportName: _selectedSport,
+                    isDarkMode: _isDarkMode,
+                  );
                 },
               ),
             ],

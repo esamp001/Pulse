@@ -35,8 +35,8 @@ When deploying builds:
 | 3️⃣ | **QR Code / 6-Digit PIN Match Join** | 2 Days | Court UX & Quick Lobby Join | ✅ **COMPLETED** (`440f225`) |
 | 4️⃣ | **Mobile Push Notifications (FCM)** | 2–3 Days | Off-App Invites & User Retention | ⏳ Pending Setup |
 | 5️⃣ | **Network Disconnection & Signal Banner** | 1–1.5 Days | Outdoor Sports Court Resilience | ⏳ Pending |
-| 6️⃣ | **Post-Match Victory Card / Social Share Generator** | 1–1.5 Days | Viral Growth & Social Media Sharing | ⏳ Pending |
-| 7️⃣ | **Find Nearby Players & Courts Map (UI Teaser)** | 0.5 Days | UX Teaser & Future Feature Preview | ⏳ Pending UI |
+| 6️⃣ | **Post-Match Victory Card / Flex Your ELO Social Share Generator** | 1–1.5 Days | Viral Growth & Social Media Sharing | ✅ **COMPLETED** |
+| 7️⃣ | **Find Nearby Players & Courts Map (UI Teaser)** | 0.5 Days | UX Teaser & Future Feature Preview | ✅ **COMPLETED** (Bento Netflix Teasers) |
 
 ---
 
@@ -67,14 +67,14 @@ When deploying builds:
 - [ ] Sticky top status banner: "Reconnecting to live match..." with warning styling (`PulseColors.warning`).
 - [ ] Local offline queue for storing score events while offline.
 
-### 6. 📸 Post-Match Victory Card / Social Share Generator — ⏳ NEXT
-- [ ] Flutter `RepaintBoundary` widget to generate pixel-perfect PNG card of final match outcome.
-- [ ] Sleek branded card template showing final score, player avatars, ELO points gained (+15 ELO), and MVP badge.
-- [ ] Native one-tap share trigger (`share_plus`) targeting Instagram Stories, WhatsApp, and TikTok.
+### 6. 📸 Post-Match Victory Card / Social Share Generator — ✅ DONE
+- [x] Flutter `RepaintBoundary` widget to generate pixel-perfect PNG card of player rating & ELO stats.
+- [x] Sleek branded card template showing ELO rating, player avatar/name, ELO points, rank tier, and verified badge.
+- [x] Native one-tap share trigger (`share_plus`) targeting Facebook, Instagram Stories, WhatsApp, and X.
 
-### 7. 📍 Find Nearby Players & Courts Map (UI Teaser) — ⏳ NEXT
-- [ ] Add "Find Players Nearby" card/button on Home / Explore tab with map visual cue.
-- [ ] Display clean, modern "Coming Soon in v1.1" modal/sheet preview when tapped.
+### 7. 📍 Find Nearby Players & Courts Map (UI Teaser) — ✅ DONE
+- [x] Add Bento Grid cards for "Match Players" and "Find Court" on Home screen.
+- [x] Netflix-style dark gradient "COMING SOON" overlay and centered badge.
 
 ---
 
