@@ -53,6 +53,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   List<MatchModel> _historyMatches = [];
   bool _isLoadingHistory = false;
   String _historySportFilter = 'ALL';
+  String _selectedProfileSport = 'PICKLEBALL';
   bool _isCommunityNotified = false;
   final AuthService _authService = AuthService();
   final MatchService _matchService = MatchService();
@@ -423,20 +424,78 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   /// Modern Minimalist Bento Grid Home Screen Content
   Widget _buildHomeContent(String firstName) {
-    final wins = _user?.wins ?? 0;
-    final losses = _user?.losses ?? 0;
-    final totalGames = wins + losses;
-    final winRateText = totalGames > 0 ? '${((wins / totalGames) * 100).toStringAsFixed(0)}%' : '0%';
     final activeSportKey = _selectedSport.isEmpty
         ? (_user?.primarySport ?? 'pickleball')
         : _selectedSport;
+
+    final currentUserId = _user?.id ?? AuthService.currentUser?.id;
+    final targetSportKey = activeSportKey.toLowerCase().replaceAll('_', '').replaceAll(' ', '');
+
+    int sportWins = 0;
+    int sportLosses = 0;
+    int sportMatches = 0;
+    String streakText = '0 WINS';
+    String lastMatchText = 'NONE';
+    bool foundInHistory = false;
+
+    if (_historyMatches.isNotEmpty && currentUserId != null) {
+      final sportMatchesList = _historyMatches.where((m) {
+        final matchSportKey = m.sport.toLowerCase().replaceAll('_', '').replaceAll(' ', '');
+        return matchSportKey == targetSportKey &&
+            (m.player1Id == currentUserId || m.player2Id == currentUserId) &&
+            (m.status == 'FINISHED' || m.status == 'CONFIRMED');
+      }).toList();
+
+      if (sportMatchesList.isNotEmpty) {
+        foundInHistory = true;
+        sportMatches = sportMatchesList.length;
+        sportWins = sportMatchesList.where((m) => m.winnerId == currentUserId).length;
+        sportLosses = sportMatches - sportWins;
+
+        sportMatchesList.sort((a, b) => (b.scheduledAt ?? DateTime(2000)).compareTo(a.scheduledAt ?? DateTime(2000)));
+        final lastMatch = sportMatchesList.first;
+        lastMatchText = lastMatch.winnerId == currentUserId ? '+15 PTS' : '-15 PTS';
+
+        int streakCount = 0;
+        bool? isStreakWin;
+        for (final m in sportMatchesList) {
+          final isWin = m.winnerId == currentUserId;
+          if (isStreakWin == null) {
+            isStreakWin = isWin;
+            streakCount = 1;
+          } else if (isStreakWin == isWin) {
+            streakCount++;
+          } else {
+            break;
+          }
+        }
+        if (isStreakWin != null && streakCount > 0) {
+          streakText = isStreakWin ? '$streakCount WINS' : '$streakCount LOSS';
+        }
+      }
+    }
+
+    if (!foundInHistory) {
+      final isPrimary = targetSportKey == (_user?.primarySport ?? 'pickleball').toLowerCase().replaceAll('_', '').replaceAll(' ', '');
+      if (isPrimary) {
+        sportWins = _user?.wins ?? 0;
+        sportLosses = _user?.losses ?? 0;
+        sportMatches = sportWins + sportLosses;
+        streakText = sportWins > 0 ? '$sportWins WINS' : '0 WINS';
+        lastMatchText = sportWins > 0 ? '+15 PTS' : 'NONE';
+      }
+    }
+
+    final winRateText = sportMatches > 0 ? '${((sportWins / sportMatches) * 100).toStringAsFixed(0)}%' : '0%';
+    final recordText = '${sportWins}W · ${sportLosses}L';
     final rawRating = _user?.getRatingForSport(activeSportKey) ?? 1200;
     final ratingNumber = rawRating.toString().replaceAllMapped(
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
           (Match m) => '${m[1]},',
         );
-    final recordText = '${wins}W · ${losses}L';
-    final sportText = '${activeSportKey[0].toUpperCase()}${activeSportKey.substring(1)}';
+    final cleanSport = activeSportKey.replaceAll('_', ' ').replaceAll('-', ' ').trim();
+    final words = cleanSport.split(' ');
+    final sportText = words.map((w) => w.isNotEmpty ? '${w[0].toUpperCase()}${w.substring(1)}' : '').join(' ');
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
@@ -596,8 +655,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             ratingNumber: ratingNumber,
             recordText: recordText,
             winRateText: winRateText,
-            streakText: '0 WINS',
-            lastMatchText: '+15 PTS',
+            streakText: streakText,
+            lastMatchText: lastMatchText,
             sportText: sportText,
             onSportTap: _showSportSelectionModal,
           ),
@@ -3226,12 +3285,64 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final initials = fullName.isNotEmpty ? fullName[0].toUpperCase() : 'E';
     final avatarUrl = currentUser?.avatarUrl;
     final coverPhotoUrl = currentUser?.coverPhotoUrl;
-    final wins = currentUser?.wins ?? 0;
-    final losses = currentUser?.losses ?? 0;
-    final totalMatches = wins + losses;
-    final winRate = totalMatches > 0 ? '${((wins / totalMatches) * 100).round()}%' : '0%';
     final rating = currentUser?.rating ?? 1200;
     final primarySport = (currentUser?.primarySport ?? 'pickleball').toUpperCase();
+
+    // Extract user's declared sport preferences only
+    final userPreferredSports = (currentUser?.configuredSports ?? [primarySport])
+        .map((s) => s.toUpperCase())
+        .toList();
+
+    if (userPreferredSports.isEmpty) {
+      userPreferredSports.add(primarySport);
+    }
+
+    final activeSport = userPreferredSports.contains(_selectedProfileSport.toUpperCase())
+        ? _selectedProfileSport.toUpperCase()
+        : userPreferredSports.first;
+
+    final currentSportRating = currentUser?.getRatingForSport(activeSport.toLowerCase()) ?? rating;
+
+    // Calculate real per-sport wins, matches, and win rate from match history
+    final currentUserId = currentUser?.id ?? AuthService.currentUser?.id;
+    final targetSportKey = activeSport.toLowerCase().replaceAll('_', '').replaceAll(' ', '');
+
+    int sportWins = 0;
+    int sportMatches = 0;
+    bool foundInHistory = false;
+
+    if (_historyMatches.isNotEmpty && currentUserId != null) {
+      for (final m in _historyMatches) {
+        final matchSportKey = m.sport.toLowerCase().replaceAll('_', '').replaceAll(' ', '');
+        if (matchSportKey == targetSportKey) {
+          if (m.player1Id == currentUserId || m.player2Id == currentUserId) {
+            final isFinished = m.status == 'FINISHED' || m.status == 'CONFIRMED';
+            if (isFinished) {
+              foundInHistory = true;
+              sportMatches++;
+              if (m.winnerId == currentUserId) {
+                sportWins++;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Fallback if match history hasn't loaded or active sport matches primary sport
+    if (!foundInHistory) {
+      final isPrimary = targetSportKey == primarySport.toLowerCase().replaceAll('_', '').replaceAll(' ', '');
+      if (isPrimary) {
+        sportWins = currentUser?.wins ?? 0;
+        final totalOverall = (currentUser?.wins ?? 0) + (currentUser?.losses ?? 0);
+        sportMatches = totalOverall;
+      } else {
+        sportWins = 0;
+        sportMatches = 0;
+      }
+    }
+
+    final sportWinRate = sportMatches > 0 ? '${((sportWins / sportMatches) * 100).round()}%' : '0%';
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
@@ -3334,27 +3445,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                   ),
                           ),
                         ),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: InkWell(
-                            onTap: () => _navigateToEditProfile(context, popDrawer: false),
-                            borderRadius: BorderRadius.circular(16),
-                            child: Container(
-                              padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(
-                                color: PulseColors.accent,
-                                shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 1.5),
-                              ),
-                              child: const Icon(
-                                Icons.camera_alt_rounded,
-                                color: Colors.white,
-                                size: 13,
-                              ),
-                            ),
-                          ),
-                        ),
                       ],
                     ),
                   ],
@@ -3365,31 +3455,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
           const SizedBox(height: 54),
 
-          // Streak / Rating Badge Pill
+          // Text-Only Rating Badge Pill
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
             decoration: BoxDecoration(
-              color: PulseColors.accent,
+              color: PulseColors.accent.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.local_fire_department_rounded,
-                  size: 14,
-                  color: Color(0xFFFF4500), // Fiery red-orange
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '$rating ELO',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
+            child: Text(
+              '$currentSportRating ELO',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                color: PulseColors.accent,
+                letterSpacing: 0.5,
+              ),
             ),
           ),
           const SizedBox(height: 12),
@@ -3435,12 +3515,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       if (currentUser?.phoneNumber?.isNotEmpty ?? false) ...[
-                        Icon(
-                          Icons.phone_rounded,
-                          size: 13,
-                          color: PulseColors.getTextSecondary(_isDarkMode),
-                        ),
-                        const SizedBox(width: 4),
                         Text(
                           currentUser!.phoneNumber!,
                           style: TextStyle(
@@ -3464,12 +3538,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         ),
                       ],
                       if (currentUser?.location?.isNotEmpty ?? false) ...[
-                        Icon(
-                          Icons.location_on_outlined,
-                          size: 13,
-                          color: PulseColors.accent,
-                        ),
-                        const SizedBox(width: 4),
                         Flexible(
                           child: Text(
                             currentUser!.location!,
@@ -3503,38 +3571,50 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
                 const SizedBox(height: 16),
 
-                // Sport Pill Badges
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
-                      decoration: BoxDecoration(
-                        color: PulseColors.getSurface(_isDarkMode),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: PulseColors.getBorder(_isDarkMode),
-                          width: 1.0,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.sports_tennis_rounded, size: 15, color: PulseColors.accent),
-                          const SizedBox(width: 6),
-                          Text(
-                            primarySport,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 0.5,
-                              color: PulseColors.getTextPrimary(_isDarkMode),
+                // Text-Only Multi-Sport Tab Bar (User Preferences Only)
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: PulseColors.getSurface(_isDarkMode),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: userPreferredSports.map((sport) {
+                        final isSelected = activeSport == sport;
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _selectedProfileSport = sport;
+                            });
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            margin: const EdgeInsets.symmetric(horizontal: 2),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: isSelected ? PulseColors.accent : Colors.transparent,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              sport,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.5,
+                                color: isSelected
+                                    ? Colors.white
+                                    : PulseColors.getTextSecondary(_isDarkMode),
+                              ),
                             ),
                           ),
-                        ],
-                      ),
+                        );
+                      }).toList(),
                     ),
-                  ],
+                  ),
                 ),
 
                 const SizedBox(height: 20),
@@ -3545,27 +3625,23 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   decoration: BoxDecoration(
                     color: PulseColors.getSurface(_isDarkMode),
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: PulseColors.getBorder(_isDarkMode),
-                      width: 1.0,
-                    ),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _buildProfileStatColumn('$wins', 'Wins', _isDarkMode),
+                      Expanded(child: _buildProfileStatColumn('$sportWins', 'Wins', _isDarkMode)),
                       Container(
                         width: 1,
                         height: 32,
-                        color: PulseColors.getBorder(_isDarkMode).withValues(alpha: 0.5),
+                        color: PulseColors.getBorder(_isDarkMode).withValues(alpha: 0.3),
                       ),
-                      _buildProfileStatColumn('$totalMatches', 'Matches', _isDarkMode),
+                      Expanded(child: _buildProfileStatColumn('$sportMatches', 'Matches', _isDarkMode)),
                       Container(
                         width: 1,
                         height: 32,
-                        color: PulseColors.getBorder(_isDarkMode).withValues(alpha: 0.5),
+                        color: PulseColors.getBorder(_isDarkMode).withValues(alpha: 0.3),
                       ),
-                      _buildProfileStatColumn(winRate, 'Win rates', _isDarkMode),
+                      Expanded(child: _buildProfileStatColumn(sportWinRate, 'Win rates', _isDarkMode)),
                     ],
                   ),
                 ),

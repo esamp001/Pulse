@@ -490,204 +490,217 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   child: Column(
                     children: [
                       // Cover Banner & Overlapping Avatar Header
-                      Stack(
-                        alignment: Alignment.topCenter,
-                        clipBehavior: Clip.none,
-                        children: [
-                          // Cover Photo Banner Image Container
-                          Container(
-                            height: 140,
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: isDark ? PulseColors.darkCard : PulseColors.secondary.withValues(alpha: 0.3),
-                              gradient: (_coverBytes == null && (_uploadedCoverUrl == null || _uploadedCoverUrl!.isEmpty))
-                                  ? LinearGradient(
-                                      colors: isDark
-                                          ? [const Color(0xFF1B3B36), const Color(0xFF0F2622)]
-                                          : [PulseColors.primary, const Color(0xFF2C5E55)],
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
+                      SizedBox(
+                        height: 200,
+                        width: double.infinity,
+                        child: Stack(
+                          alignment: Alignment.topCenter,
+                          children: [
+                            // Cover Photo Banner Image Container
+                            Container(
+                              height: 140,
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                color: isDark ? PulseColors.darkCard : PulseColors.secondary.withValues(alpha: 0.3),
+                                gradient: (_coverBytes == null && (_uploadedCoverUrl == null || _uploadedCoverUrl!.isEmpty))
+                                    ? LinearGradient(
+                                        colors: isDark
+                                            ? [const Color(0xFF1B3B36), const Color(0xFF0F2622)]
+                                            : [PulseColors.primary, const Color(0xFF2C5E55)],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      )
+                                    : null,
+                              ),
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  if (_coverBytes != null)
+                                    Image.memory(_coverBytes!, fit: BoxFit.cover)
+                                  else if (_uploadedCoverUrl != null && _uploadedCoverUrl!.isNotEmpty)
+                                    Image.network(
+                                      _uploadedCoverUrl!,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (c, e, s) => Center(
+                                        child: Icon(
+                                          Icons.sports_tennis_rounded,
+                                          size: 80,
+                                          color: Colors.white.withValues(alpha: 0.15),
+                                        ),
+                                      ),
                                     )
-                                  : null,
-                            ),
-                            child: Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                if (_coverBytes != null)
-                                  Image.memory(_coverBytes!, fit: BoxFit.cover)
-                                else if (_uploadedCoverUrl != null && _uploadedCoverUrl!.isNotEmpty)
-                                  Image.network(
-                                    _uploadedCoverUrl!,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (c, e, s) => Center(
+                                  else
+                                    Positioned(
+                                      right: -10,
+                                      top: -10,
                                       child: Icon(
                                         Icons.sports_tennis_rounded,
-                                        size: 80,
-                                        color: Colors.white.withValues(alpha: 0.15),
+                                        size: 160,
+                                        color: Colors.white.withValues(alpha: 0.08),
                                       ),
                                     ),
-                                  )
-                                else
-                                  Positioned(
-                                    right: -10,
-                                    top: -10,
-                                    child: Icon(
-                                      Icons.sports_tennis_rounded,
-                                      size: 160,
-                                      color: Colors.white.withValues(alpha: 0.08),
-                                    ),
-                                  ),
 
-                                if (_isUploadingCover)
-                                  Container(
-                                    color: Colors.black.withValues(alpha: 0.4),
-                                    child: const Center(
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white,
-                                        strokeWidth: 2.5,
-                                      ),
-                                    ),
-                                  ),
-
-                                // Change Cover Photo Button (Top Right of Banner)
-                                Positioned(
-                                  top: 12,
-                                  right: 12,
-                                  child: InkWell(
-                                    onTap: (_isSaving || _isUploadingCover)
-                                        ? null
-                                        : () => _showImageSourcePicker(isCover: true),
-                                    borderRadius: BorderRadius.circular(20),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                      decoration: BoxDecoration(
-                                        color: Colors.black.withValues(alpha: 0.6),
-                                        borderRadius: BorderRadius.circular(20),
-                                        border: Border.all(
-                                          color: Colors.white.withValues(alpha: 0.6),
-                                          width: 1.0,
+                                  if (_isUploadingCover)
+                                    Container(
+                                      color: Colors.black.withValues(alpha: 0.4),
+                                      child: const Center(
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 2.5,
                                         ),
                                       ),
-                                      child: const Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            Icons.camera_alt_rounded,
-                                            color: Colors.white,
-                                            size: 14,
+                                    ),
+
+                                  // Change Cover Photo Button (Top Right of Banner)
+                                  Positioned(
+                                    top: 12,
+                                    right: 12,
+                                    child: InkWell(
+                                      onTap: (_isSaving || _isUploadingCover)
+                                          ? null
+                                          : () => _showImageSourcePicker(isCover: true),
+                                      borderRadius: BorderRadius.circular(20),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withValues(alpha: 0.6),
+                                          borderRadius: BorderRadius.circular(20),
+                                          border: Border.all(
+                                            color: Colors.white.withValues(alpha: 0.6),
+                                            width: 1.0,
                                           ),
-                                          SizedBox(width: 4),
-                                          Text(
-                                            'Cover Photo',
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.bold,
+                                        ),
+                                        child: const Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.camera_alt_rounded,
                                               color: Colors.white,
+                                              size: 14,
+                                            ),
+                                            SizedBox(width: 4),
+                                            Text(
+                                              'Cover Photo',
+                                              style: TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            // Overlapping Centered Avatar Photo (50% on Banner, 50% on Body)
+                            Positioned(
+                              top: 86,
+                              child: SizedBox(
+                                width: 112,
+                                height: 112,
+                                child: Stack(
+                                  children: [
+                                    Align(
+                                      alignment: Alignment.topLeft,
+                                      child: Container(
+                                        width: 96,
+                                        height: 96,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: PulseColors.getBackground(isDark),
+                                          border: Border.all(
+                                            color: PulseColors.getBackground(isDark),
+                                            width: 3.5,
+                                          ),
+                                        ),
+                                        child: ClipOval(
+                                          child: _avatarBytes != null
+                                              ? Image.memory(_avatarBytes!, fit: BoxFit.cover)
+                                              : (_uploadedAvatarUrl != null && _uploadedAvatarUrl!.isNotEmpty)
+                                                  ? Image.network(
+                                                      _uploadedAvatarUrl!,
+                                                      fit: BoxFit.cover,
+                                                      errorBuilder: (context, error, stackTrace) => Center(
+                                                        child: Text(
+                                                          initials,
+                                                          style: TextStyle(
+                                                            fontSize: 36,
+                                                            fontWeight: FontWeight.w900,
+                                                            color: PulseColors.getTextPrimary(isDark),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    )
+                                                  : Center(
+                                                      child: Text(
+                                                        initials,
+                                                        style: TextStyle(
+                                                          fontSize: 36,
+                                                          fontWeight: FontWeight.w900,
+                                                          color: PulseColors.getTextPrimary(isDark),
+                                                        ),
+                                                      ),
+                                                    ),
+                                        ),
+                                      ),
+                                    ),
+                                    if (_isUploadingAvatar)
+                                      Align(
+                                        alignment: Alignment.topLeft,
+                                        child: Container(
+                                          width: 96,
+                                          height: 96,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: Colors.black.withValues(alpha: 0.5),
+                                          ),
+                                          child: const Center(
+                                            child: CircularProgressIndicator(
+                                              color: Colors.white,
+                                              strokeWidth: 2.5,
                                             ),
                                           ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // Overlapping Centered Avatar Photo (50% on Banner, 50% on Body)
-                          Positioned(
-                            top: 92,
-                            child: Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                Container(
-                                  width: 96,
-                                  height: 96,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: PulseColors.getBackground(isDark),
-                                    border: Border.all(
-                                      color: PulseColors.getBackground(isDark),
-                                      width: 3.5,
-                                    ),
-                                  ),
-                                  child: ClipOval(
-                                    child: _avatarBytes != null
-                                        ? Image.memory(_avatarBytes!, fit: BoxFit.cover)
-                                        : (_uploadedAvatarUrl != null && _uploadedAvatarUrl!.isNotEmpty)
-                                            ? Image.network(
-                                                _uploadedAvatarUrl!,
-                                                fit: BoxFit.cover,
-                                                errorBuilder: (context, error, stackTrace) => Center(
-                                                  child: Text(
-                                                    initials,
-                                                    style: TextStyle(
-                                                      fontSize: 36,
-                                                      fontWeight: FontWeight.w900,
-                                                      color: PulseColors.getTextPrimary(isDark),
-                                                    ),
-                                                  ),
-                                                ),
-                                              )
-                                            : Center(
-                                                child: Text(
-                                                  initials,
-                                                  style: TextStyle(
-                                                    fontSize: 36,
-                                                    fontWeight: FontWeight.w900,
-                                                    color: PulseColors.getTextPrimary(isDark),
-                                                  ),
-                                                ),
-                                              ),
-                                  ),
-                                ),
-                                if (_isUploadingAvatar)
-                                  Container(
-                                    width: 96,
-                                    height: 96,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: Colors.black.withValues(alpha: 0.5),
-                                    ),
-                                    child: const Center(
-                                      child: CircularProgressIndicator(
-                                        color: Colors.white,
-                                        strokeWidth: 2.5,
-                                      ),
-                                    ),
-                                  ),
-                                Positioned(
-                                  bottom: 0,
-                                  right: 0,
-                                  child: GestureDetector(
-                                    onTap: (_isSaving || _isUploadingAvatar)
-                                        ? null
-                                        : () => _showImageSourcePicker(isCover: false),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(7),
-                                      decoration: BoxDecoration(
-                                        color: PulseColors.accent,
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: Colors.white,
-                                          width: 1.5,
                                         ),
                                       ),
-                                      child: const Icon(
-                                        Icons.camera_alt_rounded,
-                                        color: Colors.white,
-                                        size: 13,
+                                    Positioned(
+                                      bottom: 4,
+                                      right: 4,
+                                      child: GestureDetector(
+                                        onTap: (_isSaving || _isUploadingAvatar)
+                                            ? null
+                                            : () => _showImageSourcePicker(isCover: false),
+                                        behavior: HitTestBehavior.opaque,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: PulseColors.accent,
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: Colors.white,
+                                              width: 2.0,
+                                            ),
+                                          ),
+                                          child: const Icon(
+                                            Icons.camera_alt_rounded,
+                                            color: Colors.white,
+                                            size: 16,
+                                          ),
+                                        ),
                                       ),
                                     ),
-                                  ),
+                                  ],
                                 ),
-                              ],
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
 
-                      const SizedBox(height: 58),
+                      const SizedBox(height: 12),
 
                       // Rest of Form Content uses Padded Body Area
                       Padding(

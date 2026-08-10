@@ -746,28 +746,39 @@ class _ScorerScreenState extends State<ScorerScreen> {
   }
 
   Widget _buildRulesMetric(String label, String value, Color labelColor, Color valueColor) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: labelColor,
-            fontSize: 9,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0.8,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: labelColor,
+                fontSize: 9,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.8,
+              ),
+            ),
           ),
-        ),
-        const SizedBox(height: 3),
-        Text(
-          value,
-          style: TextStyle(
-            color: valueColor,
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
+          const SizedBox(height: 3),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: valueColor,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -987,11 +998,11 @@ class _ScorerScreenState extends State<ScorerScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _buildRulesMetric('SETS', _match.setsFormatTitle, textSecondary, textPrimary),
+                      Expanded(child: _buildRulesMetric('SETS', _match.setsFormatTitle, textSecondary, textPrimary)),
                       Container(width: 1, height: 24, color: border.withValues(alpha: 0.5)),
-                      _buildRulesMetric('TARGET', _match.pointsFormatTitle, textSecondary, textPrimary),
+                      Expanded(child: _buildRulesMetric('TARGET', _match.pointsFormatTitle, textSecondary, textPrimary)),
                       Container(width: 1, height: 24, color: border.withValues(alpha: 0.5)),
-                      _buildRulesMetric('MARGIN', _match.winMarginTitle, textSecondary, textPrimary),
+                      Expanded(child: _buildRulesMetric('MARGIN', _match.winMarginTitle, textSecondary, textPrimary)),
                     ],
                   ),
                 ),

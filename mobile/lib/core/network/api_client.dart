@@ -44,6 +44,40 @@ class ApiClient {
     return headers;
   }
 
+  /// Resolve URI safely, supporting both relative API endpoints and absolute external URLs (e.g. R2/S3 presigned URLs)
+  Uri _resolveUri(String endpoint, {Map<String, String>? queryParams}) {
+    final isExternal = endpoint.startsWith('http://') || endpoint.startsWith('https://');
+
+    if (isExternal) {
+      final parsed = Uri.parse(endpoint);
+      return queryParams != null ? parsed.replace(queryParameters: queryParams) : parsed;
+    }
+
+    final cleanPath = endpoint.startsWith('/') ? endpoint : '/$endpoint';
+    return Uri.parse('$baseUrl$cleanPath').replace(queryParameters: queryParams);
+  }
+
+  /// Build request headers based on whether the target endpoint is an internal API or external storage URL
+  Map<String, String> _buildHeadersForEndpoint(String endpoint, {Map<String, String>? customHeaders}) {
+    final isExternal = endpoint.startsWith('http://') || endpoint.startsWith('https://');
+
+    if (isExternal) {
+      // Do not inject backend JWT Bearer tokens into external pre-signed S3/Cloudflare R2 URLs
+      return customHeaders ?? <String, String>{};
+    }
+    return _buildHeaders(customHeaders: customHeaders);
+  }
+
+  /// Encode body data cleanly without jsonEncoding raw binary bytes (List<int>) or external requests
+  Object? _encodeBody(Object? body, bool isExternal) {
+    if (body == null) {
+      return null;
+    }
+
+    if (body is List<int> || body is String || isExternal) return body;
+    return jsonEncode(body);
+  }
+
   /// Process HTTP response and return parsed JSON data payload
   dynamic _processResponse(http.Response response) {
     final bodyStr = response.body.trim();
@@ -83,9 +117,9 @@ class ApiClient {
   /// GET request
   Future<dynamic> get(String endpoint, {Map<String, String>? queryParams, Map<String, String>? headers}) async {
     try {
-      final cleanPath = endpoint.startsWith('/') ? endpoint : '/$endpoint';
-      final uri = Uri.parse('$baseUrl$cleanPath').replace(queryParameters: queryParams);
-      final response = await http.get(uri, headers: _buildHeaders(customHeaders: headers));
+      final uri = _resolveUri(endpoint, queryParams: queryParams);
+      final reqHeaders = _buildHeadersForEndpoint(endpoint, customHeaders: headers);
+      final response = await http.get(uri, headers: reqHeaders);
       return _processResponse(response);
     } catch (err) {
       if (_shouldLog) {
@@ -98,10 +132,11 @@ class ApiClient {
   /// POST request
   Future<dynamic> post(String endpoint, {Object? body, Map<String, String>? headers}) async {
     try {
-      final cleanPath = endpoint.startsWith('/') ? endpoint : '/$endpoint';
-      final uri = Uri.parse('$baseUrl$cleanPath');
-      final encodedBody = body is String ? body : jsonEncode(body);
-      final response = await http.post(uri, headers: _buildHeaders(customHeaders: headers), body: encodedBody);
+      final isExternal = endpoint.startsWith('http://') || endpoint.startsWith('https://');
+      final uri = _resolveUri(endpoint);
+      final reqHeaders = _buildHeadersForEndpoint(endpoint, customHeaders: headers);
+      final reqBody = _encodeBody(body, isExternal);
+      final response = await http.post(uri, headers: reqHeaders, body: reqBody);
       return _processResponse(response);
     } catch (err) {
       if (_shouldLog) {
@@ -114,10 +149,11 @@ class ApiClient {
   /// PATCH request
   Future<dynamic> patch(String endpoint, {Object? body, Map<String, String>? headers}) async {
     try {
-      final cleanPath = endpoint.startsWith('/') ? endpoint : '/$endpoint';
-      final uri = Uri.parse('$baseUrl$cleanPath');
-      final encodedBody = body is String ? body : jsonEncode(body);
-      final response = await http.patch(uri, headers: _buildHeaders(customHeaders: headers), body: encodedBody);
+      final isExternal = endpoint.startsWith('http://') || endpoint.startsWith('https://');
+      final uri = _resolveUri(endpoint);
+      final reqHeaders = _buildHeadersForEndpoint(endpoint, customHeaders: headers);
+      final reqBody = _encodeBody(body, isExternal);
+      final response = await http.patch(uri, headers: reqHeaders, body: reqBody);
       return _processResponse(response);
     } catch (err) {
       if (_shouldLog) {
@@ -130,10 +166,11 @@ class ApiClient {
   /// PUT request
   Future<dynamic> put(String endpoint, {Object? body, Map<String, String>? headers}) async {
     try {
-      final cleanPath = endpoint.startsWith('/') ? endpoint : '/$endpoint';
-      final uri = Uri.parse('$baseUrl$cleanPath');
-      final encodedBody = body is String ? body : jsonEncode(body);
-      final response = await http.put(uri, headers: _buildHeaders(customHeaders: headers), body: encodedBody);
+      final isExternal = endpoint.startsWith('http://') || endpoint.startsWith('https://');
+      final uri = _resolveUri(endpoint);
+      final reqHeaders = _buildHeadersForEndpoint(endpoint, customHeaders: headers);
+      final reqBody = _encodeBody(body, isExternal);
+      final response = await http.put(uri, headers: reqHeaders, body: reqBody);
       return _processResponse(response);
     } catch (err) {
       if (_shouldLog) {
@@ -146,10 +183,11 @@ class ApiClient {
   /// DELETE request
   Future<dynamic> delete(String endpoint, {Object? body, Map<String, String>? headers}) async {
     try {
-      final cleanPath = endpoint.startsWith('/') ? endpoint : '/$endpoint';
-      final uri = Uri.parse('$baseUrl$cleanPath');
-      final encodedBody = body != null ? (body is String ? body : jsonEncode(body)) : null;
-      final response = await http.delete(uri, headers: _buildHeaders(customHeaders: headers), body: encodedBody);
+      final isExternal = endpoint.startsWith('http://') || endpoint.startsWith('https://');
+      final uri = _resolveUri(endpoint);
+      final reqHeaders = _buildHeadersForEndpoint(endpoint, customHeaders: headers);
+      final reqBody = _encodeBody(body, isExternal);
+      final response = await http.delete(uri, headers: reqHeaders, body: reqBody);
       return _processResponse(response);
     } catch (err) {
       if (kDebugMode) {
