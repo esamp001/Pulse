@@ -1,6 +1,7 @@
 import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user_model.dart';
 import '../../../core/services/socket_service.dart';
+import '../../../core/services/fcm_service.dart';
 import '../../../core/network/api_client.dart';
 
 class AuthService {
@@ -206,6 +207,9 @@ class AuthService {
 
   /// Clear active user session & sign out Google OAuth
   static Future<void> logout() async {
+    try {
+      await FcmService().unregisterFcmToken();
+    } catch (_) {}
     SocketService().disconnect();
     _currentToken = null;
     _currentUser = null;

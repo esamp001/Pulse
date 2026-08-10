@@ -15,6 +15,7 @@ export interface User {
   phone_number?: string | null;
   location?: string | null;
   bio?: string | null;
+  fcm_token?: string | null;
   has_password?: boolean;
   created_at: Date;
   updated_at: Date;

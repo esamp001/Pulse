@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import { z } from 'zod';
 import AuthService from '../services/auth-service';
+import UserRepository from '../repositories/user-repository';
 
 const registerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -25,9 +26,11 @@ const updatePasswordSchema = z.object({
 
 class AuthController {
   private authService: AuthService;
+  private userRepository: UserRepository;
 
   constructor() {
     this.authService = new AuthService();
+    this.userRepository = new UserRepository();
   }
 
   // Registration endpoint
@@ -191,6 +194,25 @@ class AuthController {
       });
     } catch (error: any) {
       res.status(400).json({ error: error.message || 'Failed to delete account' });
+    }
+  };
+
+  updateFcmToken = async (req: any, res: Response): Promise<void> => {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const { fcmToken } = req.body;
+      await this.userRepository.updateFcmToken(userId, fcmToken || null);
+
+      res.status(200).json({
+        message: 'FCM Token updated successfully',
+      });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || 'Failed to update FCM token' });
     }
   };
 }

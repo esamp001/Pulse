@@ -3,6 +3,24 @@ import type { Knex } from 'knex';
 import type { User, CreateUserData, UserSportStat } from '../types/user';
 
 class UserRepository {
+  async updateFcmToken(userId: string, fcmToken: string | null): Promise<void> {
+    try {
+      await db<User>('users').where({ id: userId }).update({ fcm_token: fcmToken });
+    } catch (err) {
+      console.error('[UserRepository Error]: Failed to update FCM token', err);
+    }
+  }
+
+  async getFcmToken(userId: string): Promise<string | null> {
+    try {
+      const user = await db<User>('users').where({ id: userId }).select('fcm_token').first();
+      return user?.fcm_token || null;
+    } catch (err) {
+      console.error('[UserRepository Error]: Failed to get FCM token', err);
+      return null;
+    }
+  }
+
   async findByEmail(email: string): Promise<User | undefined> {
     const user = await db<User>('users').where({ email }).first();
     if (!user) return undefined;

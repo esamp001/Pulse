@@ -1,4 +1,5 @@
 import notificationRepository, { INotificationRow } from '../repositories/notification-repository';
+import fcmService from './fcm-service';
 
 class NotificationService {
   async getUserNotifications(userId: string, unreadOnly = false): Promise<INotificationRow[]> {
@@ -20,7 +21,18 @@ class NotificationService {
     subtitle: string;
     payload?: any;
   }): Promise<INotificationRow> {
-    return notificationRepository.createNotification(data);
+    const notification = await notificationRepository.createNotification(data);
+    
+    // Asynchronously trigger FCM Push Notification to recipient's device token
+    fcmService.sendPushNotification(data.userId, data.title, data.subtitle, {
+      category: data.category,
+      notificationId: notification.id,
+      ...(data.payload || {}),
+    }).catch((err) => {
+      console.error('[NotificationService Error]: FCM Push Notification trigger failed', err);
+    });
+
+    return notification;
   }
 }
 
