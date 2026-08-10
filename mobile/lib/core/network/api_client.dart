@@ -14,16 +14,24 @@ class ApiClient {
 
   /// Resolve root API base URL safely with test mode & legacy dotenv fallbacks
   String get baseUrl {
+    const String envDefinedUrl = String.fromEnvironment('API_BASE_URL');
+    if (envDefinedUrl.isNotEmpty) {
+      if (envDefinedUrl.endsWith('/auth')) {
+        return envDefinedUrl.replaceAll('/auth', '');
+      }
+      return envDefinedUrl;
+    }
+
     try {
       if (dotenv.isInitialized) {
-        final rawUrl = dotenv.get('API_BASE_URL', fallback: 'http://localhost:3000/api/v1');
+        final rawUrl = dotenv.get('API_BASE_URL', fallback: 'http://localhost:5000/api/v1');
         if (rawUrl.endsWith('/auth')) {
           return rawUrl.replaceAll('/auth', '');
         }
         return rawUrl;
       }
     } catch (_) {}
-    return 'http://localhost:3000/api/v1';
+    return 'http://localhost:5000/api/v1';
   }
 
   /// Construct HTTP headers with dynamic JWT Bearer token injection
