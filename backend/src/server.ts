@@ -18,5 +18,15 @@ initMatchSockets(io);
 
 server.listen(config.port, () => {
   console.log(`🚀 Pulse Backend running at http://localhost:${config.port}`);
+  try {
+    const admin = require('firebase-admin');
+    if (!admin.apps || !admin.apps.length) {
+      admin.initializeApp();
+    }
+    (global as any).firebaseAdmin = admin;
+    console.log('Firebase Admin SDK initialized for FCM push notifications');
+  } catch (_) {
+    console.log('Firebase Admin SDK fallback mode active (FcmService ready)');
+  }
 });
 

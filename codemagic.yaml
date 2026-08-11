@@ -1,0 +1,42 @@
+workflows:
+  android-workflow:
+    name: Rally Android Release Build
+    max_build_duration: 30
+    instance_type: linux_x2 # Fast, free Linux instance for Android builds
+    environment:
+      flutter: stable
+      vars:
+        API_BASE_URL: "https://lotus-velvet-hero-comprehensive.trycloudflare.com/api/v1"
+    scripts:
+      - name: Set up .env for Flutter Mobile
+        script: |
+          cd mobile
+          echo "API_BASE_URL=$API_BASE_URL" > .env
+      - name: Get Flutter dependencies
+        script: |
+          cd mobile
+          flutter pub get
+      - name: Flutter Static Analysis
+        script: |
+          cd mobile
+          flutter analyze
+      - name: Run Responsive & Unit Tests
+        script: |
+          cd mobile
+          flutter test
+      - name: Build Android APK
+        script: |
+          cd mobile
+          flutter build apk --release
+      - name: Build Android App Bundle (AAB for Play Store)
+        script: |
+          cd mobile
+          flutter build appbundle --release
+    artifacts:
+      - mobile/build/app/outputs/flutter-apk/*.apk
+      - mobile/build/app/outputs/bundle/release/*.aab
+    publishing:
+      email:
+        notify:
+          success: true
+          failure: true

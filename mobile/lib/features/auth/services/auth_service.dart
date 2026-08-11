@@ -24,6 +24,10 @@ class AuthService {
       if (data['user'] != null) {
         _currentUser = UserModel.fromJson(data['user']);
       }
+      // Initialize FCM messaging & sync device token upon successful authentication
+      if (_currentToken != null) {
+        FcmService.initialize();
+      }
     }
   }
 
@@ -208,7 +212,7 @@ class AuthService {
   /// Clear active user session & sign out Google OAuth
   static Future<void> logout() async {
     try {
-      await FcmService().unregisterFcmToken();
+      await FcmService.clearTokenOnBackend();
     } catch (_) {}
     SocketService().disconnect();
     _currentToken = null;
