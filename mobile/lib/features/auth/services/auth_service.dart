@@ -1,4 +1,7 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 import '../../../core/services/socket_service.dart';
 import '../../../core/services/fcm_service.dart';
@@ -15,7 +18,7 @@ class AuthService {
   static String? get currentToken => _currentToken;
   static UserModel? get currentUser => _currentUser;
 
-   /// Process authentication data
+   /// Process authentication data and persist session locally
     void _processAuthData(dynamic data) {
     if (data is Map<String, dynamic>) {
       if (data['token'] != null) {
@@ -27,7 +30,81 @@ class AuthService {
       // Initialize FCM messaging & sync device token upon successful authentication
       if (_currentToken != null) {
         FcmService.initialize();
+        if (_currentUser != null) {
+          _saveSessionToPrefs(_currentToken!, _currentUser!);
+        }
       }
+    }
+  }
+
+  static Future<void> _saveSessionToPrefs(String token, UserModel user) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('auth_token', token);
+      await prefs.setString('user_data', jsonEncode(user.toJson()));
+    } catch (err) {
+      if (kDebugMode) {
+        print('[AuthService]: Failed to save session: $err');
+      }
+    }
+  }
+
+  static Future<void> _clearSessionFromPrefs() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('auth_token');
+      await prefs.remove('user_data');
+    } catch (err) {
+      if (kDebugMode) {
+        print('[AuthService]: Failed to clear session: $err');
+      }
+    }
+  }
+
+  /// Restore saved authentication session from SharedPreferences on app boot
+  static Future<UserModel?> restoreSavedSession() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      final userDataStr = prefs.getString('user_data');
+
+      if (token == null || token.isEmpty) {
+        return null;
+      }
+
+      _currentToken = token;
+
+      if (userDataStr != null && userDataStr.isNotEmpty) {
+        try {
+          _currentUser = UserModel.fromJson(jsonDecode(userDataStr));
+        } catch (err) {
+          if (kDebugMode) {
+            print('[AuthService]: Failed to decode saved user data: $err');
+          }
+        }
+      }
+
+      // Refresh latest profile from backend
+      try {
+        final freshUser = await AuthService().fetchCurrentUser();
+        _currentUser = freshUser;
+        await prefs.setString('user_data', jsonEncode(freshUser.toJson()));
+      } catch (err) {
+        if (kDebugMode) {
+          print('[AuthService]: Failed to refresh profile on session restore: $err');
+        }
+      }
+
+      if (_currentToken != null) {
+        FcmService.initialize();
+      }
+
+      return _currentUser;
+    } catch (err) {
+      if (kDebugMode) {
+        print('[AuthService]: Error restoring session: $err');
+      }
+      return null;
     }
   }
 
@@ -217,6 +294,7 @@ class AuthService {
     SocketService().disconnect();
     _currentToken = null;
     _currentUser = null;
+    await _clearSessionFromPrefs();
     try {
       final googleSignIn = GoogleSignIn();
       if (await googleSignIn.isSignedIn()) {

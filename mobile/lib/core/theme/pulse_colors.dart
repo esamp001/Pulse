@@ -37,6 +37,7 @@ abstract class PulseColors {
   static const Color darkBorder = Color(0xFF2E4549);
 
   // Dynamic helper methods
+  static Color getPrimary(bool isDark) => primary;
   static Color getBackground(bool isDark) => isDark ? darkBackground : background;
   static Color getSurface(bool isDark) => isDark ? darkSurface : surface;
   static Color getCard(bool isDark) => isDark ? darkCard : card;

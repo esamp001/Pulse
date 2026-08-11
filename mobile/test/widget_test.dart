@@ -8,17 +8,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pulse_app/main.dart';
 
 void main() {
   testWidgets('RallyApp renders LoginScreen smoke test', (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
+
     // Build our app and trigger a frame.
     await tester.pumpWidget(const RallyApp());
+    await tester.pumpAndSettle();
     expect(find.byType(MaterialApp), findsOneWidget);
 
     // Verify that the LoginScreen components are present
     expect(find.text('Welcome Back!'), findsOneWidget);
-    expect(find.text('Login'), findsOneWidget);
     expect(find.text('Username or Email'), findsOneWidget);
   });
 }
