@@ -6,7 +6,7 @@ workflows:
     environment:
       flutter: stable
       vars:
-        API_BASE_URL: "https://lotus-velvet-hero-comprehensive.trycloudflare.com/api/v1"
+        API_BASE_URL: "https://noticed-layer-interval-confirmed.trycloudflare.com/api/v1"
     scripts:
       - name: Set up .env for Flutter Mobile
         script: |
