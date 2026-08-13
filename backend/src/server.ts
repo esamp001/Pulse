@@ -21,12 +21,28 @@ server.listen(config.port, () => {
   try {
     const admin = require('firebase-admin');
     if (!admin.apps || !admin.apps.length) {
-      admin.initializeApp();
+      let serviceAccount;
+      try {
+        serviceAccount = require('../firebase-service-account.json/pulse-6bec2-firebase-adminsdk-fbsvc-d0cf5805b2.json');
+      } catch (_) {
+        try {
+          serviceAccount = require('../firebase-service-account.json');
+        } catch (_) {}
+      }
+
+      if (serviceAccount) {
+        admin.initializeApp({
+          credential: admin.credential.cert(serviceAccount),
+        });
+        console.log('Firebase Admin SDK initialized with Firebase Service Account Key credentials!');
+      } else {
+        admin.initializeApp();
+        console.log('Firebase Admin SDK initialized (default environment)');
+      }
     }
     (global as any).firebaseAdmin = admin;
-    console.log('Firebase Admin SDK initialized for FCM push notifications');
-  } catch (_) {
-    console.log('Firebase Admin SDK fallback mode active (FcmService ready)');
+  } catch (err) {
+    console.log('Firebase Admin SDK fallback mode active (FcmService ready):', err);
   }
 });
 

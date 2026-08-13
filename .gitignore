@@ -8,6 +8,8 @@ dist/
 .env
 .env.*
 !.env.example
+firebase-service-account.json
+*.json.key
 
 # OS & Editor files
 .DS_Store
