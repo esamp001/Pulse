@@ -47,10 +47,7 @@ class FcmService {
           settings.authorizationStatus == AuthorizationStatus.provisional) {
         
         // 2. Fetch current device token & sync to backend
-        final token = await _messaging.getToken();
-        if (token != null) {
-          await syncTokenToBackend(token);
-        }
+        await syncCurrentToken();
 
         // 3. Listen for token refresh events
         _messaging.onTokenRefresh.listen((newToken) {
@@ -76,6 +73,20 @@ class FcmService {
     } catch (err) {
       if (kDebugMode) {
         print('[FcmService Initialization Error]: $err');
+      }
+    }
+  }
+
+  /// Explicitly fetch current device FCM token and sync to backend
+  static Future<void> syncCurrentToken() async {
+    try {
+      final token = await _messaging.getToken();
+      if (token != null && token.isNotEmpty) {
+        await syncTokenToBackend(token);
+      }
+    } catch (err) {
+      if (kDebugMode) {
+        print('[FcmService Sync Current Token Error]: $err');
       }
     }
   }

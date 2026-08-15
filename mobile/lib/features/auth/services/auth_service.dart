@@ -30,6 +30,7 @@ class AuthService {
       // Initialize FCM messaging & sync device token upon successful authentication
       if (_currentToken != null) {
         FcmService.initialize();
+        FcmService.syncCurrentToken();
         if (_currentUser != null) {
           _saveSessionToPrefs(_currentToken!, _currentUser!);
         }
@@ -97,6 +98,7 @@ class AuthService {
 
       if (_currentToken != null) {
         FcmService.initialize();
+        FcmService.syncCurrentToken();
       }
 
       return _currentUser;

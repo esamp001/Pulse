@@ -21,6 +21,7 @@ import '../../../notifications/presentation/widgets/notification_side_drawer.dar
 import '../../../notifications/services/notification_service.dart';
 import '../../../matches/services/match_service.dart';
 import '../../../../core/services/socket_service.dart';
+import '../../../../core/services/fcm_service.dart';
 import '../../../help/presentation/screens/help_rules_screen.dart';
 import '../../../profile/presentation/screens/account_settings_screen.dart';
 import '../../../profile/presentation/screens/edit_profile_screen.dart';
@@ -74,6 +75,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _setupRealtimeActiveMatchListener();
     _loadInitialNotifications();
     _fetchCommunityWaitlistStatus();
+    FcmService.syncCurrentToken();
   }
 
   Future<void> _fetchCommunityWaitlistStatus() async {
@@ -452,7 +454,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         sportWins = sportMatchesList.where((m) => m.winnerId == currentUserId).length;
         sportLosses = sportMatches - sportWins;
 
-        sportMatchesList.sort((a, b) => (b.scheduledAt ?? DateTime(2000)).compareTo(a.scheduledAt ?? DateTime(2000)));
+        sportMatchesList.sort((a, b) => b.scheduledAt.compareTo(a.scheduledAt));
         final lastMatch = sportMatchesList.first;
         lastMatchText = lastMatch.winnerId == currentUserId ? '+15 PTS' : '-15 PTS';
 
@@ -2503,10 +2505,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       backgroundColor: Colors.transparent,
       builder: (modalContext) {
         return StatefulBuilder(
-          builder: (context, setModalState) {
+          builder: (sheetContext, setModalState) {
             return Container(
               padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+                bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 24,
                 top: 20,
                 left: 24,
                 right: 24,
@@ -2615,28 +2617,29 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             : () async {
                                 final pin = pinController.text.trim();
                                 if (pin.length != 6) {
-                                  PulseToast.showError(context, 'Please enter a 6-digit PIN code');
+                                  PulseToast.showError(sheetContext, 'Please enter a 6-digit PIN code');
                                   return;
                                 }
 
                                 setModalState(() => isJoining = true);
                                 try {
                                   final joinedMatch = await _matchService.joinMatchByPin(pin);
-                                  if (mounted) {
+                                  if (modalContext.mounted) {
                                     Navigator.pop(modalContext);
-                                    PulseToast.showSuccess(context, 'Joined match room successfully!');
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => MatchLobbyScreen(match: joinedMatch),
-                                      ),
-                                    );
                                   }
+                                  if (!context.mounted) return;
+                                  PulseToast.showSuccess(context, 'Joined match room successfully!');
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => MatchLobbyScreen(match: joinedMatch),
+                                    ),
+                                  );
                                 } catch (e) {
-                                  setModalState(() => isJoining = false);
-                                  if (mounted) {
+                                  if (modalContext.mounted) {
+                                    setModalState(() => isJoining = false);
                                     PulseToast.showError(
-                                      context,
+                                      modalContext,
                                       e.toString().replaceAll('Exception: ', ''),
                                     );
                                   }
