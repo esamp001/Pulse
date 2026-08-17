@@ -22,8 +22,7 @@ export class FcmService {
       // Log notification payload for server tracing
       console.log(`[FCM Push Notification Sent] -> UserId: ${userId} | Token: ${fcmToken.substring(0, 10)}... | Title: "${title}" | Body: "${body}"`);
 
-      // If GOOGLE_APPLICATION_CREDENTIALS / Firebase Admin SDK is configured in environment,
-      // send via firebase-admin. Otherwise, fallback cleanly without crashing.
+      // Firebase Admin is initialized at server startup from deployment credentials.
       const firebaseAdmin = (global as any).firebaseAdmin;
       if (firebaseAdmin && typeof firebaseAdmin.messaging === 'function') {
         const stringifiedData: Record<string, string> = {};
@@ -59,7 +58,8 @@ export class FcmService {
         return true;
       }
 
-      return true;
+      console.error('[FcmService Error]: Firebase Admin SDK is unavailable; push notification was not sent.');
+      return false;
     } catch (err) {
       console.error('[FcmService Error]: Failed to send push notification', err);
       return false;

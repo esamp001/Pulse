@@ -1,4 +1,5 @@
 import http from 'http';
+import * as admin from 'firebase-admin';
 import { Server as SocketIOServer } from 'socket.io';
 import './config/crypto-polyfill';
 import app from './app';
@@ -16,33 +17,45 @@ const io = new SocketIOServer(server, {
 setSocketIOInstance(io);
 initMatchSockets(io);
 
-server.listen(config.port, () => {
-  console.log(`🚀 Pulse Backend running at http://localhost:${config.port}`);
-  try {
-    const admin = require('firebase-admin');
-    if (!admin.apps || !admin.apps.length) {
-      let serviceAccount;
-      try {
-        serviceAccount = require('../firebase-service-account.json/pulse-6bec2-firebase-adminsdk-fbsvc-d0cf5805b2.json');
-      } catch (_) {
-        try {
-          serviceAccount = require('../firebase-service-account.json');
-        } catch (_) {}
-      }
+import fs from 'fs';
 
-      if (serviceAccount) {
+function initializeFirebaseAdmin(): void {
+  try {
+    if (!admin.apps.length) {
+      const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+      const credentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+
+      if (serviceAccountJson) {
+        if (serviceAccountJson.trim().startsWith('{')) {
+          admin.initializeApp({
+            credential: admin.credential.cert(JSON.parse(serviceAccountJson)),
+          });
+          console.log('Firebase Admin SDK initialized with raw FIREBASE_SERVICE_ACCOUNT_JSON string.');
+        } else if (fs.existsSync(serviceAccountJson)) {
+          admin.initializeApp({
+            credential: admin.credential.cert(serviceAccountJson),
+          });
+          console.log(`Firebase Admin SDK initialized with service account file at: ${serviceAccountJson}`);
+        }
+      } else if (credentialsPath && fs.existsSync(credentialsPath)) {
         admin.initializeApp({
-          credential: admin.credential.cert(serviceAccount),
+          credential: admin.credential.cert(credentialsPath),
         });
-        console.log('Firebase Admin SDK initialized with Firebase Service Account Key credentials!');
+        console.log(`Firebase Admin SDK initialized with GOOGLE_APPLICATION_CREDENTIALS at: ${credentialsPath}`);
       } else {
         admin.initializeApp();
-        console.log('Firebase Admin SDK initialized (default environment)');
+        console.log('Firebase Admin SDK initialized with default application credentials.');
       }
     }
     (global as any).firebaseAdmin = admin;
   } catch (err) {
-    console.log('Firebase Admin SDK fallback mode active (FcmService ready):', err);
+    console.error('Firebase Admin SDK unavailable. FCM notifications will not be sent:', err);
   }
+}
+
+initializeFirebaseAdmin();
+
+server.listen(config.port, () => {
+  console.log(`🚀 Pulse Backend running at http://localhost:${config.port}`);
 });
 

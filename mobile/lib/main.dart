@@ -11,14 +11,31 @@ import 'features/auth/services/auth_service.dart';
 import 'features/auth/presentation/screens/login_screen.dart';
 import 'features/auth/presentation/screens/onboarding_screen.dart';
 import 'features/home/presentation/screens/home_screen.dart';
+import 'features/matches/presentation/screens/match_lobby_screen.dart';
+import 'features/matches/services/match_service.dart';
 
 /// Global Theme Mode Notifier for Rally App
 final ValueNotifier<ThemeMode> themeModeNotifier = ValueNotifier<ThemeMode>(ThemeMode.light);
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
+Future<void> _handleNotificationTap(Map<String, dynamic> data) async {
+  final matchId = data['matchId'] ?? data['match_id'];
+  if (matchId is! String || matchId.isEmpty) return;
+
+  try {
+    final match = await MatchService().getMatchById(matchId);
+    navigatorKey.currentState?.push(
+      MaterialPageRoute(builder: (_) => MatchLobbyScreen(match: match)),
+    );
+  } catch (err) {
+    debugPrint('[FCM Navigation Error]: $err');
+  }
+}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: '.env');
+  FcmService.configure(onNotificationTap: _handleNotificationTap);
 
   try {
     await Firebase.initializeApp();
@@ -41,6 +58,7 @@ class RallyApp extends StatelessWidget {
         return MaterialApp(
           title: 'Rally',
           debugShowCheckedModeBanner: false,
+          navigatorKey: navigatorKey,
           themeAnimationDuration: Duration.zero,
           theme: PulseTheme.lightTheme,
           darkTheme: PulseTheme.darkTheme,
