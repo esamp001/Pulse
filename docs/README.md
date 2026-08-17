@@ -23,6 +23,9 @@ This directory contains the complete specification-driven documentation for the 
 ### 📦 Module Specifications
 - **User & Auth Management**: Registration, Login, and Social OAuth UI (Google & Apple Sign-In).
 
+### 🚀 Deployment & Testing
+- [**TestFlight Testing Guide**](./testflight-testing.md) - Cloudflare tunnel setup and backend exposure guide for TestFlight testing.
+
 ---
 
 ## Documentation Guidelines
