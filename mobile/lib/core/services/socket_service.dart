@@ -23,6 +23,10 @@ class SocketService {
       _currentUserId = userId;
     }
 
+    if (!dotenv.isInitialized) {
+      return;
+    }
+
     if (_socket != null && _socket!.connected) {
       if (_currentUserId != null) {
         _socket?.emit('join_user', {'userId': _currentUserId});
@@ -31,9 +35,10 @@ class SocketService {
     }
 
     try {
-      final rawBaseUrl =  dotenv.get('API_BASE_URL', fallback: 'http://localhost:3000');
-      final uri = Uri.parse(rawBaseUrl);
-      final socketUrl = '${uri.scheme}://${uri.host}:${uri.port}';
+      final rawBaseUrl = dotenv.get('API_BASE_URL', fallback: 'http://localhost:5000/api/v1').trim();
+      final uri = Uri.parse(rawBaseUrl.startsWith('http') ? rawBaseUrl : 'https://$rawBaseUrl');
+      final portSuffix = (uri.hasPort && uri.port != 80 && uri.port != 443) ? ':${uri.port}' : '';
+      final socketUrl = '${uri.scheme}://${uri.host}$portSuffix';
 
       _socket = io.io(
         socketUrl,

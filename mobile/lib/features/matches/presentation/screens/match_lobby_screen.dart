@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../../../core/theme/pulse_colors.dart';
 import '../../../../core/widgets/pulse_back_button.dart';
 import '../../../../core/widgets/pulse_toast.dart';
+import '../../../../core/services/socket_service.dart';
 import '../../../../main.dart';
 import '../../../auth/services/auth_service.dart';
 import '../../models/match_model.dart';
@@ -29,7 +30,9 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
   final MatchService _matchService = MatchService();
   bool _isLoading = false;
   bool _isAssigning = false;
+  bool _isNavigatingToLive = false;
   Timer? _pollingTimer;
+  StreamSubscription<Map<String, dynamic>>? _socketSub;
 
   bool get _isDarkMode => themeModeNotifier.value == ThemeMode.dark;
 
@@ -37,14 +40,38 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
   void initState() {
     super.initState();
     _match = widget.match;
-    _refreshMatchDetails();
-    _startPolling();
+    if (_match.status == 'LIVE') {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_isNavigatingToLive) {
+          _isNavigatingToLive = true;
+          _pollingTimer?.cancel();
+          _socketSub?.cancel();
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => ScorerScreen(match: _match),
+            ),
+          );
+        }
+      });
+    } else {
+      _refreshMatchDetails();
+      _startPolling();
+      _listenToSocketUpdates();
+    }
+  }
+
+  void _listenToSocketUpdates() {
+    _socketSub = SocketService().onActiveMatchUpdated.listen((_) {
+      if (mounted && !_isAssigning && !_isNavigatingToLive) {
+        _refreshMatchDetails(silent: true);
+      }
+    });
   }
 
   void _startPolling() {
     _pollingTimer?.cancel();
     _pollingTimer = Timer.periodic(const Duration(seconds: 3), (_) {
-      if (mounted && !_isAssigning) {
+      if (mounted && !_isAssigning && !_isNavigatingToLive) {
         _refreshMatchDetails(silent: true);
       }
     });
@@ -52,6 +79,7 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
 
   @override
   void dispose() {
+    _socketSub?.cancel();
     _pollingTimer?.cancel();
     super.dispose();
   }
@@ -67,6 +95,20 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
           _match = updatedMatch;
           if (!silent) _isLoading = false;
         });
+
+        // Auto-transition all lobby participants (Player 1, Player 2, Scorer)
+        // directly to ScorerScreen when match status becomes LIVE
+        if (updatedMatch.status == 'LIVE' && !_isNavigatingToLive) {
+          _isNavigatingToLive = true;
+          _pollingTimer?.cancel();
+          _socketSub?.cancel();
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => ScorerScreen(match: updatedMatch),
+            ),
+          );
+          return;
+        }
 
         if (['FINISHED', 'CONFIRMED'].contains(updatedMatch.status)) {
           _pollingTimer?.cancel();

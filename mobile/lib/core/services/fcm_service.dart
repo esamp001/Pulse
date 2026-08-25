@@ -45,6 +45,7 @@ class FcmService {
   /// Initialize Firebase Messaging listeners, permissions, and initial token sync
   static Future<void> initialize() async {
     if (_isInitialized) return;
+    if (Firebase.apps.isEmpty) return;
 
     try {
       await _initializeLocalNotifications();
@@ -181,12 +182,15 @@ class FcmService {
   /// Explicitly fetch current device FCM token and sync to backend
   static Future<void> syncCurrentToken() async {
     try {
+      if (Firebase.apps.isEmpty) {
+        return;
+      }
       final token = await _messaging.getToken();
       if (token != null && token.isNotEmpty) {
         await syncTokenToBackend(token);
       }
     } catch (err) {
-      if (kDebugMode) {
+      if (kDebugMode && Firebase.apps.isNotEmpty) {
         print('[FcmService Sync Current Token Error]: $err');
       }
     }

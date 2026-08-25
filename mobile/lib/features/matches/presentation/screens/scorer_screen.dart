@@ -81,19 +81,23 @@ class _ScorerScreenState extends State<ScorerScreen> {
 
 
   void _initSocket() {
+    if (!dotenv.isInitialized) return;
+
     try {
-      final rawBaseUrl = dotenv.get('API_BASE_URL', fallback: 'http://localhost:3000');
-      // Extract root server URL (e.g. http://10.0.2.2:3000 or http://localhost:3000)
-      final uri = Uri.parse(rawBaseUrl);
-      final socketUrl = '${uri.scheme}://${uri.host}:${uri.port}';
+      final rawBaseUrl = dotenv.get('API_BASE_URL', fallback: 'http://localhost:5000/api/v1').trim().replaceAll(' ', '');
+      final uri = Uri.parse(rawBaseUrl.startsWith('http') ? rawBaseUrl : 'https://$rawBaseUrl');
+      final portSuffix = (uri.hasPort && uri.port != 80 && uri.port != 443) ? ':${uri.port}' : '';
+      final socketUrl = '${uri.scheme}://${uri.host}$portSuffix';
 
       _socket = io.io(
         socketUrl,
         io.OptionBuilder()
             .setTransports(['websocket', 'polling'])
-            .disableAutoConnect()
+            .enableAutoConnect()
+            .enableReconnection()
             .build(),
       );
+      _socket?.connect();
 
       _socket?.onConnect((_) {
         if (mounted) {
@@ -101,7 +105,7 @@ class _ScorerScreenState extends State<ScorerScreen> {
           _socket?.emit('join_match', {
             'matchId': _match.id,
             'userId': AuthService.currentUser?.id,
-            'role': 'scorer',
+            'role': _isScorer ? 'scorer' : 'spectator',
           });
         }
       });
