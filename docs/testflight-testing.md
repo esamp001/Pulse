@@ -8,37 +8,34 @@ This guide details how to expose your local backend for **TestFlight (iOS)** and
 
 TestFlight builds run on physical devices outside your local network (over cellular or external Wi-Fi). They cannot connect to `localhost` or local network IPs (e.g. `192.168.x.x`). Use Cloudflare Tunnel to expose your local backend server securely via HTTPS.
 
-### Command
+### Active 24/7 Cloud Backend URL (Oracle Cloud VPS)
 
-```bash
-cloudflared tunnel --url http://localhost:5000
+The backend runs 24/7 in the cloud with PM2 and Cloudflare Tunnel. For complete deployment steps, see [VPS Deployment & Cloudflare Tunnel Guide](file:///c:/Users/ellejun.sampaga/Documents/Pulse/docs/backend/vps-deployment-and-cloudflare-guide.md).
+
+```env
+API_BASE_URL=https://retailers-nuke-unsigned-jaguar.trycloudflare.com/api/v1
 ```
 
 ---
 
 ## 📋 Step-by-Step TestFlight Setup
 
-### 1. Start Local Backend
-Make sure your backend is running locally on port 5000:
+### 1. 24/7 Backend Status
+Your backend runs 24/7 on Oracle Cloud VPS. You do NOT need your laptop turned on for TestFlight testers or CI/CD builds.
+
+To inspect backend or tunnel status on the server:
 ```bash
-cd backend
-npm run dev
+pm2 status
+pm2 logs pulse-backend
 ```
 
-### 2. Start Cloudflare Tunnel
-Run the tunnel command in a separate terminal:
-```bash
-cloudflared tunnel --url http://localhost:5000
-```
-Cloudflare will provide a temporary public HTTPS URL (e.g., `https://random-subdomain.trycloudflare.com`).
-
-### 3. Update Mobile App Base URL
+### 2. Update Mobile App Base URL
 Set `API_BASE_URL` in `mobile/.env` (or pass via Codemagic / CI/CD environment variables):
 ```env
-API_BASE_URL=https://<your-cloudflare-subdomain>.trycloudflare.com/api/v1
+API_BASE_URL=https://retailers-nuke-unsigned-jaguar.trycloudflare.com/api/v1
 ```
 
-### 4. Build and Distribute via TestFlight
+### 3. Build and Distribute via TestFlight
 1. Ensure `GoogleService-Info.plist` is in `mobile/ios/Runner/`.
 2. Ensure Apple Push Notification service (APNs) `.p8` key is uploaded in Firebase Console.
 3. Build the iOS archive and distribute through App Store Connect / TestFlight.
