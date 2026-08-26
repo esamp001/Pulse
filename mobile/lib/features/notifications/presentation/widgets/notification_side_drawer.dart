@@ -272,18 +272,20 @@ class _NotificationSideDrawerState extends State<NotificationSideDrawer> {
           Row(
             children: [
               Expanded(
-                child: OutlinedButton(
+                child: ElevatedButton(
                   onPressed: () {
                     Navigator.pop(context);
                     widget.onDeclineMatchInvitation();
                   },
-                  style: OutlinedButton.styleFrom(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: PulseColors.error.withValues(alpha: 0.12),
                     foregroundColor: PulseColors.error,
-                    side: const BorderSide(color: PulseColors.error, width: 1.2),
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
+                    elevation: 0,
+                    shadowColor: Colors.transparent,
                   ),
                   child: const FittedBox(
                     fit: BoxFit.scaleDown,

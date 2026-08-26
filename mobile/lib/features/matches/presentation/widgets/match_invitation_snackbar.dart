@@ -66,24 +66,23 @@ class _MatchInvitationSnackbarState extends State<MatchInvitationSnackbar> {
 
     final progressValue = _secondsRemaining / _totalSeconds;
 
-    return SafeArea(
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: cardBg,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: borderColor, width: 1.5),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Progress Bar at the top edge of snackbar
-            ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(15),
-                topRight: Radius.circular(15),
-              ),
-              child: LinearProgressIndicator(
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor, width: 1.5),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Progress Bar at the top edge of snackbar
+          ClipRRect(
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(15),
+              topRight: Radius.circular(15),
+            ),
+            child: LinearProgressIndicator(
                 value: progressValue,
                 minHeight: 4,
                 backgroundColor: PulseColors.primary.withValues(alpha: 0.15),
@@ -198,16 +197,17 @@ class _MatchInvitationSnackbarState extends State<MatchInvitationSnackbar> {
                     children: [
                       // Decline Button
                       Expanded(
-                        child: OutlinedButton(
+                        child: ElevatedButton(
                           onPressed: widget.onDecline,
-                          style: OutlinedButton.styleFrom(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: PulseColors.error.withValues(alpha: 0.12),
                             foregroundColor: PulseColors.error,
-                            side: const BorderSide(color: PulseColors.error, width: 1.5),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            padding: const EdgeInsets.symmetric(vertical: 13),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                             elevation: 0,
+                            shadowColor: Colors.transparent,
                           ),
                           child: const FittedBox(
                             fit: BoxFit.scaleDown,
@@ -215,7 +215,7 @@ class _MatchInvitationSnackbarState extends State<MatchInvitationSnackbar> {
                               'Decline',
                               style: TextStyle(
                                 fontSize: 14,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
@@ -227,13 +227,14 @@ class _MatchInvitationSnackbarState extends State<MatchInvitationSnackbar> {
                         child: ElevatedButton(
                           onPressed: widget.onAccept,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: PulseColors.primary,
+                            backgroundColor: PulseColors.accent,
                             foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            padding: const EdgeInsets.symmetric(vertical: 13),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                             elevation: 0,
+                            shadowColor: Colors.transparent,
                           ),
                           child: const FittedBox(
                             fit: BoxFit.scaleDown,
@@ -254,7 +255,6 @@ class _MatchInvitationSnackbarState extends State<MatchInvitationSnackbar> {
             ),
           ],
         ),
-      ),
-    );
+      );
   }
 }

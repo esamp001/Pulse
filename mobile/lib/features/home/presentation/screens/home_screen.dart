@@ -392,32 +392,36 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             onAcceptMatchInvitation: _acceptMatchInvitation,
             onDeclineMatchInvitation: _declineMatchInvitation,
           ),
-          body: IndexedStack(
-            index: _currentBottomNavIndex,
+          body: Stack(
             children: [
-              _buildHomeContent(displayName),
-              _buildHistoryTab(),
-              _buildHomeContent(displayName), // Compete tab focus
-              const RankingsScreen(),
-              _buildProfileTab(),
+              IndexedStack(
+                index: _currentBottomNavIndex,
+                children: [
+                  _buildHomeContent(displayName),
+                  _buildHistoryTab(),
+                  _buildHomeContent(displayName), // Compete tab focus
+                  const RankingsScreen(),
+                  _buildProfileTab(),
+                ],
+              ),
+              if (_isInvitationPending && _activeMatch != null)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: MediaQuery.of(context).padding.bottom + 76,
+                  child: MatchInvitationSnackbar(
+                    match: _activeMatch!,
+                    currentUserRoleLabel: _invitedUserRoleLabel,
+                    isDarkMode: isDark,
+                    onAccept: _acceptMatchInvitation,
+                    onDecline: _declineMatchInvitation,
+                  ),
+                ),
             ],
           ),
-          bottomNavigationBar: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (_isInvitationPending && _activeMatch != null)
-                MatchInvitationSnackbar(
-                  match: _activeMatch!,
-                  currentUserRoleLabel: _invitedUserRoleLabel,
-                  isDarkMode: isDark,
-                  onAccept: _acceptMatchInvitation,
-                  onDecline: _declineMatchInvitation,
-                ),
-              PulseBottomNavBar(
-                currentIndex: _currentBottomNavIndex,
-                onTap: _onBottomNavTapped,
-              ),
-            ],
+          bottomNavigationBar: PulseBottomNavBar(
+            currentIndex: _currentBottomNavIndex,
+            onTap: _onBottomNavTapped,
           ),
         );
       },
@@ -963,7 +967,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: _isInvitationPending ? 200 : 28),
         ],
       ),
     );
