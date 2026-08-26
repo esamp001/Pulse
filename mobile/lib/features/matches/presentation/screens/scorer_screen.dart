@@ -97,19 +97,20 @@ class _ScorerScreenState extends State<ScorerScreen> {
             .enableReconnection()
             .build(),
       );
-      _socket?.connect();
 
-      _socket?.onConnect((_) {
+      void joinMatchRoom() {
         if (mounted) {
           setState(() => _isSocketConnected = true);
-          _socket?.emit('join_match', {
-            'matchId': _match.id,
-            'userId': AuthService.currentUser?.id,
-            'role': _isScorer ? 'scorer' : 'spectator',
-          });
         }
-      });
+        _socket?.emit('join_match', {
+          'matchId': _match.id,
+          'userId': AuthService.currentUser?.id,
+          'role': _isScorer ? 'scorer' : 'spectator',
+        });
+      }
 
+      _socket?.onConnect((_) => joinMatchRoom());
+      _socket?.onReconnect((_) => joinMatchRoom());
 
       _socket?.onDisconnect((_) {
         if (mounted) {
@@ -157,6 +158,11 @@ class _ScorerScreenState extends State<ScorerScreen> {
       });
 
       _socket?.connect();
+
+      // If socket is already connected (e.g. shared manager), join match room immediately
+      if (_socket?.connected == true) {
+        joinMatchRoom();
+      }
     } catch (e) {
       debugPrint('Socket initialization error: $e');
     }
