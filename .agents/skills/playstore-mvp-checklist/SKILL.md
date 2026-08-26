@@ -24,7 +24,7 @@ When deploying builds:
 ## 🚀 Top MVP 1.0.0 Feature Roadmap & Status Tracker
 
 **Total Initial Scope:** `11 - 14.5 Working Days`  
-**Remaining Effort:** `~4 - 6.5 Working Days`
+**Remaining Effort:** `~0.5 Working Days` (Pre-Submission Store Metadata & Policy URLs)
 
 ### Implementation Status Matrix
 
@@ -33,8 +33,8 @@ When deploying builds:
 | 1️⃣ | **In-App Account Deletion** | 1–1.5 Days | **Mandatory Google Play Policy** | ✅ **COMPLETED** (`86a1412`) |
 | 2️⃣ | **Post-Match Player Confirmation & Dispute** | 2–3 Days | Core Trust & ELO Rating System | ✅ **COMPLETED** (`971ea99`, `3eebc0b`) |
 | 3️⃣ | **QR Code / 6-Digit PIN Match Join** | 2 Days | Court UX & Quick Lobby Join | ✅ **COMPLETED** (`440f225`) |
-| 4️⃣ | **Mobile Push Notifications (FCM)** | 2–3 Days | Off-App Invites & User Retention | ⏳ Pending Setup |
-| 5️⃣ | **Network Disconnection & Signal Banner** | 1–1.5 Days | Outdoor Sports Court Resilience | ⏳ Pending |
+| 4️⃣ | **Mobile Push Notifications (FCM)** | 2–3 Days | Off-App Invites & User Retention | ✅ **COMPLETED** (Hardware Verified) |
+| 5️⃣ | **Network Disconnection & Signal Banner** | 1–1.5 Days | Outdoor Sports Court Resilience | ✅ **COMPLETED** |
 | 6️⃣ | **Post-Match Victory Card / Flex Your ELO Social Share Generator** | 1–1.5 Days | Viral Growth & Social Media Sharing | ✅ **COMPLETED** |
 | 7️⃣ | **Find Nearby Players & Courts Map (UI Teaser)** | 0.5 Days | UX Teaser & Future Feature Preview | ✅ **COMPLETED** (Bento Netflix Teasers) |
 
@@ -56,16 +56,20 @@ When deploying builds:
 - [x] Match PIN generator & lobby PIN display (`440f225`).
 - [x] PIN entry & lobby positioning on Flutter home / match screens.
 
-### 4. 🔔 Mobile Push Notifications (Firebase Cloud Messaging) — ⏳ NEXT
-- [ ] Firebase project setup (`google-services.json` in `android/app/`).
-- [ ] Node.js backend FCM Admin SDK setup (`firebase-admin`).
-- [ ] Triggers for match invites, scorer invites, match outcome verification requests, and dispute alerts.
-- [ ] Flutter FCM payload listener with deep linking to target match lobby screen when notification is tapped.
+### 4. 🔔 Mobile Push Notifications (Firebase Cloud Messaging) — ✅ DONE
+- [x] Firebase project setup (`google-services.json` in `android/app/`).
+- [x] Node.js backend FCM Admin SDK setup (`firebase-admin` + `/home/opc/firebase.json` VPS deployment).
+- [x] Triggers for match invites, scorer invites, match outcome verification, rating changes, and account actions.
+- [x] Flutter FCM foreground notifications & background token sync (`PATCH /auth/fcm-token`).
+- [x] Flutter FCM payload listener with auto-navigation when notification is tapped.
+- [x] Verified with live push delivery on physical Android device hardware.
 
-### 5. ⚠️ Network Disconnection & Signal Recovery Banner — ⏳ NEXT
-- [ ] Socket.IO connectivity listener in `scorer_screen.dart` & live match widgets.
-- [ ] Sticky top status banner: "Reconnecting to live match..." with warning styling (`PulseColors.warning`).
-- [ ] Local offline queue for storing score events while offline.
+### 5. ⚠️ Network Disconnection & Signal Recovery Banner — ✅ DONE
+- [x] Minimalist `SignalRecoveryBanner` with colored status dots (🟡 Offline, 🔵 Reconnecting, 🟢 Back Online).
+- [x] Real-time Socket.IO connectivity listener in `scorer_screen.dart` & `match_lobby_screen.dart`.
+- [x] Local offline score queue buffer for point taps and undos while offline.
+- [x] Automatic background flush of pending points on socket reconnection.
+- [x] Automated responsive 280x520 worst-case test and widget state unit tests passed.
 
 ### 6. 📸 Post-Match Victory Card / Social Share Generator — ✅ DONE
 - [x] Flutter `RepaintBoundary` widget to generate pixel-perfect PNG card of player rating & ELO stats.

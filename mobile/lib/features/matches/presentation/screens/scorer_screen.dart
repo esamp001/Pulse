@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'package:confetti/confetti.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import '../../../../core/theme/pulse_colors.dart';
 import '../../../../core/widgets/pulse_back_button.dart';
 import '../../../../core/widgets/pulse_toast.dart';
@@ -11,6 +12,7 @@ import '../../../../main.dart';
 import '../../../auth/services/auth_service.dart';
 import '../../models/match_model.dart';
 import '../../services/match_service.dart';
+import '../widgets/signal_recovery_banner.dart';
 import 'post_match_screen.dart';
 
 class ScoreStateHistory {
@@ -48,7 +50,10 @@ class _ScorerScreenState extends State<ScorerScreen> {
   late ConfettiController _confettiController;
   
   bool _isLoading = false;
-  bool _isSocketConnected = false;
+  SignalConnectionStatus _connectionStatus = SignalConnectionStatus.online;
+  Timer? _reconnectedDismissTimer;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
+  final List<Map<String, dynamic>> _offlineScoreQueue = [];
   String _matchStatus = 'READY';
 
   // Scoring Engine State
@@ -77,13 +82,37 @@ class _ScorerScreenState extends State<ScorerScreen> {
     _match = widget.match;
     _matchStatus = _match.status;
     _initSocket();
+    _initConnectivityListener();
   }
 
+  void _initConnectivityListener() {
+    _connectivitySub = Connectivity().onConnectivityChanged.listen((results) {
+      final isOffline = results.contains(ConnectivityResult.none) || results.isEmpty;
+      if (isOffline) {
+        if (mounted) {
+          setState(() {
+            _connectionStatus = SignalConnectionStatus.offline;
+          });
+        }
+      } else {
+        if (mounted && _connectionStatus == SignalConnectionStatus.offline) {
+          setState(() => _connectionStatus = SignalConnectionStatus.reconnecting);
+          _initSocket();
+        }
+      }
+    });
+  }
 
   void _initSocket() {
     if (!dotenv.isInitialized) return;
 
     try {
+      if (_socket != null) {
+        _socket?.disconnect();
+        _socket?.dispose();
+        _socket = null;
+      }
+
       final rawBaseUrl = dotenv.get('API_BASE_URL', fallback: 'http://localhost:5000/api/v1').trim().replaceAll(' ', '');
       final uri = Uri.parse(rawBaseUrl.startsWith('http') ? rawBaseUrl : 'https://$rawBaseUrl');
       final portSuffix = (uri.hasPort && uri.port != 80 && uri.port != 443) ? ':${uri.port}' : '';
@@ -98,10 +127,26 @@ class _ScorerScreenState extends State<ScorerScreen> {
             .build(),
       );
 
-      void joinMatchRoom() {
+      void joinMatchRoom({bool isReconnecting = false}) {
         if (mounted) {
-          setState(() => _isSocketConnected = true);
+          setState(() {
+            if (isReconnecting || _connectionStatus == SignalConnectionStatus.offline || _connectionStatus == SignalConnectionStatus.reconnecting || _offlineScoreQueue.isNotEmpty) {
+              _connectionStatus = SignalConnectionStatus.reconnected;
+              _reconnectedDismissTimer?.cancel();
+              _reconnectedDismissTimer = Timer(const Duration(milliseconds: 2500), () {
+                if (mounted) {
+                  setState(() => _connectionStatus = SignalConnectionStatus.online);
+                }
+              });
+            } else {
+              _connectionStatus = SignalConnectionStatus.online;
+            }
+          });
         }
+
+        // Flush offline queue if any points were recorded while disconnected
+        _flushOfflineQueue();
+
         _socket?.emit('join_match', {
           'matchId': _match.id,
           'userId': AuthService.currentUser?.id,
@@ -109,12 +154,27 @@ class _ScorerScreenState extends State<ScorerScreen> {
         });
       }
 
-      _socket?.onConnect((_) => joinMatchRoom());
-      _socket?.onReconnect((_) => joinMatchRoom());
+      _socket?.onConnect((_) => joinMatchRoom(isReconnecting: false));
+      _socket?.onReconnect((_) => joinMatchRoom(isReconnecting: true));
+      _socket?.onReconnectAttempt((_) {
+        if (mounted && _connectionStatus != SignalConnectionStatus.reconnecting) {
+          setState(() => _connectionStatus = SignalConnectionStatus.reconnecting);
+        }
+      });
+
+      _socket?.onConnectError((_) {
+        if (mounted && _connectionStatus != SignalConnectionStatus.offline) {
+          setState(() {
+            _connectionStatus = SignalConnectionStatus.offline;
+          });
+        }
+      });
 
       _socket?.onDisconnect((_) {
         if (mounted) {
-          setState(() => _isSocketConnected = false);
+          setState(() {
+            _connectionStatus = SignalConnectionStatus.offline;
+          });
         }
       });
 
@@ -128,6 +188,24 @@ class _ScorerScreenState extends State<ScorerScreen> {
 
       _socket?.on('score_updated', (data) {
         if (mounted && data != null) {
+          // If current user is the SCORER and received a SYNC snapshot, do not downgrade local scores
+          if (_isScorer && data['action'] == 'SYNC') {
+            final serverP1 = data['p1Score'] as int? ?? 0;
+            final serverP2 = data['p2Score'] as int? ?? 0;
+            if (_p1Score > serverP1 || _p2Score > serverP2 || _offlineScoreQueue.isNotEmpty) {
+              // Scorer is ahead with offline points, push authoritative score to server
+              _socket?.emit('record_point', {
+                'matchId': _match.id,
+                'player': _serverPlayer,
+                'p1Score': _p1Score,
+                'p2Score': _p2Score,
+                'currentSet': _currentSet,
+                'setScores': _completedSets.join(' | '),
+              });
+              return;
+            }
+          }
+
           setState(() {
             if (data['p1Score'] != null) _p1Score = data['p1Score'] as int;
             if (data['p2Score'] != null) _p2Score = data['p2Score'] as int;
@@ -161,15 +239,43 @@ class _ScorerScreenState extends State<ScorerScreen> {
 
       // If socket is already connected (e.g. shared manager), join match room immediately
       if (_socket?.connected == true) {
-        joinMatchRoom();
+        joinMatchRoom(isReconnecting: false);
       }
     } catch (e) {
       debugPrint('Socket initialization error: $e');
     }
   }
 
+  void _flushOfflineQueue() {
+    if (_socket?.connected != true) return;
+
+    if (_isScorer) {
+      // Scorer pushes the authoritative current scoreboard to the server
+      _socket?.emit('record_point', {
+        'matchId': _match.id,
+        'player': _serverPlayer,
+        'p1Score': _p1Score,
+        'p2Score': _p2Score,
+        'currentSet': _currentSet,
+        'setScores': _completedSets.join(' | '),
+      });
+    }
+
+    if (_offlineScoreQueue.isNotEmpty) {
+      for (final event in List<Map<String, dynamic>>.from(_offlineScoreQueue)) {
+        final eventType = event['type'] as String? ?? 'record_point';
+        final payload = event['payload'] as Map<String, dynamic>? ?? {};
+        _socket?.emit(eventType, payload);
+      }
+      _offlineScoreQueue.clear();
+      if (mounted) setState(() {});
+    }
+  }
+
   @override
   void dispose() {
+    _connectivitySub?.cancel();
+    _reconnectedDismissTimer?.cancel();
     _confettiController.dispose();
     _socket?.emit('leave_match', {'matchId': _match.id});
     _socket?.disconnect();
@@ -297,15 +403,28 @@ class _ScorerScreenState extends State<ScorerScreen> {
       }
     });
 
-    // Broadcast live score via Socket.IO
-    _socket?.emit('record_point', {
+    // Broadcast live score via Socket.IO or Queue Locally if Offline
+    final scorePayload = {
       'matchId': _match.id,
       'player': targetPlayer,
       'p1Score': _p1Score,
       'p2Score': _p2Score,
       'currentSet': _currentSet,
       'setScores': _completedSets.join(' | '),
-    });
+    };
+
+    if (_socket != null && _socket!.connected && _connectionStatus != SignalConnectionStatus.offline) {
+      _socket?.emit('record_point', scorePayload);
+    } else {
+      _offlineScoreQueue.add({
+        'id': DateTime.now().microsecondsSinceEpoch.toString(),
+        'type': 'record_point',
+        'payload': scorePayload,
+      });
+      if (_connectionStatus != SignalConnectionStatus.offline) {
+        setState(() => _connectionStatus = SignalConnectionStatus.offline);
+      }
+    }
   }
 
   void _showCrossCheckModal(String winnerId) {
@@ -723,14 +842,23 @@ class _ScorerScreenState extends State<ScorerScreen> {
       _serverPlayer = lastState.serverPlayer ?? 'P1';
     });
 
-    // Broadcast undo via Socket.IO
-    _socket?.emit('undo_point', {
+    // Broadcast undo via Socket.IO or queue locally
+    final undoPayload = {
       'matchId': _match.id,
       'p1Score': _p1Score,
       'p2Score': _p2Score,
       'currentSet': _currentSet,
       'setScores': _completedSets.join(' | '),
-    });
+    };
+
+    if (_socket != null && _socket!.connected) {
+      _socket?.emit('undo_point', undoPayload);
+    } else {
+      _offlineScoreQueue.add({
+        'type': 'undo_point',
+        'payload': undoPayload,
+      });
+    }
   }
 
   void _setServer(String player) {
@@ -740,14 +868,23 @@ class _ScorerScreenState extends State<ScorerScreen> {
       _serverPlayer = player;
     });
 
-    _socket?.emit('score_updated', {
+    final serverPayload = {
       'matchId': _match.id,
       'p1Score': _p1Score,
       'p2Score': _p2Score,
       'currentSet': _currentSet,
       'player': player,
       'setScores': _completedSets.join(' | '),
-    });
+    };
+
+    if (_socket != null && _socket!.connected) {
+      _socket?.emit('score_updated', serverPayload);
+    } else {
+      _offlineScoreQueue.add({
+        'type': 'score_updated',
+        'payload': serverPayload,
+      });
+    }
   }
 
   void _toggleServer() {
@@ -839,21 +976,33 @@ class _ScorerScreenState extends State<ScorerScreen> {
         ),
         actions: [
           Center(
-            child: Container(
-              margin: const EdgeInsets.only(right: 16),
-              width: 12,
-              height: 12,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: _isSocketConnected
-                    ? const Color(0xFF22C55E)
-                    : PulseColors.warning,
-                border: Border.all(
-                  color: (_isSocketConnected
-                          ? const Color(0xFF22C55E)
-                          : PulseColors.warning)
-                      .withValues(alpha: 0.35),
-                  width: 2.5,
+            child: InkWell(
+              onTap: () {
+                if (_connectionStatus != SignalConnectionStatus.online) {
+                  _initSocket();
+                }
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                margin: const EdgeInsets.only(right: 16),
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _connectionStatus == SignalConnectionStatus.online || _connectionStatus == SignalConnectionStatus.reconnected
+                      ? const Color(0xFF22C55E)
+                      : (_connectionStatus == SignalConnectionStatus.reconnecting
+                          ? const Color(0xFF3B82F6)
+                          : const Color(0xFFF59E0B)),
+                  border: Border.all(
+                    color: (_connectionStatus == SignalConnectionStatus.online || _connectionStatus == SignalConnectionStatus.reconnected
+                            ? const Color(0xFF22C55E)
+                            : (_connectionStatus == SignalConnectionStatus.reconnecting
+                                ? const Color(0xFF3B82F6)
+                                : const Color(0xFFF59E0B)))
+                        .withValues(alpha: 0.35),
+                    width: 2.5,
+                  ),
                 ),
               ),
             ),
@@ -867,6 +1016,14 @@ class _ScorerScreenState extends State<ScorerScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Minimalist Signal Recovery Top Banner
+              SignalRecoveryBanner(
+                status: _connectionStatus,
+                pendingQueueCount: _offlineScoreQueue.length,
+                isDarkMode: _isDarkMode,
+                onRetry: () => _initSocket(),
+              ),
+
               // Status & Info Header Bar
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),

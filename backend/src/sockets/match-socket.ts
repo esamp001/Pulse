@@ -78,7 +78,7 @@ export function initMatchSockets(io: Server): void {
     });
 
     // Scorer records a point for Player 1 or Player 2
-    socket.on('record_point', (data: { matchId: string; player: 'P1' | 'P2'; p1Score: number; p2Score: number; currentSet: number; setScores?: string }) => {
+    socket.on('record_point', (data: { matchId: string; player: 'P1' | 'P2'; p1Score: number; p2Score: number; currentSet: number; setScores?: string }, callback?: Function) => {
       const room = `match:${data.matchId}`;
       liveScores.set(data.matchId, {
         p1Score: data.p1Score,
@@ -98,10 +98,14 @@ export function initMatchSockets(io: Server): void {
         action: 'POINT',
         timestamp: new Date().toISOString(),
       });
+
+      if (typeof callback === 'function') {
+        callback({ success: true, timestamp: new Date().toISOString() });
+      }
     });
 
     // Scorer undos last point
-    socket.on('undo_point', (data: { matchId: string; p1Score: number; p2Score: number; currentSet: number; setScores?: string }) => {
+    socket.on('undo_point', (data: { matchId: string; p1Score: number; p2Score: number; currentSet: number; setScores?: string }, callback?: Function) => {
       const room = `match:${data.matchId}`;
       const existing = liveScores.get(data.matchId);
       liveScores.set(data.matchId, {
@@ -121,6 +125,10 @@ export function initMatchSockets(io: Server): void {
         action: 'UNDO',
         timestamp: new Date().toISOString(),
       });
+
+      if (typeof callback === 'function') {
+        callback({ success: true, timestamp: new Date().toISOString() });
+      }
     });
 
     // Scorer completes match

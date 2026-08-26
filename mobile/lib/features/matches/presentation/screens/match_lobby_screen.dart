@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import '../../../../core/theme/pulse_colors.dart';
 import '../../../../core/widgets/pulse_back_button.dart';
 import '../../../../core/widgets/pulse_toast.dart';
@@ -10,6 +11,7 @@ import '../../../auth/services/auth_service.dart';
 import '../../models/match_model.dart';
 import '../../services/match_service.dart';
 import '../widgets/invite_user_modal.dart';
+import '../widgets/signal_recovery_banner.dart';
 import 'scorer_screen.dart';
 
 
@@ -31,8 +33,10 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
   bool _isLoading = false;
   bool _isAssigning = false;
   bool _isNavigatingToLive = false;
+  bool _isDeviceOffline = false;
   Timer? _pollingTimer;
   StreamSubscription<Map<String, dynamic>>? _socketSub;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
 
   bool get _isDarkMode => themeModeNotifier.value == ThemeMode.dark;
 
@@ -58,6 +62,16 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
       _startPolling();
       _listenToSocketUpdates();
     }
+    _initConnectivityListener();
+  }
+
+  void _initConnectivityListener() {
+    _connectivitySub = Connectivity().onConnectivityChanged.listen((results) {
+      final isOffline = results.contains(ConnectivityResult.none) || results.isEmpty;
+      if (mounted) {
+        setState(() => _isDeviceOffline = isOffline);
+      }
+    });
   }
 
   void _listenToSocketUpdates() {
@@ -79,6 +93,7 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
 
   @override
   void dispose() {
+    _connectivitySub?.cancel();
     _socketSub?.cancel();
     _pollingTimer?.cancel();
     super.dispose();
@@ -572,6 +587,13 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (_isDeviceOffline || !SocketService().isConnected)
+              SignalRecoveryBanner(
+                status: SignalConnectionStatus.offline,
+                isDarkMode: _isDarkMode,
+                onRetry: () => _refreshMatchDetails(),
+              ),
+
             // Status Header Banner (Soft, natural aesthetic)
             Container(
               width: double.infinity,

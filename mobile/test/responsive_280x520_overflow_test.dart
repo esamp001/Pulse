@@ -17,6 +17,7 @@ import 'package:pulse_app/features/notifications/presentation/widgets/notificati
 import 'package:pulse_app/features/matches/presentation/widgets/invite_user_modal.dart';
 import 'package:pulse_app/features/matches/presentation/screens/post_match_screen.dart';
 import 'package:pulse_app/features/home/presentation/widgets/share_victory_modal.dart';
+import 'package:pulse_app/features/matches/presentation/widgets/signal_recovery_banner.dart';
 
 /// Helper to configure test surface viewport size to small 280x520 resolution
 void setSmallestScreen280x520(WidgetTester tester) {
@@ -217,6 +218,21 @@ void main() {
             userName: 'Rally Champ',
             currentElo: 1250,
             sportName: 'Pickleball',
+            isDarkMode: true,
+          ),
+        ),
+      ));
+      await tester.pump();
+      resetViewport(tester);
+    });
+
+    testWidgets('SignalRecoveryBanner renders without pixel overflow on 280x520', (WidgetTester tester) async {
+      setSmallestScreen280x520(tester);
+      await tester.pumpWidget(const MaterialApp(
+        home: Scaffold(
+          body: SignalRecoveryBanner(
+            status: SignalConnectionStatus.offline,
+            pendingQueueCount: 4,
             isDarkMode: true,
           ),
         ),
