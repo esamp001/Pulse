@@ -53,33 +53,17 @@ class PulseSportIcons {
     );
   }
 
-  /// Pickleball: Paddle representation (FontAwesome fa-table-tennis-paddle-ball 0xf45d)
-  static const IconData pickleball = IconData(
-    0xf45d,
-    fontFamily: 'FontAwesomeSolid',
-    fontPackage: 'font_awesome_flutter',
-  );
+  /// Pickleball: Paddle representation (Material sports_tennis_rounded)
+  static const IconData pickleball = Icons.sports_tennis_rounded;
 
-  /// Tennis: Official Tennis Ball icon (FontAwesome fa-tennis-ball 0xf45e)
-  static const IconData tennis = IconData(
-    0xf45e,
-    fontFamily: 'FontAwesomeSolid',
-    fontPackage: 'font_awesome_flutter',
-  );
+  /// Tennis: Official Tennis icon (Material sports_tennis_rounded)
+  static const IconData tennis = Icons.sports_tennis_rounded;
 
-  /// Table Tennis: Official Table Tennis Paddle & Ball icon (FontAwesome fa-table-tennis-paddle-ball 0xf45d)
-  static const IconData tableTennis = IconData(
-    0xf45d,
-    fontFamily: 'FontAwesomeSolid',
-    fontPackage: 'font_awesome_flutter',
-  );
+  /// Table Tennis: Official Table Tennis Paddle & Ball icon (Material sports_tennis_rounded)
+  static const IconData tableTennis = Icons.sports_tennis_rounded;
 
-  /// Badminton: Official Shuttlecock icon (FontAwesome fa-shuttlecock 0xf45b)
-  static const IconData badminton = IconData(
-    0xf45b,
-    fontFamily: 'FontAwesomeSolid',
-    fontPackage: 'font_awesome_flutter',
-  );
+  /// Badminton: Shuttlecock / sports fallback icon (Material sports_baseball_rounded)
+  static const IconData badminton = Icons.sports_baseball_rounded;
 
   /// Returns the standardized icon for a given sport key string.
   static IconData getIcon(String sportKey) {
