@@ -226,10 +226,30 @@ class _ScorerScreenState extends State<ScorerScreen> {
       _socket?.on('match_completed', (data) {
         if (mounted && data != null) {
           final winnerId = data['winnerId'] as String? ?? _match.player1Id;
-          final ratingChange = data['ratingChange'] as int? ?? 25;
+          final ratingChange = data['ratingChange'] is int
+              ? data['ratingChange'] as int
+              : int.tryParse('${data['ratingChange']}') ?? 25;
+          final p1Sets = data['p1SetsWon'] is int
+              ? data['p1SetsWon'] as int
+              : int.tryParse('${data['p1SetsWon']}') ?? _p1SetsWon;
+          final p2Sets = data['p2SetsWon'] is int
+              ? data['p2SetsWon'] as int
+              : int.tryParse('${data['p2SetsWon']}') ?? _p2SetsWon;
+          final setScores = data['setScores'] as String? ??
+              (_completedSets.isNotEmpty ? _completedSets.join('  •  ') : null);
+
           setState(() {
             _matchStatus = 'FINISHED';
             _ratingGained = ratingChange;
+            _p1SetsWon = p1Sets;
+            _p2SetsWon = p2Sets;
+            _match = _match.copyWith(
+              winnerId: winnerId,
+              status: 'FINISHED',
+              player1SetsWon: p1Sets,
+              player2SetsWon: p2Sets,
+              setScores: setScores,
+            );
           });
           _showWinnerModal(winnerId);
         }
@@ -631,6 +651,7 @@ class _ScorerScreenState extends State<ScorerScreen> {
       'ratingChange': ratingChange,
       'p1SetsWon': _p1SetsWon,
       'p2SetsWon': _p2SetsWon,
+      'setScores': _completedSets.join('  •  '),
     });
 
     if (mounted) {

@@ -132,7 +132,7 @@ export function initMatchSockets(io: Server): void {
     });
 
     // Scorer completes match
-    socket.on('match_completed', (data: { matchId: string; winnerId: string; ratingChange?: number; p1SetsWon?: number; p2SetsWon?: number }) => {
+    socket.on('match_completed', (data: { matchId: string; winnerId: string; ratingChange?: number; p1SetsWon?: number; p2SetsWon?: number; setScores?: string }) => {
       const room = `match:${data.matchId}`;
       liveScores.delete(data.matchId);
 
@@ -140,8 +140,9 @@ export function initMatchSockets(io: Server): void {
         matchId: data.matchId,
         winnerId: data.winnerId,
         ratingChange: data.ratingChange || 25,
-        p1SetsWon: data.p1SetsWon || 0,
-        p2SetsWon: data.p2SetsWon || 0,
+        p1SetsWon: data.p1SetsWon ?? 0,
+        p2SetsWon: data.p2SetsWon ?? 0,
+        setScores: data.setScores || '',
         timestamp: new Date().toISOString(),
       });
     });

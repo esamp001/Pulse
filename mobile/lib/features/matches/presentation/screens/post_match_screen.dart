@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/pulse_colors.dart';
 import '../../../../core/theme/pulse_sport_icons.dart';
 import '../../models/match_model.dart';
+import '../../services/match_service.dart';
 
-class PostMatchScreen extends StatelessWidget {
+class PostMatchScreen extends StatefulWidget {
   final MatchModel match;
   final String currentUserId;
 
@@ -14,12 +15,60 @@ class PostMatchScreen extends StatelessWidget {
   });
 
   @override
+  State<PostMatchScreen> createState() => _PostMatchScreenState();
+}
+
+class _PostMatchScreenState extends State<PostMatchScreen> {
+  late MatchModel _match;
+  final MatchService _matchService = MatchService();
+
+  @override
+  void initState() {
+    super.initState();
+    _match = widget.match;
+    _refreshMatchDetails();
+  }
+
+  Future<void> _refreshMatchDetails() async {
+    if (_match.id.isEmpty) return;
+    try {
+      final freshMatch = await _matchService.getMatchById(_match.id);
+      if (mounted) {
+        setState(() {
+          _match = freshMatch;
+        });
+      }
+    } catch (e) {
+      debugPrint('[PostMatchScreen Error fetching match]: $e');
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isWinnerP1 = match.winnerId == match.player1Id;
-    final winnerName = isWinnerP1
-        ? (match.player1?.name ?? 'Player 1')
-        : (match.player2?.name ?? 'Player 2');
+
+    final String winnerId = _match.winnerId ?? '';
+    final bool isWinnerP1 = winnerId.isNotEmpty
+        ? (winnerId == _match.player1Id || winnerId == _match.creatorId)
+        : (_match.player1SetsWon > _match.player2SetsWon);
+    final bool isWinnerP2 = winnerId.isNotEmpty
+        ? (winnerId == _match.player2Id)
+        : (_match.player2SetsWon > _match.player1SetsWon);
+
+    final String winnerName;
+    if (isWinnerP1) {
+      winnerName = _match.player1?.name ?? 'Player 1';
+    } else if (isWinnerP2) {
+      winnerName = _match.player2?.name ?? 'Player 2';
+    } else if (_match.player1SetsWon > _match.player2SetsWon) {
+      winnerName = _match.player1?.name ?? 'Player 1';
+    } else if (_match.player2SetsWon > _match.player1SetsWon) {
+      winnerName = _match.player2?.name ?? 'Player 2';
+    } else {
+      winnerName = 'Match Finished';
+    }
+
+    final String displayTitle = (isWinnerP1 || isWinnerP2) ? '$winnerName Won!' : winnerName;
 
     return Scaffold(
       backgroundColor: PulseColors.getBackground(isDark),
@@ -62,7 +111,7 @@ class PostMatchScreen extends StatelessWidget {
                 child: Row(
                   children: [
                     Icon(
-                      PulseSportIcons.getIcon(match.sport),
+                      PulseSportIcons.getIcon(_match.sport),
                       color: PulseColors.accent,
                       size: 24,
                     ),
@@ -72,7 +121,7 @@ class PostMatchScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            match.sportDisplayName,
+                            _match.sportDisplayName,
                             style: TextStyle(
                               color: PulseColors.getTextPrimary(isDark),
                               fontWeight: FontWeight.bold,
@@ -81,7 +130,7 @@ class PostMatchScreen extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                           Text(
-                            match.venueName,
+                            _match.venueName,
                             style: TextStyle(
                               color: PulseColors.getTextSecondary(isDark),
                               fontSize: 12,
@@ -133,7 +182,7 @@ class PostMatchScreen extends StatelessWidget {
                     FittedBox(
                       fit: BoxFit.scaleDown,
                       child: Text(
-                        '$winnerName Won!',
+                        displayTitle,
                         style: TextStyle(
                           color: PulseColors.getTextPrimary(isDark),
                           fontWeight: FontWeight.w800,
@@ -143,7 +192,7 @@ class PostMatchScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Scorer: ${match.scorer?.name ?? "Official Scorer"}',
+                      'Scorer: ${_match.scorer?.name ?? "Official Scorer"}',
                       style: TextStyle(
                         color: PulseColors.getTextSecondary(isDark),
                         fontSize: 12,
@@ -163,18 +212,18 @@ class PostMatchScreen extends StatelessWidget {
                       child: Column(
                         children: [
                           Text(
-                            'Final Score: ${match.player1SetsWon} - ${match.player2SetsWon} Sets',
+                            'Final Score: ${_match.player1SetsWon} - ${_match.player2SetsWon} Sets',
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w800,
                               color: PulseColors.getTextPrimary(isDark),
                             ),
                           ),
-                          if (match.setScores != null &&
-                              match.setScores!.isNotEmpty) ...[
+                          if (_match.setScores != null &&
+                              _match.setScores!.isNotEmpty) ...[
                             const SizedBox(height: 6),
                             Text(
-                              match.setScores!,
+                              _match.setScores!,
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
@@ -200,7 +249,7 @@ class PostMatchScreen extends StatelessWidget {
                                     ? PulseColors.accent
                                     : PulseColors.getSurface(isDark),
                                 child: Text(
-                                  match.player1?.initials ?? 'P1',
+                                  _match.player1?.initials ?? 'P1',
                                   style: TextStyle(
                                     color: isWinnerP1
                                         ? Colors.white
@@ -211,7 +260,7 @@ class PostMatchScreen extends StatelessWidget {
                               ),
                               const SizedBox(height: 6),
                               Text(
-                                match.player1?.name ?? 'Player 1',
+                                _match.player1?.name ?? 'Player 1',
                                 style: TextStyle(
                                   color: PulseColors.getTextPrimary(isDark),
                                   fontWeight: FontWeight.w600,
@@ -238,13 +287,13 @@ class PostMatchScreen extends StatelessWidget {
                             children: [
                               CircleAvatar(
                                 radius: 24,
-                                backgroundColor: !isWinnerP1
+                                backgroundColor: isWinnerP2
                                     ? PulseColors.accent
                                     : PulseColors.getSurface(isDark),
                                 child: Text(
-                                  match.player2?.initials ?? 'P2',
+                                  _match.player2?.initials ?? 'P2',
                                   style: TextStyle(
-                                    color: !isWinnerP1
+                                    color: isWinnerP2
                                         ? Colors.white
                                         : PulseColors.getTextPrimary(isDark),
                                     fontWeight: FontWeight.bold,
@@ -253,7 +302,7 @@ class PostMatchScreen extends StatelessWidget {
                               ),
                               const SizedBox(height: 6),
                               Text(
-                                match.player2?.name ?? 'Player 2',
+                                _match.player2?.name ?? 'Player 2',
                                 style: TextStyle(
                                   color: PulseColors.getTextPrimary(isDark),
                                   fontWeight: FontWeight.w600,
