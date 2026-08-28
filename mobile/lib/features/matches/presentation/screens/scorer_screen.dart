@@ -51,6 +51,9 @@ class _ScorerScreenState extends State<ScorerScreen> {
   
   bool _isLoading = false;
   SignalConnectionStatus _connectionStatus = SignalConnectionStatus.online;
+  bool _isInitialGracePeriod = true;
+  Timer? _gracePeriodTimer;
+  Timer? _autoReconnectTimer;
   Timer? _reconnectedDismissTimer;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
   final List<Map<String, dynamic>> _offlineScoreQueue = [];
@@ -81,23 +84,81 @@ class _ScorerScreenState extends State<ScorerScreen> {
     _confettiController = ConfettiController(duration: const Duration(seconds: 4));
     _match = widget.match;
     _matchStatus = _match.status;
+    _connectionStatus = SignalConnectionStatus.online;
+
+    // 2.5s Startup Grace Period: prevents false-positive offline flashes while socket handshakes
+    _gracePeriodTimer = Timer(const Duration(milliseconds: 2500), () {
+      if (mounted) {
+        setState(() => _isInitialGracePeriod = false);
+        if (_socket?.connected != true) {
+          _checkAndHandleConnectionState();
+        }
+      }
+    });
+
     _initSocket();
     _initConnectivityListener();
   }
 
+  void _checkAndHandleConnectionState() {
+    if (_socket?.connected == true) {
+      if (_connectionStatus != SignalConnectionStatus.online &&
+          _connectionStatus != SignalConnectionStatus.reconnected) {
+        setState(() => _connectionStatus = SignalConnectionStatus.online);
+      }
+      _autoReconnectTimer?.cancel();
+    } else {
+      if (!_isInitialGracePeriod && mounted) {
+        setState(() => _connectionStatus = SignalConnectionStatus.offline);
+        _startAutoReconnectTimer();
+      }
+    }
+  }
+
+  void _startAutoReconnectTimer() {
+    _autoReconnectTimer?.cancel();
+    _autoReconnectTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (!mounted) return;
+      if (_socket?.connected == true) {
+        _autoReconnectTimer?.cancel();
+        return;
+      }
+      // Silently and automatically attempt reconnection in the background
+      debugPrint('[ScorerScreen] Attempting background auto-reconnect...');
+      _socket?.connect();
+    });
+  }
+
+  void _manualReconnect() {
+    setState(() => _connectionStatus = SignalConnectionStatus.reconnecting);
+    _initSocket();
+    _startAutoReconnectTimer();
+  }
+
   void _initConnectivityListener() {
+    // Initial active network check
+    Connectivity().checkConnectivity().then((results) {
+      final hasNetwork = results.any((r) => r != ConnectivityResult.none);
+      if (!hasNetwork && mounted && !_isInitialGracePeriod) {
+        setState(() => _connectionStatus = SignalConnectionStatus.offline);
+        _startAutoReconnectTimer();
+      }
+    });
+
     _connectivitySub = Connectivity().onConnectivityChanged.listen((results) {
-      final isOffline = results.contains(ConnectivityResult.none) || results.isEmpty;
-      if (isOffline) {
-        if (mounted) {
+      final hasNetwork = results.any((r) => r != ConnectivityResult.none);
+      if (!hasNetwork) {
+        if (mounted && !_isInitialGracePeriod) {
           setState(() {
             _connectionStatus = SignalConnectionStatus.offline;
           });
+          _startAutoReconnectTimer();
         }
       } else {
-        if (mounted && _connectionStatus == SignalConnectionStatus.offline) {
+        // Network connection is available / restored -> automatically reconnect!
+        if (mounted && (_connectionStatus == SignalConnectionStatus.offline || _socket?.connected != true)) {
           setState(() => _connectionStatus = SignalConnectionStatus.reconnecting);
-          _initSocket();
+          _manualReconnect();
         }
       }
     });
@@ -124,10 +185,14 @@ class _ScorerScreenState extends State<ScorerScreen> {
             .setTransports(['websocket', 'polling'])
             .enableAutoConnect()
             .enableReconnection()
+            .setReconnectionAttempts(double.infinity)
+            .setReconnectionDelay(1000)
+            .setReconnectionDelayMax(4000)
             .build(),
       );
 
       void joinMatchRoom({bool isReconnecting = false}) {
+        _autoReconnectTimer?.cancel();
         if (mounted) {
           setState(() {
             if (isReconnecting || _connectionStatus == SignalConnectionStatus.offline || _connectionStatus == SignalConnectionStatus.reconnecting || _offlineScoreQueue.isNotEmpty) {
@@ -157,24 +222,27 @@ class _ScorerScreenState extends State<ScorerScreen> {
       _socket?.onConnect((_) => joinMatchRoom(isReconnecting: false));
       _socket?.onReconnect((_) => joinMatchRoom(isReconnecting: true));
       _socket?.onReconnectAttempt((_) {
-        if (mounted && _connectionStatus != SignalConnectionStatus.reconnecting) {
+        if (mounted && _connectionStatus != SignalConnectionStatus.reconnecting && !_isInitialGracePeriod) {
           setState(() => _connectionStatus = SignalConnectionStatus.reconnecting);
         }
       });
 
-      _socket?.onConnectError((_) {
-        if (mounted && _connectionStatus != SignalConnectionStatus.offline) {
+      _socket?.onConnectError((err) {
+        debugPrint('[ScorerScreen Socket onConnectError]: $err');
+        if (mounted && !_isInitialGracePeriod && _connectionStatus != SignalConnectionStatus.offline) {
           setState(() {
             _connectionStatus = SignalConnectionStatus.offline;
           });
+          _startAutoReconnectTimer();
         }
       });
 
       _socket?.onDisconnect((_) {
-        if (mounted) {
+        if (mounted && !_isInitialGracePeriod) {
           setState(() {
             _connectionStatus = SignalConnectionStatus.offline;
           });
+          _startAutoReconnectTimer();
         }
       });
 
@@ -294,12 +362,15 @@ class _ScorerScreenState extends State<ScorerScreen> {
 
   @override
   void dispose() {
+    _gracePeriodTimer?.cancel();
+    _autoReconnectTimer?.cancel();
     _connectivitySub?.cancel();
     _reconnectedDismissTimer?.cancel();
     _confettiController.dispose();
     _socket?.emit('leave_match', {'matchId': _match.id});
     _socket?.disconnect();
     _socket?.dispose();
+    _socket = null;
     super.dispose();
   }
 
@@ -1042,7 +1113,7 @@ class _ScorerScreenState extends State<ScorerScreen> {
                 status: _connectionStatus,
                 pendingQueueCount: _offlineScoreQueue.length,
                 isDarkMode: _isDarkMode,
-                onRetry: () => _initSocket(),
+                onRetry: () => _manualReconnect(),
               ),
 
               // Status & Info Header Bar

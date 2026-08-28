@@ -34,6 +34,8 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
   bool _isAssigning = false;
   bool _isNavigatingToLive = false;
   bool _isDeviceOffline = false;
+  bool _isInitialGracePeriod = true;
+  Timer? _gracePeriodTimer;
   Timer? _pollingTimer;
   StreamSubscription<Map<String, dynamic>>? _socketSub;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
@@ -44,6 +46,14 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
   void initState() {
     super.initState();
     _match = widget.match;
+
+    // 2.5s Startup Grace Period: prevents false-positive offline flashes on lobby load
+    _gracePeriodTimer = Timer(const Duration(milliseconds: 2500), () {
+      if (mounted) {
+        setState(() => _isInitialGracePeriod = false);
+      }
+    });
+
     if (_match.status == 'LIVE') {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && !_isNavigatingToLive) {
@@ -66,10 +76,22 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
   }
 
   void _initConnectivityListener() {
-    _connectivitySub = Connectivity().onConnectivityChanged.listen((results) {
-      final isOffline = results.contains(ConnectivityResult.none) || results.isEmpty;
+    Connectivity().checkConnectivity().then((results) {
+      final hasNetwork = results.any((r) => r != ConnectivityResult.none);
       if (mounted) {
-        setState(() => _isDeviceOffline = isOffline);
+        setState(() => _isDeviceOffline = !hasNetwork);
+      }
+    });
+
+    _connectivitySub = Connectivity().onConnectivityChanged.listen((results) {
+      final hasNetwork = results.any((r) => r != ConnectivityResult.none);
+      if (mounted) {
+        final wasOffline = _isDeviceOffline;
+        setState(() => _isDeviceOffline = !hasNetwork);
+        if (wasOffline && hasNetwork) {
+          // Auto-reconnected!
+          _refreshMatchDetails(silent: true);
+        }
       }
     });
   }
@@ -93,6 +115,7 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
 
   @override
   void dispose() {
+    _gracePeriodTimer?.cancel();
     _connectivitySub?.cancel();
     _socketSub?.cancel();
     _pollingTimer?.cancel();
@@ -587,7 +610,7 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (_isDeviceOffline || !SocketService().isConnected)
+            if ((_isDeviceOffline || !SocketService().isConnected) && !_isInitialGracePeriod)
               SignalRecoveryBanner(
                 status: SignalConnectionStatus.offline,
                 isDarkMode: _isDarkMode,
