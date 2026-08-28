@@ -6,6 +6,7 @@ import 'package:flutter/rendering.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../../core/theme/pulse_colors.dart';
+import '../../../../core/widgets/pulse_logo.dart';
 import '../../../../core/widgets/pulse_toast.dart';
 import '../../../../main.dart';
 
@@ -63,15 +64,18 @@ class _ShareVictoryModalState extends State<ShareVictoryModal> {
       _isSharing = true;
     });
 
+    // Capture sharePositionOrigin before async gaps to avoid use_build_context_synchronously
+    final box = context.findRenderObject() as RenderBox?;
+    final Rect? sharePositionOrigin = box != null && box.hasSize
+        ? box.localToGlobal(Offset.zero) & box.size
+        : null;
+
     try {
       // 1. Brief post-frame delay to ensure Flutter has painted the RepaintBoundary
       await Future.delayed(const Duration(milliseconds: 100));
+      if (!mounted) return;
 
       final boundary = _cardKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
-      final box = context.findRenderObject() as RenderBox?;
-      final Rect? sharePositionOrigin = box != null && box.hasSize
-          ? box.localToGlobal(Offset.zero) & box.size
-          : null;
 
       final String shareText =
           'Flexing my ELO rating on Rally! ${widget.currentElo} ELO #RallySports #FlexYourELO #${widget.sportName}';
@@ -93,11 +97,13 @@ class _ShareVictoryModalState extends State<ShareVictoryModal> {
 
           if (!mounted) return;
 
-          final result = await Share.shareXFiles(
-            [XFile(file.path)],
-            text: shareText,
-            subject: 'Rally Player ELO Rating Card',
-            sharePositionOrigin: sharePositionOrigin,
+          final result = await SharePlus.instance.share(
+            ShareParams(
+              files: [XFile(file.path)],
+              text: shareText,
+              subject: 'Rally Player ELO Rating Card',
+              sharePositionOrigin: sharePositionOrigin,
+            ),
           );
 
           if (mounted && result.status == ShareResultStatus.success) {
@@ -108,27 +114,27 @@ class _ShareVictoryModalState extends State<ShareVictoryModal> {
       }
 
       // Fallback: If boundary capture is unavailable, trigger text share
-      await Share.share(
-        shareText,
-        subject: 'Rally Player ELO Rating Card',
-        sharePositionOrigin: sharePositionOrigin,
+      await SharePlus.instance.share(
+        ShareParams(
+          text: shareText,
+          subject: 'Rally Player ELO Rating Card',
+          sharePositionOrigin: sharePositionOrigin,
+        ),
       );
     } catch (err) {
-      print('[ShareVictoryModal Error]: $err');
+      debugPrint('[ShareVictoryModal Error]: $err');
       if (mounted) {
         try {
-          final box = context.findRenderObject() as RenderBox?;
-          final Rect? sharePositionOrigin = box != null && box.hasSize
-              ? box.localToGlobal(Offset.zero) & box.size
-              : null;
-
-          await Share.share(
-            '⚡ Flexing my ELO rating on Rally! ${widget.currentElo} ELO 🚀 #RallySports #FlexYourELO #${widget.sportName}',
-            subject: 'Rally Player ELO Rating Card',
-            sharePositionOrigin: sharePositionOrigin,
+          await SharePlus.instance.share(
+            ShareParams(
+              text:
+                  '⚡ Flexing my ELO rating on Rally! ${widget.currentElo} ELO 🚀 #RallySports #FlexYourELO #${widget.sportName}',
+              subject: 'Rally Player ELO Rating Card',
+              sharePositionOrigin: sharePositionOrigin,
+            ),
           );
         } catch (fallbackErr) {
-          print('[ShareVictoryModal Fallback Error]: $fallbackErr');
+          debugPrint('[ShareVictoryModal Fallback Error]: $fallbackErr');
           if (mounted) {
             PulseToast.show(context, 'Failed to share card. Please try again.');
           }
@@ -233,28 +239,10 @@ class _ShareVictoryModalState extends State<ShareVictoryModal> {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              // Top Brand Mascot Header
-                              Row(
-                                children: [
-                                  Image.asset(
-                                    'assets/images/official_logo_rally.png',
-                                    height: 32,
-                                    width: 32,
-                                    errorBuilder: (context, error, stackTrace) =>
-                                        const Icon(Icons.sports_tennis_rounded,
-                                            size: 28, color: PulseColors.accent),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'RALLY',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w900,
-                                      letterSpacing: 1.2,
-                                      color: textPrimary,
-                                    ),
-                                  ),
-                                ],
+                              // Top Brand Text Logo Header
+                              const Align(
+                                alignment: Alignment.centerLeft,
+                                child: PulseLogo(size: 42),
                               ),
                               const SizedBox(height: 18),
 
