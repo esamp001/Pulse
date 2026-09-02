@@ -297,7 +297,9 @@ class _RankingsScreenState extends State<RankingsScreen> {
         return Scaffold(
           backgroundColor: PulseColors.getBackground(isDark),
           body: SafeArea(
+            bottom: false,
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _buildHeader(),
                 _buildSportFilterBar(),
@@ -857,7 +859,8 @@ class _RankingsScreenState extends State<RankingsScreen> {
   Widget _buildPinnedCurrentUserBar() {
     final entry = _currentUserEntry!;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: PulseColors.getSurface(_isDarkMode),
         border: Border(
@@ -871,7 +874,9 @@ class _RankingsScreenState extends State<RankingsScreen> {
         top: false,
         child: FittedBox(
           fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
           child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -889,34 +894,32 @@ class _RankingsScreenState extends State<RankingsScreen> {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 120),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      entry.name,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                        color: PulseColors.getTextPrimary(_isDarkMode),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+              const SizedBox(width: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    entry.name,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      color: PulseColors.getTextPrimary(_isDarkMode),
                     ),
-                    Text(
-                      _getMetricSubtext(entry),
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: PulseColors.getTextSecondary(_isDarkMode),
-                      ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _getMetricSubtext(entry),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: PulseColors.getTextSecondary(_isDarkMode),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
               Text(
                 _getMetricValueText(entry),
                 style: TextStyle(
