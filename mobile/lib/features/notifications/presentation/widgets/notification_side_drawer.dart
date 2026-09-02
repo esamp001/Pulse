@@ -76,9 +76,9 @@ class _NotificationSideDrawerState extends State<NotificationSideDrawer> {
       child: SafeArea(
         child: Column(
           children: [
-            // 1. Header (Back Arrow + Title + Mark All as Read)
+            // 1. Header (Back Arrow + Title)
             Padding(
-              padding: const EdgeInsets.fromLTRB(8.0, 12.0, 12.0, 8.0),
+              padding: const EdgeInsets.fromLTRB(8.0, 12.0, 16.0, 8.0),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -98,10 +98,28 @@ class _NotificationSideDrawerState extends State<NotificationSideDrawer> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  if (notifications.any((n) => n.isUnread)) ...[
-                    const SizedBox(width: 8),
+                ],
+              ),
+            ),
+
+            // 2. All / Unread Tabs & Mark All as Read
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  _buildTabItem('All', selected: _filter == 'ALL', onTap: () {
+                    setState(() => _filter = 'ALL');
+                  }),
+                  const SizedBox(width: 20),
+                  _buildTabItem('Unread', selected: _filter == 'UNREAD', onTap: () {
+                    setState(() => _filter = 'UNREAD');
+                  }),
+                  const Spacer(),
+                  if (notifications.any((n) => n.isUnread))
                     Flexible(
                       child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
                         onTap: () async {
                           await _notificationService.markAllAsRead();
                           if (!mounted) return;
@@ -110,37 +128,23 @@ class _NotificationSideDrawerState extends State<NotificationSideDrawer> {
                             PulseToast.show(context, 'All notifications marked as read');
                           }
                         },
-                        child: const FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            'Mark all as read',
-                            style: TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w700,
-                              color: PulseColors.accent,
-                              height: 1.1,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4.0),
+                          child: const FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              'Mark all as read',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: PulseColors.accent,
+                                height: 1.1,
+                              ),
                             ),
                           ),
                         ),
                       ),
                     ),
-                  ],
-                ],
-              ),
-            ),
-
-            // 2. All / Unread Tabs
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: Row(
-                children: [
-                  _buildTabItem('All', selected: _filter == 'ALL', onTap: () {
-                    setState(() => _filter = 'ALL');
-                  }),
-                  const SizedBox(width: 24),
-                  _buildTabItem('Unread', selected: _filter == 'UNREAD', onTap: () {
-                    setState(() => _filter = 'UNREAD');
-                  }),
                 ],
               ),
             ),
