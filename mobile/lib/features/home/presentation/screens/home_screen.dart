@@ -27,6 +27,7 @@ import '../../../profile/presentation/screens/account_settings_screen.dart';
 import '../../../profile/presentation/screens/edit_profile_screen.dart';
 import '../../../rankings/presentation/screens/rankings_screen.dart';
 import '../../../community/services/community_service.dart';
+import '../../../courts/presentation/screens/court_finder_screen.dart';
 import '../widgets/share_victory_modal.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -787,16 +788,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   PulseToast.show(context, 'Match Players Radar is coming soon in v1.1!');
                 },
               ),
-              // 3. Find Court (Card 3) - Coming Soon
+              // 3. Find Court (Card 3) - Active Feature
               PulseWidgetCard(
                 imagePath: 'assets/images/find_court.png',
                 title: 'Find Court',
                 subtitle: 'Locate Venues',
                 pillText: 'NEARBY',
                 isDarkMode: _isDarkMode,
-                isComingSoon: true,
                 onTap: () {
-                  PulseToast.show(context, 'Court Finder Map is coming soon in v1.1!');
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => CourtFinderScreen(
+                        initialSport: _selectedSport,
+                      ),
+                    ),
+                  );
                 },
               ),
               // 4. Share Victory (Card 4) - Active Feature

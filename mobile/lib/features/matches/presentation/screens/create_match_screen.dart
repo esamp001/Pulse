@@ -10,7 +10,16 @@ import '../widgets/sport_selector_card.dart';
 import 'match_lobby_screen.dart';
 
 class CreateMatchScreen extends StatefulWidget {
-  const CreateMatchScreen({super.key});
+  final String? initialVenueName;
+  final String? initialSport;
+  final String? initialLocation;
+
+  const CreateMatchScreen({
+    super.key,
+    this.initialVenueName,
+    this.initialSport,
+    this.initialLocation,
+  });
 
   @override
   State<CreateMatchScreen> createState() => _CreateMatchScreenState();
@@ -190,6 +199,19 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialVenueName != null && widget.initialVenueName!.isNotEmpty) {
+      _venueNameController.text = widget.initialVenueName!;
+    }
+    if (widget.initialLocation != null && widget.initialLocation!.isNotEmpty) {
+      _locationController.text = widget.initialLocation!;
+    }
+    if (widget.initialSport != null && widget.initialSport!.isNotEmpty) {
+      final norm = widget.initialSport!.toLowerCase().replaceAll(' ', '_');
+      if (_sports.any((s) => s.key == norm)) {
+        _selectedSport = norm;
+        return;
+      }
+    }
     final available = _availableSports;
     if (available.isNotEmpty) {
       final user = AuthService.currentUser;
