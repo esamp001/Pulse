@@ -65,7 +65,28 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _handleLogin() async {
+  UserModel _extractUserFromResult(Map<String, dynamic> result) {
+    final rawData = result['data'];
+    Map<String, dynamic>? userMap;
+
+    if (rawData is Map<String, dynamic>) {
+      if (rawData['user'] is Map<String, dynamic>) {
+        userMap = rawData['user'] as Map<String, dynamic>;
+      } else if (rawData['data'] is Map<String, dynamic> &&
+          rawData['data']['user'] is Map<String, dynamic>) {
+        userMap = rawData['data']['user'] as Map<String, dynamic>;
+      }
+    } else if (result['user'] is Map<String, dynamic>) {
+      userMap = result['user'] as Map<String, dynamic>;
+    }
+
+    if (userMap == null) {
+      throw Exception('User profile not found in server response');
+    }
+    return UserModel.fromJson(userMap);
+  }
+
+  Future<void> _handleLogin() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
       final email = _emailController.text.trim();
@@ -76,8 +97,7 @@ class _LoginScreenState extends State<LoginScreen> {
         final result = await _authService.login(email: email, password: password);
         if (!mounted) return;
 
-        final userData = result['data']['user'];
-        final user = UserModel.fromJson(userData);
+        final user = _extractUserFromResult(result);
 
         Navigator.pushReplacement(
           context,
@@ -122,8 +142,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!mounted) return;
 
-      final userData = result['data']['user'];
-      final user = UserModel.fromJson(userData);
+      final user = _extractUserFromResult(result);
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(

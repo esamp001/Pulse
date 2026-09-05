@@ -47,6 +47,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
+  UserModel _extractUserFromResult(Map<String, dynamic> result) {
+    final rawData = result['data'];
+    Map<String, dynamic>? userMap;
+
+    if (rawData is Map<String, dynamic>) {
+      if (rawData['user'] is Map<String, dynamic>) {
+        userMap = rawData['user'] as Map<String, dynamic>;
+      } else if (rawData['data'] is Map<String, dynamic> &&
+          rawData['data']['user'] is Map<String, dynamic>) {
+        userMap = rawData['data']['user'] as Map<String, dynamic>;
+      }
+    } else if (result['user'] is Map<String, dynamic>) {
+      userMap = result['user'] as Map<String, dynamic>;
+    }
+
+    if (userMap == null) {
+      throw Exception('User profile not found in server response');
+    }
+    return UserModel.fromJson(userMap);
+  }
+
   Future<void> _handleGoogleSignUp() async {
     setState(() => _isLoading = true);
     try {
@@ -67,8 +88,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       if (!mounted) return;
 
-      final userData = result['data']['user'];
-      final user = UserModel.fromJson(userData);
+      final user = _extractUserFromResult(result);
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(

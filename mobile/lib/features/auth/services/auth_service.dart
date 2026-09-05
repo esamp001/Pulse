@@ -18,14 +18,17 @@ class AuthService {
   static String? get currentToken => _currentToken;
   static UserModel? get currentUser => _currentUser;
 
-   /// Process authentication data and persist session locally
-    void _processAuthData(dynamic data) {
+  /// Process authentication data and persist session locally
+  void _processAuthData(dynamic data) {
     if (data is Map<String, dynamic>) {
-      if (data['token'] != null) {
-        _currentToken = data['token'];
+      final payload = (data['data'] is Map<String, dynamic>)
+          ? data['data'] as Map<String, dynamic>
+          : data;
+      if (payload['token'] != null) {
+        _currentToken = payload['token'];
       }
-      if (data['user'] != null) {
-        _currentUser = UserModel.fromJson(data['user']);
+      if (payload['user'] != null) {
+        _currentUser = UserModel.fromJson(payload['user']);
       }
       // Initialize FCM messaging & sync device token upon successful authentication
       if (_currentToken != null) {

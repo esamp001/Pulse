@@ -119,6 +119,9 @@ class ApiClient {
     }
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
+      if (responseData is Map<String, dynamic> && responseData.containsKey('data')) {
+        return responseData['data'];
+      }
       return responseData;
     }
 
