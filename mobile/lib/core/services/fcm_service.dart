@@ -191,7 +191,7 @@ class FcmService {
       }
     } catch (err) {
       if (kDebugMode && Firebase.apps.isNotEmpty) {
-        print('[FcmService Sync Current Token Error]: $err');
+        debugPrint('[FcmService Sync Current Token Error]: $err');
       }
     }
   }

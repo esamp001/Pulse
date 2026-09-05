@@ -123,8 +123,10 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                                     setModalState(() => isDeleting = true);
                                     try {
                                       await _authService.deleteAccount();
-                                      if (mounted) {
+                                      if (modalContext.mounted) {
                                         Navigator.pop(modalContext);
+                                      }
+                                      if (context.mounted) {
                                         PulseToast.showSuccess(context, 'Account deleted successfully');
                                         Navigator.of(context).pushAndRemoveUntil(
                                           MaterialPageRoute(builder: (_) => const LoginScreen()),
@@ -133,7 +135,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                                       }
                                     } catch (e) {
                                       setModalState(() => isDeleting = false);
-                                      if (mounted) {
+                                      if (context.mounted) {
                                         PulseToast.showError(
                                           context,
                                           'Failed to delete account: ${e.toString().replaceAll("Exception: ", "")}',

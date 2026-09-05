@@ -26,8 +26,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final AuthService _authService = AuthService();
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     clientId: kIsWeb ? '254427635301-o7l406affi0gq1j3ae9k63duq0mna3k3.apps.googleusercontent.com' : null,
-    serverClientId: kIsWeb ? null : '254427635301-o7l406affi0gq1j3ae9k63duq0mna3k3.apps.googleusercontent.com',
-    scopes: ['email'],
+    scopes: ['email', 'profile'],
   );
 
   bool _isPasswordVisible = false;
