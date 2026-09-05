@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "254427635301-jv3bmtm6q1a9k1r9ohqtdrjm12f2c5u0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.pulse.pulse_app",
+            "certificate_hash": "db725cc976b710a5cd2b785504d58fcc62a11e84"
+          }
+        },
+        {
           "client_id": "254427635301-p7f4k6hkhn4nbtf4soqipenot9h0q6lu.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
