@@ -7,11 +7,13 @@ workflows:
       flutter: stable
       vars:
         API_BASE_URL: "https://retailers-nuke-unsigned-jaguar.trycloudflare.com/api/v1"
+        MAPBOX_ACCESS_TOKEN: "pk.eyJ1IjoiZXNhbXAwMDEiLCJhIjoiY210a24ycTE3MDI0azJ6b2IxMzk0ZmZzbyJ9.gN06AcEqY0iiW2LIrxQ6-Q"
     scripts:
       - name: Set up .env for Flutter Mobile
         script: |
           cd mobile
           echo "API_BASE_URL=$API_BASE_URL" > .env
+          echo "MAPBOX_ACCESS_TOKEN=$MAPBOX_ACCESS_TOKEN" >> .env
       - name: Get Flutter dependencies
         script: |
           cd mobile
