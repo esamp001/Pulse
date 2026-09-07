@@ -8,7 +8,7 @@ import 'core/theme/pulse_colors.dart';
 import 'core/widgets/pulse_logo.dart';
 import 'features/auth/models/user_model.dart';
 import 'features/auth/services/auth_service.dart';
-import 'features/auth/presentation/screens/login_screen.dart';
+import 'features/auth/presentation/screens/get_started_screen.dart';
 import 'features/auth/presentation/screens/onboarding_screen.dart';
 import 'features/home/presentation/screens/home_screen.dart';
 import 'features/matches/presentation/screens/match_lobby_screen.dart';
@@ -106,7 +106,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
     if (mounted) {
       setState(() {
-        _initialScreen = const LoginScreen();
+        _initialScreen = const GetStartedScreen();
       });
     }
   }

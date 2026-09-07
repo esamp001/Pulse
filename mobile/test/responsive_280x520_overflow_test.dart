@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pulse_app/features/auth/models/user_model.dart';
 import 'package:pulse_app/features/matches/models/match_model.dart';
+import 'package:pulse_app/features/auth/presentation/screens/get_started_screen.dart';
 import 'package:pulse_app/features/auth/presentation/screens/login_screen.dart';
 import 'package:pulse_app/features/auth/presentation/screens/register_screen.dart';
 import 'package:pulse_app/features/auth/presentation/screens/onboarding_screen.dart';
@@ -84,6 +85,16 @@ void main() {
   group(
     'Smallest Mobile Viewport (280x520) Responsive Overflow Protection Tests',
     () {
+      testWidgets(
+        'GetStartedScreen renders without pixel overflow on 280x520',
+        (WidgetTester tester) async {
+          setSmallestScreen280x520(tester);
+          await tester.pumpWidget(const MaterialApp(home: GetStartedScreen()));
+          await tester.pump();
+          resetViewport(tester);
+        },
+      );
+
       testWidgets('LoginScreen renders without pixel overflow on 280x520', (
         WidgetTester tester,
       ) async {
