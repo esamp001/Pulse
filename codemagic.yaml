@@ -53,6 +53,8 @@ workflows:
       - mobile/build/app/outputs/bundle/release/*.aab
     publishing:
       email:
+        recipients:
+          - ellejunsampaga@gmail.com
         notify:
           success: true
           failure: true
