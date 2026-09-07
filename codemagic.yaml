@@ -5,11 +5,10 @@ workflows:
     instance_type: linux_x2 # Fast, free Linux instance for Android builds
     environment:
       flutter: stable
-      groups:
-        - keystore_credentials
       vars:
         API_BASE_URL: "https://retailers-nuke-unsigned-jaguar.trycloudflare.com/api/v1"
         MAPBOX_ACCESS_TOKEN: "pk.eyJ1IjoiZXNhbXAwMDEiLCJhIjoiY210a24ycTE3MDI0azJ6b2IxMzk0ZmZzbyJ9.gN06AcEqY0iiW2LIrxQ6-Q"
+        UPLOAD_KEYSTORE_BASE64: "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"
     scripts:
       - name: Set up .env for Flutter Mobile
         script: |
@@ -19,9 +18,9 @@ workflows:
       - name: Set up Android Release Keystore
         script: |
           cd mobile/android
-          echo "storePassword=${KEY_STORE_PASSWORD:-rallysports2026}" > key.properties
-          echo "keyPassword=${KEY_PASSWORD:-rallysports2026}" >> key.properties
-          echo "keyAlias=${KEY_ALIAS:-upload}" >> key.properties
+          echo "storePassword=rallysports2026" > key.properties
+          echo "keyPassword=rallysports2026" >> key.properties
+          echo "keyAlias=upload" >> key.properties
           echo "storeFile=upload-keystore.jks" >> key.properties
           echo "$UPLOAD_KEYSTORE_BASE64" | base64 --decode > app/upload-keystore.jks
       - name: Get Flutter dependencies
