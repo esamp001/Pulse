@@ -4,9 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/pulse_colors.dart';
 
 /// Official Brand Logo Widget for Rally
-/// Displays the authentic high-resolution logo asset from the design team:
-/// - assets/images/logo_rally_white.png on dark backgrounds
-/// - assets/images/logo_rally_official.png on light backgrounds
+/// Displays the authentic high-resolution logo asset:
+/// - assets/images/LOGO RALLY - OFFICIAL.png
 /// Includes graceful vector fallback if asset is pending bundle rebuild.
 class RallyTextLogo extends StatelessWidget {
   final double fontSize;
@@ -29,13 +28,11 @@ class RallyTextLogo extends StatelessWidget {
     final effectiveIsDark = isDark ?? (Theme.of(context).brightness == Brightness.dark);
     final bool useWhiteLogo = isWhite || effectiveIsDark;
 
-    // Aspect ratio of official logo is 2152 / 731 = 2.9439
+    // Aspect ratio of official logo is 1696 / 520 = 3.2615
     final double height = fontSize * 1.15;
-    final double width = height * (2152.0 / 731.0);
+    final double width = height * (1696.0 / 520.0);
 
-    final assetPath = useWhiteLogo
-        ? 'assets/images/logo_rally_white.png'
-        : 'assets/images/logo_rally_official.png';
+    const assetPath = 'assets/images/LOGO_RALLY.png';
 
     Widget logoImage = Image.asset(
       assetPath,
@@ -50,6 +47,12 @@ class RallyTextLogo extends StatelessWidget {
     if (color != null) {
       logoImage = ColorFiltered(
         colorFilter: ColorFilter.mode(color!, BlendMode.srcIn),
+        child: logoImage,
+      );
+    } else if (!useWhiteLogo) {
+      // On light backgrounds, tint white letters to dark brand teal
+      logoImage = ColorFiltered(
+        colorFilter: const ColorFilter.mode(Color(0xFF163A42), BlendMode.srcIn),
         child: logoImage,
       );
     }

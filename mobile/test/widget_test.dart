@@ -12,7 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pulse_app/main.dart';
 
 void main() {
-  testWidgets('RallyApp renders LoginScreen smoke test', (WidgetTester tester) async {
+  testWidgets('RallyApp renders GetStartedScreen smoke test', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({});
 
     // Build our app and trigger a frame.
@@ -20,8 +20,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(MaterialApp), findsOneWidget);
 
-    // Verify that the LoginScreen components are present
-    expect(find.text('Welcome Back!'), findsOneWidget);
-    expect(find.text('Username or Email'), findsOneWidget);
+    // Verify that the GetStartedScreen components are present
+    expect(find.text('Get Started'), findsOneWidget);
+    expect(find.text('PLAY. CONNECT. RALLY.'), findsOneWidget);
   });
 }

@@ -64,6 +64,16 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  image_path: "assets/images/app_icon_1024.png"
+  adaptive_icon_background: "#14373E"
+  adaptive_icon_foreground: "assets/images/app_icon_foreground.png"
+  min_sdk_android: 21
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -78,15 +88,18 @@ flutter:
 
   assets:
     - assets/images/
-    - assets/images/logo_rally_white.png
-    - assets/images/logo_rally_official.png
-    - assets/images/LOGO RALLY - OFFICIAL.png
-    - assets/images/rally_app_icon.png
-    - assets/images/official_logo_rally.png
+    - assets/images/LOGO_RALLY.png
+    - assets/images/get-started-bg.jpg
+    - assets/images/app_icon_1024.png
+    - assets/images/app_icon_foreground.png
     - assets/images/find_court.png
     - assets/images/all_balls.png
     - assets/images/officiate.png
     - assets/images/scan_qr.png
+    - assets/images/pickle-ball.png
+    - assets/images/tennis.png
+    - assets/images/table-tennis.png
+    - assets/images/badminton.png
     - .env
   # assets:
   #   - images/a_dot_burr.jpeg
