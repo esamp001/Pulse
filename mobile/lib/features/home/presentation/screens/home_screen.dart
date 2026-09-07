@@ -68,7 +68,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _user = widget.user ?? AuthService.currentUser;
     _selectedSport = _user?.primarySport ?? 'pickleball';
 
-    if (_user == null && AuthService.currentToken != null) {
+    if (AuthService.currentToken != null) {
       _loadCurrentUserProfile();
     }
     _fetchActiveMatch();
@@ -534,15 +534,34 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                               width: 1.2,
                             ),
                           ),
-                          child: Center(
-                            child: Text(
-                              firstName.isNotEmpty ? firstName[0].toUpperCase() : 'E',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                                color: PulseColors.getTextPrimary(_isDarkMode),
-                              ),
-                            ),
+                          child: ClipOval(
+                            child: (_user?.avatarUrl != null && _user!.avatarUrl!.isNotEmpty)
+                                ? Image.network(
+                                    _user!.avatarUrl!,
+                                    fit: BoxFit.cover,
+                                    width: 44,
+                                    height: 44,
+                                    errorBuilder: (context, error, stackTrace) => Center(
+                                      child: Text(
+                                        firstName.isNotEmpty ? firstName[0].toUpperCase() : 'E',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w800,
+                                          color: PulseColors.getTextPrimary(_isDarkMode),
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                : Center(
+                                    child: Text(
+                                      firstName.isNotEmpty ? firstName[0].toUpperCase() : 'E',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w800,
+                                        color: PulseColors.getTextPrimary(_isDarkMode),
+                                      ),
+                                    ),
+                                  ),
                           ),
                         ),
                       ),
@@ -2263,17 +2282,38 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                 width: 1.0,
                               ),
                             ),
-                            child: Center(
-                              child: Text(
-                                initials,
-                                style: TextStyle(
-                                  color: PulseColors.getTextPrimary(
-                                    _isDarkMode,
-                                  ),
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
+                            child: ClipOval(
+                              child: (_user?.avatarUrl != null && _user!.avatarUrl!.isNotEmpty)
+                                  ? Image.network(
+                                      _user!.avatarUrl!,
+                                      fit: BoxFit.cover,
+                                      width: 44,
+                                      height: 44,
+                                      errorBuilder: (context, error, stackTrace) => Center(
+                                        child: Text(
+                                          initials,
+                                          style: TextStyle(
+                                            color: PulseColors.getTextPrimary(
+                                              _isDarkMode,
+                                            ),
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                  : Center(
+                                      child: Text(
+                                        initials,
+                                        style: TextStyle(
+                                          color: PulseColors.getTextPrimary(
+                                            _isDarkMode,
+                                          ),
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
                             ),
                           ),
                           const SizedBox(width: 12),

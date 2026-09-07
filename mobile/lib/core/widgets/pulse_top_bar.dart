@@ -80,15 +80,34 @@ class PulseTopBar extends StatelessWidget implements PreferredSizeWidget {
                     width: 1.5,
                   ),
                 ),
-                child: Center(
-                  child: Text(
-                    initials,
-                    style: TextStyle(
-                      color: avatarTextColor,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
+                child: ClipOval(
+                  child: (avatarUrl != null && avatarUrl!.isNotEmpty)
+                      ? Image.network(
+                          avatarUrl!,
+                          fit: BoxFit.cover,
+                          width: 40,
+                          height: 40,
+                          errorBuilder: (context, error, stackTrace) => Center(
+                            child: Text(
+                              initials,
+                              style: TextStyle(
+                                color: avatarTextColor,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        )
+                      : Center(
+                          child: Text(
+                            initials,
+                            style: TextStyle(
+                              color: avatarTextColor,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
                 ),
               ),
             ),
