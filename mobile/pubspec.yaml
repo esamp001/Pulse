@@ -78,6 +78,10 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/images/logo_rally_white.png
+    - assets/images/logo_rally_official.png
+    - assets/images/LOGO RALLY - OFFICIAL.png
+    - assets/images/rally_app_icon.png
     - assets/images/official_logo_rally.png
     - assets/images/find_court.png
     - assets/images/all_balls.png
