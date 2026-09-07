@@ -2,7 +2,7 @@ workflows:
   android-workflow:
     name: Rally Android Release Build
     max_build_duration: 30
-    instance_type: linux_x2 # Fast, free Linux instance for Android builds
+    instance_type: mac_mini_m2 # Included on Codemagic Free Tier (500 min/mo)
     environment:
       flutter: stable
       vars:
