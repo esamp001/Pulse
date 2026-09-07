@@ -668,6 +668,47 @@ class _CourtFinderScreenState extends State<CourtFinderScreen> {
           ),
         ),
 
+        // Floating Notice when No Courts Registered or Found
+        if (!_isLoading && _filteredCourts.isEmpty)
+          Positioned(
+            top: 70,
+            left: 16,
+            right: 16,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: PulseColors.getCard(isDark).withValues(alpha: 0.95),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: PulseColors.getBorder(isDark),
+                  width: 1.0,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.location_off_rounded,
+                    size: 18,
+                    color: isDark ? PulseColors.accent : PulseColors.primary,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      _courts.isEmpty
+                          ? 'No registered courts in the database yet. Drag the pin and tap "Register this location" below!'
+                          : 'No registered courts match the current filter in this area.',
+                      style: TextStyle(
+                        color: PulseColors.getTextPrimary(isDark),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
         // Bottom Action Panel: Selected Court Preview OR "Register this location" Banner
         Positioned(
           left: 16,
@@ -1146,67 +1187,99 @@ class _CourtFinderScreenState extends State<CourtFinderScreen> {
                       ? ListView(
                           padding: const EdgeInsets.all(24),
                           children: [
-                            const SizedBox(height: 40),
-                            Icon(
-                              Icons.location_off_rounded,
-                              size: 48,
-                              color: isDark
-                                  ? Colors.white.withValues(alpha: 0.6)
-                                  : PulseColors.getTextSecondary(isDark).withValues(alpha: 0.5),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No registered courts yet',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: PulseColors.getTextPrimary(isDark),
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Be the first to register a court or venue for your community.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: PulseColors.getTextSecondary(isDark),
-                                fontSize: 13,
+                            const SizedBox(height: 30),
+                            Center(
+                              child: Container(
+                                width: 80,
+                                height: 80,
+                                decoration: BoxDecoration(
+                                  color: PulseColors.primary.withValues(alpha: 0.12),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  _courts.isEmpty
+                                      ? Icons.location_off_rounded
+                                      : Icons.search_off_rounded,
+                                  size: 40,
+                                  color: isDark
+                                      ? Colors.white
+                                      : PulseColors.primary,
+                                ),
                               ),
                             ),
                             const SizedBox(height: 20),
-                            Center(
-                              child: Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  onTap: _openMapForPinning,
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                                    decoration: BoxDecoration(
-                                      color: PulseColors.primary,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: const FittedBox(
-                                      fit: BoxFit.scaleDown,
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(Icons.add_location_alt_rounded, size: 16, color: Colors.white),
-                                          SizedBox(width: 8),
-                                          Text(
-                                            'Suggest a Court',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
+                            Text(
+                              _courts.isEmpty
+                                  ? 'No Registered Courts Yet'
+                                  : 'No Matching Courts Found',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: PulseColors.getTextPrimary(isDark),
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.3,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              child: Text(
+                                _courts.isEmpty
+                                    ? 'There are no registered courts in the database yet. Be the first to suggest or register a court for your community!'
+                                    : 'We couldn\'t find any courts matching your search query or selected sport/city filters. Try clearing your filters.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: PulseColors.getTextSecondary(isDark),
+                                  fontSize: 13,
+                                  height: 1.45,
                                 ),
                               ),
+                            ),
+                            const SizedBox(height: 24),
+                            Center(
+                              child: _courts.isEmpty
+                                  ? ElevatedButton.icon(
+                                      onPressed: _openMapForPinning,
+                                      icon: const Icon(Icons.add_location_alt_rounded, size: 18),
+                                      label: const Text(
+                                        'Suggest / Register a Court',
+                                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                                      ),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: PulseColors.primary,
+                                        foregroundColor: Colors.white,
+                                        elevation: 0,
+                                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(14),
+                                        ),
+                                      ),
+                                    )
+                                  : OutlinedButton.icon(
+                                      onPressed: () {
+                                        setState(() {
+                                          _searchController.clear();
+                                          _selectedSport = 'All';
+                                          _selectedCity = 'All';
+                                        });
+                                        _loadCourts();
+                                      },
+                                      icon: const Icon(Icons.refresh_rounded, size: 18),
+                                      label: const Text(
+                                        'Reset Filters',
+                                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                                      ),
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: isDark ? Colors.white : PulseColors.primary,
+                                        side: BorderSide(
+                                          color: isDark ? PulseColors.getBorder(isDark) : PulseColors.primary,
+                                        ),
+                                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(14),
+                                        ),
+                                      ),
+                                    ),
                             ),
                           ],
                         )

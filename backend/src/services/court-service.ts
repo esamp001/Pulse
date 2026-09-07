@@ -29,8 +29,8 @@ export class CourtService {
     try {
       const radiusKm = params.radiusKm || 20;
 
-      // 1. Check local indexed PostgreSQL database first
-      let courts = await courtRepository.findNearby({
+      // 1. Check local indexed PostgreSQL database
+      const courts = await courtRepository.findNearby({
         latitude: params.latitude,
         longitude: params.longitude,
         radiusKm,
@@ -38,25 +38,6 @@ export class CourtService {
         search: params.search,
         limit: 50,
       });
-
-      // 2. If coverage is sparse and user hasn't specified a specific search filter, try syncing from OSM
-      if (courts.length < 3 && (!params.search || params.search.trim().length === 0)) {
-        try {
-          await this.syncFromOpenStreetMap(params.latitude, params.longitude, radiusKm, params.sport);
-          // Re-query after sync
-          courts = await courtRepository.findNearby({
-            latitude: params.latitude,
-            longitude: params.longitude,
-            radiusKm,
-            sport: params.sport,
-            search: params.search,
-            limit: 50,
-          });
-        } catch (osmErr) {
-          console.error('[CourtService OSM Background Sync Warning]:', osmErr);
-          // Non-blocking: continue with whatever local courts we have
-        }
-      }
 
       return courts;
     } catch (err) {
