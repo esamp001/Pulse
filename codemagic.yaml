@@ -5,6 +5,8 @@ workflows:
     instance_type: linux_x2 # Fast, free Linux instance for Android builds
     environment:
       flutter: stable
+      groups:
+        - keystore_credentials
       vars:
         API_BASE_URL: "https://retailers-nuke-unsigned-jaguar.trycloudflare.com/api/v1"
         MAPBOX_ACCESS_TOKEN: "pk.eyJ1IjoiZXNhbXAwMDEiLCJhIjoiY210a24ycTE3MDI0azJ6b2IxMzk0ZmZzbyJ9.gN06AcEqY0iiW2LIrxQ6-Q"
