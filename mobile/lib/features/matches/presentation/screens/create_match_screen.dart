@@ -5,6 +5,9 @@ import '../../../../core/widgets/pulse_back_button.dart';
 import '../../../../core/widgets/pulse_toast.dart';
 import '../../../../main.dart';
 import '../../../auth/services/auth_service.dart';
+import '../../../courts/models/court_model.dart';
+import '../../../courts/presentation/widgets/court_picker_modal.dart';
+import '../../../courts/presentation/widgets/suggest_court_modal.dart';
 import '../../services/match_service.dart';
 import '../widgets/sport_selector_card.dart';
 import 'match_lobby_screen.dart';
@@ -32,6 +35,9 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
   String _selectedSport = 'pickleball';
   final TextEditingController _venueNameController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
+
+  CourtModel? _selectedCourt;
+  bool _isManualVenueEntry = false;
 
   TimeOfDay _selectedTime = TimeOfDay.fromDateTime(DateTime.now().add(const Duration(hours: 1)));
 
@@ -256,7 +262,41 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
     }
   }
 
+  void _onCourtSelected(CourtModel court) {
+    setState(() {
+      _selectedCourt = court;
+      _venueNameController.text = court.name;
+      _locationController.text = court.address ?? court.city ?? '';
+      _isManualVenueEntry = false;
+    });
+  }
+
+  void _openCourtPicker() {
+    CourtPickerModal.show(
+      context,
+      isDarkMode: _isDarkMode,
+      initialSport: _selectedSport,
+      onCourtSelected: _onCourtSelected,
+    );
+  }
+
+  void _openSuggestCourtModal() {
+    SuggestCourtModal.show(
+      context,
+      isDarkMode: _isDarkMode,
+      onCourtCreated: (newCourt) {
+        _onCourtSelected(newCourt);
+        PulseToast.show(context, 'Court registered and selected!');
+      },
+    );
+  }
+
   Future<void> _handleCreateMatch() async {
+    if (_venueNameController.text.trim().isEmpty) {
+      PulseToast.show(context, 'Please select or enter a venue', isError: true);
+      return;
+    }
+
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -387,6 +427,394 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
     );
   }
 
+  Widget _buildVenueSection() {
+    final isDark = _isDarkMode;
+    final cardColor = PulseColors.getCard(isDark);
+    final surfaceColor = PulseColors.getSurface(isDark);
+    final textPrimary = PulseColors.getTextPrimary(isDark);
+    final textSecondary = PulseColors.getTextSecondary(isDark);
+
+    final hasVenue = _venueNameController.text.trim().isNotEmpty;
+
+    if (_isManualVenueEntry) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  '2. Venue & Location',
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: textPrimary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              InkWell(
+                onTap: () {
+                  setState(() => _isManualVenueEntry = false);
+                  _openCourtPicker();
+                },
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  child: Text(
+                    'Find Court',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: PulseColors.accent,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _venueNameController,
+            style: TextStyle(color: textPrimary),
+            decoration: InputDecoration(
+              labelText: 'Venue Name *',
+              labelStyle: TextStyle(color: textSecondary),
+              hintText: 'e.g. Metro Sports Club Court 3',
+              hintStyle: TextStyle(color: textSecondary.withValues(alpha: 0.6)),
+              fillColor: cardColor,
+              filled: true,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+            ),
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'Please enter a venue name';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _locationController,
+            style: TextStyle(color: textPrimary),
+            decoration: InputDecoration(
+              labelText: 'Address or Directions (Optional)',
+              labelStyle: TextStyle(color: textSecondary),
+              hintText: 'e.g. 123 Main St, Downtown',
+              hintStyle: TextStyle(color: textSecondary.withValues(alpha: 0.6)),
+              fillColor: cardColor,
+              filled: true,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (hasVenue) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  '2. Venue & Location',
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: textPrimary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              InkWell(
+                onTap: _openCourtPicker,
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  child: Text(
+                    'Change Court',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: PulseColors.accent,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: cardColor,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: PulseColors.getBorder(isDark).withValues(alpha: 0.6),
+                width: 1.0,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _venueNameController.text.trim(),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: textPrimary,
+                  ),
+                ),
+                if (_locationController.text.trim().isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    _locationController.text.trim(),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: textSecondary,
+                    ),
+                  ),
+                ],
+                if (_selectedCourt != null) ...[
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: surfaceColor,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          _selectedCourt!.primarySport,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                            color: textSecondary,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: surfaceColor,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          _selectedCourt!.isIndoor ? 'Indoor' : 'Outdoor',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                            color: textSecondary,
+                          ),
+                        ),
+                      ),
+                      if (_selectedCourt!.formattedDistance.isNotEmpty)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: surfaceColor,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            _selectedCourt!.formattedDistance,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w500,
+                              color: textSecondary,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+                const SizedBox(height: 14),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    InkWell(
+                      onTap: () {
+                        setState(() {
+                          _selectedCourt = null;
+                          _venueNameController.clear();
+                          _locationController.clear();
+                        });
+                      },
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        child: Text(
+                          'Clear Selection',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: PulseColors.error,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
+    // Default Unselected State
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '2. Venue & Location',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: textPrimary,
+          ),
+        ),
+        const SizedBox(height: 12),
+        InkWell(
+          onTap: _openCourtPicker,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: cardColor,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: PulseColors.getBorder(isDark).withValues(alpha: 0.6),
+                width: 1.0,
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Text(
+                    'Choose a court...',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12.0,
+                      fontWeight: FontWeight.w500,
+                      color: textPrimary,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: PulseColors.primary,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Text(
+                    'Browse',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8,
+          runSpacing: 4,
+          children: [
+            Text(
+              'Can\'t find your court?',
+              style: TextStyle(
+                fontSize: 12,
+                color: textSecondary,
+              ),
+            ),
+            InkWell(
+              onTap: _openSuggestCourtModal,
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                child: Text(
+                  'Suggest Court',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: PulseColors.accent,
+                  ),
+                ),
+              ),
+            ),
+            InkWell(
+              onTap: () {
+                setState(() => _isManualVenueEntry = true);
+              },
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                child: Text(
+                  'Enter Manually',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: textSecondary,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -491,73 +919,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
               const SizedBox(height: 24),
 
               // Step 2: Venue & Location
-              Text(
-                '2. Venue & Location',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: PulseColors.getTextPrimary(_isDarkMode),
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              // Venue Name Input
-              TextFormField(
-                controller: _venueNameController,
-                style: TextStyle(color: PulseColors.getTextPrimary(_isDarkMode)),
-                decoration: InputDecoration(
-                  labelText: 'Venue Name *',
-                  hintText: 'e.g. Metro Sports Club Court 3',
-                  prefixIcon: const Icon(Icons.location_on_outlined, color: PulseColors.primary),
-                  fillColor: PulseColors.getCard(_isDarkMode),
-                  filled: true,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: PulseColors.accent, width: 2),
-                  ),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter a venue name';
-                  }
-                  return null;
-                },
-              ),
-
-              const SizedBox(height: 12),
-
-              // Address Input
-              TextFormField(
-                controller: _locationController,
-                style: TextStyle(color: PulseColors.getTextPrimary(_isDarkMode)),
-                decoration: InputDecoration(
-                  labelText: 'Address or Directions (Optional)',
-                  hintText: 'e.g. 123 Main St, Downtown',
-                  prefixIcon: const Icon(Icons.map_outlined, color: PulseColors.primary),
-                  fillColor: PulseColors.getCard(_isDarkMode),
-                  filled: true,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: PulseColors.accent, width: 2),
-                  ),
-                ),
-              ),
+              _buildVenueSection(),
 
               const SizedBox(height: 24),
 

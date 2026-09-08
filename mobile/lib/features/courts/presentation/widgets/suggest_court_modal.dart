@@ -1,13 +1,15 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../../core/theme/pulse_colors.dart';
-import '../../../../core/theme/pulse_sport_icons.dart';
 import '../../../../core/widgets/pulse_toast.dart';
 import '../../models/court_model.dart';
 import '../../services/court_service.dart';
 import 'court_map_picker_modal.dart';
+import 'pulse_map_center_pin.dart';
 
 /// Modal bottom sheet allowing players to suggest or register a new court location.
 class SuggestCourtModal extends StatefulWidget {
@@ -93,6 +95,16 @@ class _SuggestCourtModalState extends State<SuggestCourtModal> {
     'Private',
     'Club',
   ];
+
+  String get _mapboxToken {
+    try {
+      if (dotenv.isInitialized) {
+        final token = dotenv.get('MAPBOX_ACCESS_TOKEN', fallback: '');
+        if (token.isNotEmpty) return token;
+      }
+    } catch (_) {}
+    return 'pk.eyJ1IjoiZXNhbXAwMDEiLCJhIjoiY210a24ycTE3MDI0azJ6b2IxMzk0ZmZzbyJ9.gN06AcEqY0iiW2LIrxQ6-Q';
+  }
 
   @override
   void initState() {
@@ -296,6 +308,7 @@ class _SuggestCourtModalState extends State<SuggestCourtModal> {
 
     return Container(
       constraints: BoxConstraints(maxHeight: maxSheetHeight),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: PulseColors.getBackground(isDark),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -309,79 +322,8 @@ class _SuggestCourtModalState extends State<SuggestCourtModal> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // 1. Drag Handle & Header
-              Padding(
-                padding: const EdgeInsets.only(top: 12, bottom: 8),
-                child: Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: PulseColors.getTextSecondary(isDark).withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? Colors.white.withValues(alpha: 0.12)
-                            : PulseColors.primary.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(
-                        Icons.add_location_alt_rounded,
-                        color: isDark ? Colors.white : PulseColors.primary,
-                        size: 22,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Suggest a Court',
-                            style: TextStyle(
-                              color: PulseColors.getTextPrimary(isDark),
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.3,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Help players discover this venue',
-                            style: TextStyle(
-                              color: PulseColors.getTextSecondary(isDark),
-                              fontSize: 12,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close_rounded, size: 22),
-                      color: isDark ? Colors.white : PulseColors.getTextSecondary(isDark),
-                      onPressed: () => Navigator.of(context).pop(),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                  ],
-                ),
-              ),
-
-              const Divider(height: 1, thickness: 0.5),
+              // 1. Top Full-Bleed Hero Map with Floating Controls
+              _buildTopHeroMap(isDark),
 
               // 2. Scrollable Form Fields
               Flexible(
@@ -392,6 +334,30 @@ class _SuggestCourtModalState extends State<SuggestCourtModal> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Header Title & Subtitle
+                        Text(
+                          'Suggest a Court',
+                          style: TextStyle(
+                            color: PulseColors.getTextPrimary(isDark),
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.3,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Help players discover this venue',
+                          style: TextStyle(
+                            color: PulseColors.getTextSecondary(isDark),
+                            fontSize: 12,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 18),
+
                         // Court Name
                         _buildSectionLabel('Court Name *', isDark),
                         const SizedBox(height: 6),
@@ -413,12 +379,7 @@ class _SuggestCourtModalState extends State<SuggestCourtModal> {
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide.none,
                             ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-                            prefixIcon: Icon(
-                              Icons.sports_tennis_rounded,
-                              size: 18,
-                              color: isDark ? Colors.white : PulseColors.primary,
-                            ),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
                           ),
                           validator: (val) {
                             if (val == null || val.trim().isEmpty) {
@@ -426,77 +387,6 @@ class _SuggestCourtModalState extends State<SuggestCourtModal> {
                             }
                             return null;
                           },
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Location Coordinates Card
-                        _buildSectionLabel('Pinned Location', isDark),
-                        const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: PulseColors.getCard(isDark),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.my_location_rounded,
-                                size: 20,
-                                color: isDark ? Colors.white : PulseColors.primary,
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      '${_currentLocation.latitude.toStringAsFixed(5)}, ${_currentLocation.longitude.toStringAsFixed(5)}',
-                                      style: TextStyle(
-                                        color: PulseColors.getTextPrimary(isDark),
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      'Tap "Change on Map" to adjust pin',
-                                      style: TextStyle(
-                                        color: PulseColors.getTextSecondary(isDark),
-                                        fontSize: 11,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              TextButton.icon(
-                                onPressed: _pickLocationOnMap,
-                                icon: Icon(
-                                  Icons.map_outlined,
-                                  size: 16,
-                                  color: isDark ? Colors.white : PulseColors.primary,
-                                ),
-                                label: Text(
-                                  'Change',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: isDark ? Colors.white : PulseColors.primary,
-                                  ),
-                                ),
-                                style: TextButton.styleFrom(
-                                  foregroundColor: isDark ? Colors.white : PulseColors.primary,
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                ),
-                              ),
-                            ],
-                          ),
                         ),
                         const SizedBox(height: 16),
 
@@ -521,12 +411,7 @@ class _SuggestCourtModalState extends State<SuggestCourtModal> {
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide.none,
                             ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-                            prefixIcon: Icon(
-                              Icons.location_on_outlined,
-                              size: 18,
-                              color: isDark ? Colors.white : PulseColors.primary,
-                            ),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -552,12 +437,7 @@ class _SuggestCourtModalState extends State<SuggestCourtModal> {
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide.none,
                             ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-                            prefixIcon: Icon(
-                              Icons.location_city_rounded,
-                              size: 18,
-                              color: isDark ? Colors.white : PulseColors.primary,
-                            ),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
                           ),
                         ),
                         const SizedBox(height: 18),
@@ -587,31 +467,18 @@ class _SuggestCourtModalState extends State<SuggestCourtModal> {
                               },
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 150),
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                                 decoration: BoxDecoration(
                                   color: isSelected ? PulseColors.primary : PulseColors.getCard(isDark),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    PulseSportIcons.buildWidget(
-                                      sport,
-                                      size: 16,
-                                      color: isSelected
-                                          ? Colors.white
-                                          : (isDark ? Colors.white : PulseColors.getTextSecondary(isDark)),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      sport,
-                                      style: TextStyle(
-                                        color: isSelected ? Colors.white : PulseColors.getTextPrimary(isDark),
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
+                                child: Text(
+                                  sport,
+                                  style: TextStyle(
+                                    color: isSelected ? Colors.white : PulseColors.getTextPrimary(isDark),
+                                    fontSize: 12,
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                  ),
                                 ),
                               ),
                             );
@@ -710,11 +577,6 @@ class _SuggestCourtModalState extends State<SuggestCourtModal> {
                                     fontSize: 11,
                                   ),
                                 ),
-                                secondary: Icon(
-                                  Icons.lightbulb_outline_rounded,
-                                  color: isDark ? Colors.white : PulseColors.primary,
-                                  size: 20,
-                                ),
                                 thumbColor: WidgetStateProperty.resolveWith(
                                   (states) => states.contains(WidgetState.selected)
                                       ? Colors.white
@@ -742,11 +604,6 @@ class _SuggestCourtModalState extends State<SuggestCourtModal> {
                                     color: PulseColors.getTextSecondary(isDark),
                                     fontSize: 11,
                                   ),
-                                ),
-                                secondary: Icon(
-                                  Icons.roofing_rounded,
-                                  color: isDark ? Colors.white : PulseColors.primary,
-                                  size: 20,
                                 ),
                                 thumbColor: WidgetStateProperty.resolveWith(
                                   (states) => states.contains(WidgetState.selected)
@@ -843,26 +700,8 @@ class _SuggestCourtModalState extends State<SuggestCourtModal> {
                 child: SizedBox(
                   width: double.infinity,
                   height: 48,
-                  child: ElevatedButton.icon(
+                  child: ElevatedButton(
                     onPressed: _isSubmitting ? null : _submitForm,
-                    icon: _isSubmitting
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Icon(Icons.check_circle_outline_rounded, size: 20, color: Colors.white),
-                    label: Text(
-                      _isSubmitting ? 'Registering Venue...' : 'Register Court',
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
-                    ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: PulseColors.primary,
                       foregroundColor: Colors.white,
@@ -871,11 +710,172 @@ class _SuggestCourtModalState extends State<SuggestCourtModal> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
+                    child: _isSubmitting
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text(
+                            'Register Court',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
                   ),
                 ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTopHeroMap(bool isDark) {
+    final textPrimary = PulseColors.getTextPrimary(isDark);
+
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      child: SizedBox(
+        width: double.infinity,
+        height: 160,
+        child: Stack(
+          children: [
+            // 1. Static Mini-Map Canvas
+            Positioned.fill(
+              child: InkWell(
+                onTap: _pickLocationOnMap,
+                child: FlutterMap(
+                  key: ValueKey(
+                    '${_currentLocation.latitude}_${_currentLocation.longitude}',
+                  ),
+                  options: MapOptions(
+                    initialCenter: _currentLocation,
+                    initialZoom: 15.0,
+                    interactionOptions: const InteractionOptions(
+                      flags: InteractiveFlag.none,
+                    ),
+                  ),
+                  children: [
+                    TileLayer(
+                      urlTemplate: isDark
+                          ? 'https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/256/{z}/{x}/{y}@2x?access_token=$_mapboxToken'
+                          : 'https://api.mapbox.com/styles/v1/mapbox/streets-v12/tiles/256/{z}/{x}/{y}@2x?access_token=$_mapboxToken',
+                      userAgentPackageName: 'com.rallypulse.app',
+                      maxZoom: 19.0,
+                      fallbackUrl: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // 2. Center Pin
+            Center(
+              child: PulseMapCenterPin(
+                sport: _selectedSports.isNotEmpty ? _selectedSports.first : 'Tennis',
+                isDragging: false,
+                isDark: isDark,
+                size: 32.0,
+              ),
+            ),
+
+            // 3. Floating Drag Handle at Top Center
+            Positioned(
+              top: 10,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.45),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+            ),
+
+            // 4. Floating Close Button at Top Right
+            Positioned(
+              top: 10,
+              right: 12,
+              child: InkWell(
+                onTap: () => Navigator.of(context).pop(),
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding: const EdgeInsets.all(5),
+                  decoration: BoxDecoration(
+                    color: (isDark ? Colors.black : Colors.white).withValues(alpha: 0.85),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.close_rounded,
+                    size: 18,
+                    color: textPrimary,
+                  ),
+                ),
+              ),
+            ),
+
+            // 5. Floating Bottom Overlay (Coordinates badge + Adjust Pin pill)
+            Positioned(
+              left: 12,
+              right: 12,
+              bottom: 10,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Flexible(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: (isDark ? Colors.black : Colors.white).withValues(alpha: 0.88),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '${_currentLocation.latitude.toStringAsFixed(5)}, ${_currentLocation.longitude.toStringAsFixed(5)}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: textPrimary,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  InkWell(
+                    onTap: _pickLocationOnMap,
+                    borderRadius: BorderRadius.circular(14),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: PulseColors.primary,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Text(
+                        'Adjust Pin',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

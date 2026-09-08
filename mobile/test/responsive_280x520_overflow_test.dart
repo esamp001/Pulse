@@ -27,6 +27,7 @@ import 'package:pulse_app/features/courts/presentation/widgets/court_map_pin.dar
 import 'package:pulse_app/features/courts/presentation/widgets/pulse_map_center_pin.dart';
 import 'package:pulse_app/features/courts/presentation/screens/court_finder_screen.dart';
 import 'package:pulse_app/features/courts/presentation/widgets/court_card.dart';
+import 'package:pulse_app/features/courts/presentation/widgets/court_picker_modal.dart';
 
 /// Helper to configure test surface viewport size to small 280x520 resolution
 void setSmallestScreen280x520(WidgetTester tester) {
@@ -534,6 +535,27 @@ void main() {
                       ],
                     ),
                   ),
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+          resetViewport(tester);
+        },
+      );
+
+      testWidgets(
+        'CourtPickerModal does not overflow at 280x520',
+        (tester) async {
+          setSmallestScreen280x520(tester);
+
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: CourtPickerModal(
+                  isDarkMode: true,
+                  initialSport: 'Pickleball',
+                  onCourtSelected: (_) {},
                 ),
               ),
             ),
