@@ -722,6 +722,7 @@ class _CourtRouteScreenState extends State<CourtRouteScreen> {
                                     Navigator.of(context).push(
                                       MaterialPageRoute(
                                         builder: (_) => CreateMatchScreen(
+                                          initialCourt: widget.court,
                                           initialVenueName: widget.court.name,
                                           initialSport: widget.court.primarySport.toLowerCase(),
                                           initialLocation: widget.court.address,

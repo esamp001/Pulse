@@ -180,6 +180,30 @@ void main() {
       );
 
       testWidgets(
+        'CreateMatchScreen with selected court renders without pixel overflow on 280x520',
+        (WidgetTester tester) async {
+          setSmallestScreen280x520(tester);
+          const court = CourtModel(
+            id: 'court-test-gulod',
+            name: 'Gulod Court - Metro Sports Arena',
+            address: 'Quirino Highway, Novaliches, Quezon City',
+            latitude: 14.7,
+            longitude: 121.0,
+            sports: ['pickleball'],
+            isIndoor: true,
+            distanceKm: 14.5,
+          );
+          await tester.pumpWidget(
+            const MaterialApp(
+              home: CreateMatchScreen(initialCourt: court),
+            ),
+          );
+          await tester.pump();
+          resetViewport(tester);
+        },
+      );
+
+      testWidgets(
         'MatchLobbyScreen renders without pixel overflow on 280x520',
         (WidgetTester tester) async {
           setSmallestScreen280x520(tester);

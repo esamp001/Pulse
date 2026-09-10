@@ -333,6 +333,7 @@ class _CourtFinderScreenState extends State<CourtFinderScreen> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => CreateMatchScreen(
+          initialCourt: court,
           initialVenueName: court.name,
           initialSport: court.primarySport.toLowerCase(),
           initialLocation: court.address,

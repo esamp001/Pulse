@@ -16,12 +16,14 @@ class CreateMatchScreen extends StatefulWidget {
   final String? initialVenueName;
   final String? initialSport;
   final String? initialLocation;
+  final CourtModel? initialCourt;
 
   const CreateMatchScreen({
     super.key,
     this.initialVenueName,
     this.initialSport,
     this.initialLocation,
+    this.initialCourt,
   });
 
   @override
@@ -205,11 +207,17 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
   @override
   void initState() {
     super.initState();
-    if (widget.initialVenueName != null && widget.initialVenueName!.isNotEmpty) {
-      _venueNameController.text = widget.initialVenueName!;
-    }
-    if (widget.initialLocation != null && widget.initialLocation!.isNotEmpty) {
-      _locationController.text = widget.initialLocation!;
+    if (widget.initialCourt != null) {
+      _selectedCourt = widget.initialCourt;
+      _venueNameController.text = widget.initialCourt!.name;
+      _locationController.text = widget.initialCourt!.address ?? widget.initialCourt!.city ?? '';
+    } else {
+      if (widget.initialVenueName != null && widget.initialVenueName!.isNotEmpty) {
+        _venueNameController.text = widget.initialVenueName!;
+      }
+      if (widget.initialLocation != null && widget.initialLocation!.isNotEmpty) {
+        _locationController.text = widget.initialLocation!;
+      }
     }
     if (widget.initialSport != null && widget.initialSport!.isNotEmpty) {
       final norm = widget.initialSport!.toLowerCase().replaceAll(' ', '_');
@@ -574,10 +582,10 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
           const SizedBox(height: 12),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(16),
+            clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
               color: cardColor,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: PulseColors.getBorder(isDark).withValues(alpha: 0.6),
                 width: 1.0,
@@ -586,73 +594,64 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  _venueNameController.text.trim(),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: textPrimary,
-                  ),
-                ),
-                if (_locationController.text.trim().isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    _locationController.text.trim(),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: textSecondary,
-                    ),
-                  ),
-                ],
-                if (_selectedCourt != null) ...[
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 4,
+                // Modern Photo / Visual Sport Banner
+                _buildSelectedVenueBanner(isDark),
+
+                // Venue Details & Actions
+                Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: surfaceColor,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          _selectedCourt!.primarySport,
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                            color: textSecondary,
-                          ),
+                      Text(
+                        _venueNameController.text.trim(),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: textPrimary,
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: surfaceColor,
-                          borderRadius: BorderRadius.circular(6),
+                      if (_locationController.text.trim().isNotEmpty) ...[
+                        const SizedBox(height: 5),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.location_on_rounded,
+                              size: 13,
+                              color: textSecondary,
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                _locationController.text.trim(),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: textSecondary,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                        child: Text(
-                          _selectedCourt!.isIndoor ? 'Indoor' : 'Outdoor',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                            color: textSecondary,
-                          ),
-                        ),
-                      ),
-                      if (_selectedCourt!.formattedDistance.isNotEmpty)
+                      ],
+                      if (_selectedCourt?.surface != null &&
+                          _selectedCourt!.surface!.isNotEmpty) ...[
+                        const SizedBox(height: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
                           decoration: BoxDecoration(
                             color: surfaceColor,
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
-                            _selectedCourt!.formattedDistance,
+                            _selectedCourt!.surface!,
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w500,
@@ -660,35 +659,65 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
                             ),
                           ),
                         ),
+                      ],
+                      const SizedBox(height: 12),
+                      Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: [
+                          InkWell(
+                            onTap: _openCourtPicker,
+                            borderRadius: BorderRadius.circular(8),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.swap_horiz_rounded,
+                                    size: 14,
+                                    color: PulseColors.accent,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Change Court',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: PulseColors.accent,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          InkWell(
+                            onTap: () {
+                              setState(() {
+                                _selectedCourt = null;
+                                _venueNameController.clear();
+                                _locationController.clear();
+                              });
+                            },
+                            borderRadius: BorderRadius.circular(8),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              child: Text(
+                                'Clear Selection',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: PulseColors.error,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
-                ],
-                const SizedBox(height: 14),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    InkWell(
-                      onTap: () {
-                        setState(() {
-                          _selectedCourt = null;
-                          _venueNameController.clear();
-                          _locationController.clear();
-                        });
-                      },
-                      borderRadius: BorderRadius.circular(8),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        child: Text(
-                          'Clear Selection',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: PulseColors.error,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
                 ),
               ],
             ),
@@ -812,6 +841,195 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
           ],
         ),
       ],
+    );
+  }
+
+  Widget _buildSelectedVenueBanner(bool isDark) {
+    final court = _selectedCourt;
+    final hasNetworkImage = court != null &&
+        court.imageUrl != null &&
+        court.imageUrl!.trim().isNotEmpty;
+    final sportKey = court?.primarySport.toLowerCase() ?? _selectedSport;
+    final primarySportName = court?.primarySport ??
+        _sports.firstWhere((s) => s.key == sportKey, orElse: () => _sports.first).title;
+
+    return SizedBox(
+      height: 125,
+      width: double.infinity,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // 1. Image or Sport-Aware Fallback Graphic
+          if (hasNetworkImage)
+            Image.network(
+              court.imageUrl!.trim(),
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => _buildSportFallbackBanner(isDark, sportKey),
+            )
+          else
+            _buildSportFallbackBanner(isDark, sportKey),
+
+          // 2. Natural Easing Gradient Overlay for readability & sleekness
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withValues(alpha: 0.15),
+                  Colors.black.withValues(alpha: 0.35),
+                  Colors.black.withValues(alpha: 0.70),
+                ],
+                stops: const [0.0, 0.6, 1.0],
+              ),
+            ),
+          ),
+
+          // 3. Floating Badges (Pills)
+          Positioned(
+            top: 10,
+            left: 10,
+            right: (court != null && court.formattedDistance.isNotEmpty) ? 80 : 10,
+            child: Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3.5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.65),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      primarySportName,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+                if (court != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3.5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.65),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        court.isIndoor ? 'Indoor' : 'Outdoor',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          // Distance badge in top-right
+          if (court != null && court.formattedDistance.isNotEmpty)
+            Positioned(
+              top: 10,
+              right: 10,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 3.5,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.70),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.near_me_rounded,
+                        size: 10,
+                        color: PulseColors.secondary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        court.formattedDistance,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSportFallbackBanner(bool isDark, String sportKey) {
+    return Container(
+      width: double.infinity,
+      height: 125,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? [
+                  const Color(0xFF14373E),
+                  const Color(0xFF0C2227),
+                ]
+              : [
+                  const Color(0xFFD3EAEF),
+                  const Color(0xFFB5DDE4),
+                ],
+        ),
+      ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Background court line painter for authentic athletic aesthetic
+          Positioned.fill(
+            child: CustomPaint(
+              painter: _CourtGridLinePainter(
+                lineColor: (isDark ? Colors.white : PulseColors.primary)
+                    .withValues(alpha: 0.08),
+              ),
+            ),
+          ),
+          // Large stylized sport watermark icon
+          Positioned(
+            right: -12,
+            bottom: -18,
+            child: Opacity(
+              opacity: isDark ? 0.16 : 0.22,
+              child: PulseSportIcons.buildWidget(
+                sportKey,
+                size: 110,
+                color: isDark ? Colors.white : PulseColors.primary,
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1287,4 +1505,43 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
       ),
     );
   }
+}
+
+class _CourtGridLinePainter extends CustomPainter {
+  final Color lineColor;
+
+  const _CourtGridLinePainter({required this.lineColor});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = lineColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+
+    // Stylized outer court perimeter
+    final courtRect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(12, 12, size.width - 24, size.height - 24),
+      const Radius.circular(8),
+    );
+    canvas.drawRRect(courtRect, paint);
+
+    // Center divider line / net line
+    canvas.drawLine(
+      Offset(size.width / 2, 12),
+      Offset(size.width / 2, size.height - 12),
+      paint,
+    );
+
+    // Horizontal baseline / service divide
+    canvas.drawLine(
+      Offset(12, size.height / 2),
+      Offset(size.width - 12, size.height / 2),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _CourtGridLinePainter oldDelegate) =>
+      oldDelegate.lineColor != lineColor;
 }
