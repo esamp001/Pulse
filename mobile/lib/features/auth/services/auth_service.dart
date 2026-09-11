@@ -18,6 +18,11 @@ class AuthService {
   static String? get currentToken => _currentToken;
   static UserModel? get currentUser => _currentUser;
 
+  @visibleForTesting
+  static void setCurrentUserForTesting(UserModel? user) {
+    _currentUser = user;
+  }
+
   /// Process authentication data and persist session locally
   void _processAuthData(dynamic data) {
     if (data is Map<String, dynamic>) {

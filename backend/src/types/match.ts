@@ -1,12 +1,18 @@
 export type SportType = 'pickleball' | 'tennis' | 'table_tennis';
 export type MatchStatus = 'WAITING' | 'READY' | 'LIVE' | 'FINISHED' | 'CONFIRMED';
+export type MatchType = 'singles' | 'doubles';
 
 export interface Match {
   id: string;
   creator_id: string;
   player1_id: string;
+  match_type: MatchType;
+  team1_partner_id?: string | null;
+  team1_partner_accepted: boolean;
   player2_id?: string | null;
   player2_accepted: boolean;
+  team2_partner_id?: string | null;
+  team2_partner_accepted: boolean;
   scorer_id?: string | null;
   scorer_accepted: boolean;
   sport: SportType;
@@ -31,6 +37,7 @@ export interface CreateMatchDTO {
   venue_name: string;
   location?: string;
   scheduled_at: string; // ISO string from client
+  match_type?: MatchType;
   total_sets?: number;
   points_to_win_set?: number;
   win_by_two?: boolean;
@@ -47,7 +54,9 @@ export interface MatchParticipant {
 
 export interface MatchWithDetails extends Match {
   player1?: MatchParticipant;
+  team1_partner?: MatchParticipant | null;
   player2?: MatchParticipant | null;
+  team2_partner?: MatchParticipant | null;
   scorer?: MatchParticipant | null;
 }
 

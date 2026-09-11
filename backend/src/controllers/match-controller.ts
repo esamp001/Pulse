@@ -11,6 +11,7 @@ const createMatchSchema = z.object({
   venue_name: z.string().min(1, 'Venue name is required'),
   location: z.string().optional(),
   scheduled_at: z.string().min(1, 'Scheduled date/time is required'),
+  match_type: z.enum(['singles', 'doubles']).optional(),
   total_sets: z.number().int().optional(),
   points_to_win_set: z.number().int().optional(),
   win_by_two: z.boolean().optional(),
@@ -21,6 +22,20 @@ class MatchController {
 
   constructor() {
     this.matchService = new MatchService();
+  }
+
+  private getMatchNotificationUserIds(userId: string, match: any, extraUserId?: string): string[] {
+    const list = [
+      userId,
+      extraUserId,
+      match.creator_id,
+      match.player1_id,
+      match.team1_partner_id,
+      match.player2_id,
+      match.team2_partner_id,
+      match.scorer_id,
+    ].filter((id): id is string => Boolean(id));
+    return Array.from(new Set(list));
   }
 
   createMatch = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
@@ -79,7 +94,7 @@ class MatchController {
       }
 
       const match = await this.matchService.joinMatchByPin(userId, pin, role);
-      notifyUserActiveMatchUpdate([userId, match.creator_id, match.player1_id, match.player2_id, match.scorer_id]);
+      notifyUserActiveMatchUpdate(this.getMatchNotificationUserIds(userId, match));
 
       res.status(200).json({
         message: 'Successfully joined match via PIN',
@@ -102,13 +117,14 @@ class MatchController {
       const { id } = req.params;
       const { target_role } = req.body;
 
-      if (!target_role || (target_role !== 'player1' && target_role !== 'player2' && target_role !== 'scorer')) {
-        res.status(400).json({ error: 'target_role must be player1, player2, or scorer' });
+      const VALID_SWITCH_ROLES = ['player1', 'team1_partner', 'player2', 'team2_partner', 'scorer'];
+      if (!target_role || !VALID_SWITCH_ROLES.includes(target_role)) {
+        res.status(400).json({ error: 'target_role must be player1, team1_partner, player2, team2_partner, or scorer' });
         return;
       }
 
       const match = await this.matchService.switchRole(id, userId, target_role);
-      notifyUserActiveMatchUpdate([userId, match.creator_id, match.player1_id, match.player2_id, match.scorer_id]);
+      notifyUserActiveMatchUpdate(this.getMatchNotificationUserIds(userId, match));
 
       res.status(200).json({
         message: 'Successfully switched role in match room',
@@ -148,8 +164,9 @@ class MatchController {
       const { id } = req.params;
       const { role, user_id } = req.body;
 
-      if (!role || (role !== 'player2' && role !== 'scorer')) {
-        res.status(400).json({ error: 'Role must be player2 or scorer' });
+      const VALID_ROLES = ['player2', 'scorer', 'team1_partner', 'team2_partner'];
+      if (!role || !VALID_ROLES.includes(role)) {
+        res.status(400).json({ error: 'Role must be player2, scorer, team1_partner, or team2_partner' });
         return;
       }
 
@@ -160,7 +177,7 @@ class MatchController {
 
       const match = await this.matchService.assignParticipant(id, userId, role, user_id);
 
-      notifyUserActiveMatchUpdate([userId, user_id, match.creator_id, match.player1_id, match.player2_id, match.scorer_id]);
+      notifyUserActiveMatchUpdate(this.getMatchNotificationUserIds(userId, match, user_id));
 
       res.status(200).json({
         message: 'Participant assigned successfully',
@@ -236,7 +253,7 @@ class MatchController {
       const { id } = req.params;
       const match = await this.matchService.acceptInvitation(id, userId);
 
-      notifyUserActiveMatchUpdate([userId, match.creator_id, match.player1_id, match.player2_id, match.scorer_id]);
+      notifyUserActiveMatchUpdate(this.getMatchNotificationUserIds(userId, match));
 
       res.status(200).json({
         message: 'Match invitation accepted successfully',
@@ -258,7 +275,7 @@ class MatchController {
       const { id } = req.params;
       const match = await this.matchService.declineInvitation(id, userId);
 
-      notifyUserActiveMatchUpdate([userId, match.creator_id, match.player1_id, match.player2_id, match.scorer_id]);
+      notifyUserActiveMatchUpdate(this.getMatchNotificationUserIds(userId, match));
 
       res.status(200).json({
         message: 'Match invitation declined successfully',
@@ -278,14 +295,15 @@ class MatchController {
       }
 
       const { id, role } = req.params;
-      if (role !== 'player2' && role !== 'scorer') {
-        res.status(400).json({ error: 'Role must be player2 or scorer' });
+      const VALID_KICK_ROLES = ['player2', 'scorer', 'team1_partner', 'team2_partner'];
+      if (!VALID_KICK_ROLES.includes(role)) {
+        res.status(400).json({ error: 'Role must be player2, scorer, team1_partner, or team2_partner' });
         return;
       }
 
-      const match = await this.matchService.kickParticipant(id, userId, role as 'player2' | 'scorer');
+      const match = await this.matchService.kickParticipant(id, userId, role as any);
 
-      notifyUserActiveMatchUpdate([userId, match.creator_id, match.player1_id, match.player2_id, match.scorer_id]);
+      notifyUserActiveMatchUpdate(this.getMatchNotificationUserIds(userId, match));
 
       res.status(200).json({
         message: 'Participant kicked successfully',
@@ -314,7 +332,7 @@ class MatchController {
 
       const match = await this.matchService.updateMatchStatus(id, userId, status);
 
-      notifyUserActiveMatchUpdate([userId, match.creator_id, match.player1_id, match.player2_id, match.scorer_id]);
+      notifyUserActiveMatchUpdate(this.getMatchNotificationUserIds(userId, match));
 
       res.status(200).json({
         message: `Match status updated to ${status}`,
@@ -350,7 +368,7 @@ class MatchController {
         set_scores
       );
 
-      notifyUserActiveMatchUpdate([userId, match.creator_id, match.player1_id, match.player2_id, match.scorer_id]);
+      notifyUserActiveMatchUpdate(this.getMatchNotificationUserIds(userId, match));
 
       res.status(200).json({
         message: 'Match completed and winner declared successfully',
@@ -363,4 +381,5 @@ class MatchController {
 }
 
 export default MatchController;
+
 

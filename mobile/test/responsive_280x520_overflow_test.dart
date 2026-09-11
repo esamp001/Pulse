@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pulse_app/features/auth/models/user_model.dart';
+import 'package:pulse_app/features/auth/services/auth_service.dart';
 import 'package:pulse_app/features/matches/models/match_model.dart';
 import 'package:pulse_app/features/auth/presentation/screens/get_started_screen.dart';
 import 'package:pulse_app/features/auth/presentation/screens/login_screen.dart';
@@ -79,6 +80,74 @@ final MatchModel mockMatch = MatchModel(
     name: 'Ref Scorer',
     email: 'ref@test.com',
     rating: 1100,
+  ),
+);
+
+final MatchModel mockDoublesMatch = MatchModel(
+  id: 'match-doubles-102',
+  creatorId: 'user-1',
+  player1Id: 'user-1',
+  team1PartnerId: 'user-4',
+  team1PartnerAccepted: true,
+  player2Id: 'user-2',
+  player2Accepted: true,
+  team2PartnerId: 'user-5',
+  team2PartnerAccepted: true,
+  scorerId: 'user-3',
+  scorerAccepted: true,
+  sport: 'pickleball',
+  matchType: 'doubles',
+  venueName: 'Central Pickleball Court 1',
+  scheduledAt: DateTime.now(),
+  status: 'READY',
+  player1: MatchParticipantModel(
+    id: 'user-1',
+    name: 'Player One',
+    email: 'p1@test.com',
+    rating: 1200,
+  ),
+  team1Partner: MatchParticipantModel(
+    id: 'user-4',
+    name: 'Partner One',
+    email: 't1@test.com',
+    rating: 1180,
+  ),
+  player2: MatchParticipantModel(
+    id: 'user-2',
+    name: 'Player Two',
+    email: 'p2@test.com',
+    rating: 1250,
+  ),
+  team2Partner: MatchParticipantModel(
+    id: 'user-5',
+    name: 'Partner Two',
+    email: 't2@test.com',
+    rating: 1220,
+  ),
+  scorer: MatchParticipantModel(
+    id: 'user-3',
+    name: 'Ref Scorer',
+    email: 'ref@test.com',
+    rating: 1100,
+  ),
+);
+
+final MatchModel mockFinishedDoublesMatch = mockDoublesMatch.copyWith(
+  status: 'FINISHED',
+  winnerId: 'user-1',
+  player1SetsWon: 2,
+  player2SetsWon: 1,
+  setScores: 'Set 1: 11 - 9  •  Set 2: 8 - 11  •  Set 3: 11 - 7',
+);
+
+final MatchModel mockDoublesPendingMatch = mockDoublesMatch.copyWith(
+  team1PartnerId: 'user-1',
+  team1PartnerAccepted: false,
+  team1Partner: MatchParticipantModel(
+    id: 'user-1',
+    name: 'Rally Player',
+    email: 'player@rallypulse.com',
+    rating: 1200,
   ),
 );
 
@@ -175,6 +244,17 @@ void main() {
           setSmallestScreen280x520(tester);
           await tester.pumpWidget(const MaterialApp(home: CreateMatchScreen()));
           await tester.pump();
+
+          // Verify Match Type tabs interaction
+          expect(find.text('1. Match Type'), findsOneWidget);
+          expect(find.text('Doubles (2v2)'), findsWidgets);
+          await tester.tap(find.text('Doubles (2v2)').first);
+          await tester.pumpAndSettle();
+
+          expect(find.text('Singles (1v1)'), findsWidgets);
+          await tester.tap(find.text('Singles (1v1)').first);
+          await tester.pumpAndSettle();
+
           resetViewport(tester);
         },
       );
@@ -250,6 +330,30 @@ void main() {
         },
       );
 
+      testWidgets(
+        'NotificationSideDrawer with pending doubles invitation renders without pixel overflow on 280x520',
+        (WidgetTester tester) async {
+          setSmallestScreen280x520(tester);
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                drawer: NotificationSideDrawer(
+                  isDarkMode: true,
+                  user: mockUser,
+                  activeMatch: mockDoublesPendingMatch,
+                  isInvitationPending: true,
+                  historyMatches: const [],
+                  onAcceptMatchInvitation: () {},
+                  onDeclineMatchInvitation: () {},
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+          resetViewport(tester);
+        },
+      );
+
       testWidgets('InviteUserModal renders without pixel overflow on 280x520', (
         WidgetTester tester,
       ) async {
@@ -259,6 +363,47 @@ void main() {
             home: Scaffold(
               body: InviteUserModal(
                 role: 'player2',
+                isDarkMode: true,
+                onUserSelected: (user) {},
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        resetViewport(tester);
+      });
+
+      testWidgets('InviteUserModal with already joined participants renders without pixel overflow on 280x520', (
+        WidgetTester tester,
+      ) async {
+        setSmallestScreen280x520(tester);
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: InviteUserModal(
+                role: 'player2',
+                existingParticipantIds: {'user-1', 'user-2'},
+                isDarkMode: true,
+                onUserSelected: (user) {},
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        resetViewport(tester);
+      });
+
+      testWidgets('InviteUserModal with pending invited participants renders without pixel overflow on 280x520', (
+        WidgetTester tester,
+      ) async {
+        setSmallestScreen280x520(tester);
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: InviteUserModal(
+                role: 'player2',
+                joinedParticipantIds: {'user-1'},
+                pendingParticipantIds: {'user-2', 'user-3'},
                 isDarkMode: true,
                 onUserSelected: (user) {},
               ),
@@ -317,6 +462,81 @@ void main() {
         await tester.pump();
         resetViewport(tester);
       });
+
+      testWidgets(
+        'MatchLobbyScreen (Doubles mode) renders without pixel overflow on 280x520',
+        (WidgetTester tester) async {
+          setSmallestScreen280x520(tester);
+          await tester.pumpWidget(
+            MaterialApp(home: MatchLobbyScreen(match: mockDoublesMatch)),
+          );
+          await tester.pump();
+          resetViewport(tester);
+        },
+      );
+
+      testWidgets(
+        'MatchLobbyScreen (Doubles pending invite banner) renders without pixel overflow on 280x520',
+        (WidgetTester tester) async {
+          AuthService.setCurrentUserForTesting(mockUser);
+          setSmallestScreen280x520(tester);
+          await tester.pumpWidget(
+            MaterialApp(home: MatchLobbyScreen(match: mockDoublesPendingMatch)),
+          );
+          await tester.pump();
+          AuthService.setCurrentUserForTesting(null);
+          resetViewport(tester);
+        },
+      );
+
+      testWidgets(
+        'ScorerScreen (Doubles mode) renders without pixel overflow on 280x520',
+        (WidgetTester tester) async {
+          setSmallestScreen280x520(tester);
+          await tester.pumpWidget(
+            MaterialApp(home: ScorerScreen(match: mockDoublesMatch)),
+          );
+          await tester.pump();
+          resetViewport(tester);
+        },
+      );
+
+      testWidgets(
+        'PostMatchScreen (Doubles mode) renders without pixel overflow on 280x520',
+        (WidgetTester tester) async {
+          setSmallestScreen280x520(tester);
+          await tester.pumpWidget(
+            MaterialApp(
+              home: PostMatchScreen(
+                match: mockFinishedDoublesMatch,
+                currentUserId: 'user-1',
+              ),
+            ),
+          );
+          await tester.pump();
+          resetViewport(tester);
+        },
+      );
+
+      testWidgets(
+        'InviteUserModal (team1_partner role) renders without pixel overflow on 280x520',
+        (WidgetTester tester) async {
+          setSmallestScreen280x520(tester);
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: InviteUserModal(
+                  role: 'team1_partner',
+                  isDarkMode: true,
+                  onUserSelected: (user) {},
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+          resetViewport(tester);
+        },
+      );
 
       testWidgets(
         'AccountSettingsScreen with Delete Account Modal renders without pixel overflow on 280x520',

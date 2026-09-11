@@ -273,7 +273,9 @@ class UserRepository {
           .andWhere((builder) => {
             builder
               .where({ player1_id: userId })
+              .orWhere({ team1_partner_id: userId })
               .orWhere({ player2_id: userId })
+              .orWhere({ team2_partner_id: userId })
               .orWhere({ scorer_id: userId })
               .orWhere({ creator_id: userId });
           })
@@ -286,7 +288,9 @@ class UserRepository {
         // 2. Anonymize match participant references so historical match scores & stats remain intact
         await trx('matches').where({ creator_id: userId }).update({ creator_id: null });
         await trx('matches').where({ player1_id: userId }).update({ player1_id: null });
+        await trx('matches').where({ team1_partner_id: userId }).update({ team1_partner_id: null });
         await trx('matches').where({ player2_id: userId }).update({ player2_id: null });
+        await trx('matches').where({ team2_partner_id: userId }).update({ team2_partner_id: null });
         await trx('matches').where({ scorer_id: userId }).update({ scorer_id: null });
         await trx('matches').where({ winner_id: userId }).update({ winner_id: null });
 

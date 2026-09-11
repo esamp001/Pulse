@@ -16,11 +16,15 @@ class SocketService {
 
   final StreamController<Map<String, dynamic>> _activeMatchUpdatedController =
       StreamController<Map<String, dynamic>>.broadcast();
+  final StreamController<Map<String, dynamic>> _notificationReceivedController =
+      StreamController<Map<String, dynamic>>.broadcast();
   final StreamController<bool> _connectionStateController =
       StreamController<bool>.broadcast();
 
   Stream<Map<String, dynamic>> get onActiveMatchUpdated =>
       _activeMatchUpdatedController.stream;
+  Stream<Map<String, dynamic>> get onNotificationReceived =>
+      _notificationReceivedController.stream;
   Stream<bool> get onConnectionStateChanged =>
       _connectionStateController.stream;
 
@@ -128,6 +132,15 @@ class SocketService {
           _activeMatchUpdatedController.add(data);
         } else {
           _activeMatchUpdatedController.add({'type': 'ACTIVE_MATCH_UPDATED'});
+        }
+      });
+
+      _socket?.on('notification_received', (data) {
+        debugPrint('[SocketService] Received notification_received event');
+        if (data is Map<String, dynamic>) {
+          _notificationReceivedController.add(data);
+        } else {
+          _notificationReceivedController.add({'type': 'NOTIFICATION_RECEIVED'});
         }
       });
 

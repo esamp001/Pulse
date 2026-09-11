@@ -51,6 +51,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   bool _isLoadingUser = false;
   MatchModel? _activeMatch;
   StreamSubscription<Map<String, dynamic>>? _activeMatchSubscription;
+  StreamSubscription<Map<String, dynamic>>? _notificationSubscription;
   String? _dismissedInvitationMatchId;
   List<MatchModel> _historyMatches = [];
   bool _isLoadingHistory = false;
@@ -105,6 +106,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _activeMatchSubscription = SocketService().onActiveMatchUpdated.listen((_) {
       if (mounted) {
         _fetchActiveMatch();
+        _loadInitialNotifications();
+      }
+    });
+
+    _notificationSubscription?.cancel();
+    _notificationSubscription = SocketService().onNotificationReceived.listen((_) {
+      if (mounted) {
+        _loadInitialNotifications();
+        _fetchActiveMatch();
       }
     });
   }
@@ -128,6 +138,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _activeMatchSubscription?.cancel();
+    _notificationSubscription?.cancel();
     super.dispose();
   }
 
@@ -140,14 +151,25 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     final isPlayer2 = _activeMatch!.player2Id == currentUserId && !_activeMatch!.player2Accepted;
     final isScorer = _activeMatch!.scorerId == currentUserId && !_activeMatch!.scorerAccepted;
+    final isTeam1Partner = _activeMatch!.team1PartnerId == currentUserId && !_activeMatch!.team1PartnerAccepted;
+    final isTeam2Partner = _activeMatch!.team2PartnerId == currentUserId && !_activeMatch!.team2PartnerAccepted;
 
-    return isPlayer2 || isScorer;
+    return isPlayer2 || isScorer || isTeam1Partner || isTeam2Partner;
   }
 
   String get _invitedUserRoleLabel {
     final currentUserId = _user?.id ?? AuthService.currentUser?.id;
     if (_activeMatch?.scorerId == currentUserId) {
       return 'Neutral Scorer';
+    }
+    if (_activeMatch?.team1PartnerId == currentUserId) {
+      return 'Team 1 Partner';
+    }
+    if (_activeMatch?.team2PartnerId == currentUserId) {
+      return 'Team 2 Partner';
+    }
+    if (_activeMatch?.isDoubles == true && _activeMatch?.player2Id == currentUserId) {
+      return 'Team 2 (Opponent 1)';
     }
     return 'Player 2 (Opponent)';
   }
@@ -246,6 +268,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     if (_activeMatch != null) {
       final activeMatch = _activeMatch!;
+
+      if (_isInvitationPending) {
+        _showInvitationDialog(activeMatch);
+        return;
+      }
 
       if (['FINISHED', 'CONFIRMED'].contains(activeMatch.status)) {
         final userId = _user?.id ?? widget.user?.id ?? AuthService.currentToken ?? '';
@@ -364,6 +391,125 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       }
       _fetchActiveMatch();
     }
+  }
+
+  void _showInvitationDialog(MatchModel match) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: PulseColors.getSurface(_isDarkMode),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: PulseColors.getBorder(_isDarkMode)),
+          ),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: PulseColors.primary.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.mail_outline_rounded, color: PulseColors.primary, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Match Invitation',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: PulseColors.getTextPrimary(_isDarkMode),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${match.player1?.name ?? "Match Host"} invited you to join a ${match.isDoubles ? "Doubles (2v2)" : "Singles"} match as $_invitedUserRoleLabel.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: PulseColors.getTextPrimary(_isDarkMode),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: PulseColors.getCard(_isDarkMode),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: PulseColors.getBorder(_isDarkMode).withValues(alpha: 0.6)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.location_on_outlined, size: 14, color: PulseColors.primary),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            match.venueName,
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: PulseColors.getTextPrimary(_isDarkMode)),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        const Icon(Icons.sports_tennis_rounded, size: 14, color: PulseColors.primary),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            '${match.sportDisplayName} • ${match.setsFormatTitle}',
+                            style: TextStyle(fontSize: 12, color: PulseColors.getTextSecondary(_isDarkMode)),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                _declineMatchInvitation();
+              },
+              child: const Text(
+                'Decline',
+                style: TextStyle(color: PulseColors.error, fontWeight: FontWeight.bold),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                _acceptMatchInvitation();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: PulseColors.primary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+              child: const Text('Accept & Join'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -686,21 +832,25 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             sportText: sportText,
             onSportTap: _showSportSelectionModal,
           ),
-          const SizedBox(height: 20),
-
-          // 3. Dynamic Featured Hero Action Card ("COMPETE NOW" vs "RETURN TO ROOM")
+          const SizedBox(height: 20),          // 3. Dynamic Featured Hero Action Card ("COMPETE NOW" vs "RETURN TO ROOM" vs "MATCH INVITATION")
           PulseWidgetCard(
             title: _activeMatch == null
                 ? 'Compete Now'
-                : (_activeMatch!.status == 'FINISHED' ? 'Verify Match Result' : 'Active Match Lobby'),
+                : (_isInvitationPending
+                    ? 'Match Invitation'
+                    : (_activeMatch!.status == 'FINISHED' ? 'Verify Match Result' : 'Active Match Lobby')),
             subtitle: _activeMatch == null
                 ? 'Create or join a rated match'
-                : (_activeMatch!.status == 'FINISHED'
-                    ? 'Scorer submitted outcome • Tap to confirm or dispute'
-                    : '${_activeMatch!.sportDisplayName} • ${_activeMatch!.status == 'READY' ? 'Ready to play' : 'Waiting for participants'}'),
+                : (_isInvitationPending
+                    ? '${_activeMatch!.player1?.name ?? 'Match Host'} invited you as $_invitedUserRoleLabel'
+                    : (_activeMatch!.status == 'FINISHED'
+                        ? 'Scorer submitted outcome • Tap to confirm or dispute'
+                        : '${_activeMatch!.sportDisplayName} • ${_activeMatch!.status == 'READY' ? 'Ready to play' : 'Waiting for participants'}')),
             pillText: _activeMatch == null
                 ? 'RATED'
-                : (_activeMatch!.status == 'FINISHED' ? 'VERIFY' : 'LIVE ROOM'),
+                : (_isInvitationPending
+                    ? 'INVITE'
+                    : (_activeMatch!.status == 'FINISHED' ? 'VERIFY' : 'LIVE ROOM')),
             onTap: _onCompeteNowPressed,
             isDarkMode: _isDarkMode,
             customContent: Padding(
@@ -725,7 +875,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             Text(
                               _activeMatch == null
                                   ? 'START A MATCH'
-                                  : (_activeMatch!.status == 'FINISHED' ? 'VERIFY RESULT' : 'RETURN TO ROOM'),
+                                  : (_isInvitationPending
+                                      ? 'REVIEW INVITATION'
+                                      : (_activeMatch!.status == 'FINISHED' ? 'VERIFY RESULT' : 'RETURN TO ROOM')),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 12,

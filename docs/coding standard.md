@@ -66,6 +66,12 @@ All screens displaying sport choices or filters (e.g. `CreateMatchScreen`, `Home
 ### 3. Database Migrations & Indexing Rules
 - **MANDATORY TABLE INDEXING**: ALWAYS define database indexes (`table.index(...)` or composite raw SQL indexes) on all Knex database table migrations for foreign keys, queried status/filter columns, and ranking/leaderboard fields.
 
+### 4. Testing Standards (Jest)
+- **ALWAYS USE JEST**: Use Jest with `ts-jest` for all backend unit and integration testing.
+- **Location & Naming**: Place tests in `__tests__/` folders adjacent to the target code with `.test.ts` extensions (e.g., `src/repositories/__tests__/court-repository.test.ts`, `src/services/__tests__/court-service.test.ts`).
+- **Assertions & Mocks**: Leverage Jest globals (`describe`, `it`, `expect`, `beforeEach`) and Jest mocking (`jest.fn()`, `jest.spyOn()`, `jest.mock()`).
+- **Running Tests**: Run test suites via `npm test` from the `backend/` directory.
+
 ---
 
 ## 📄 Documentation & Spec Standards

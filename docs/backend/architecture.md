@@ -115,3 +115,14 @@ export class AuthController {
   };
 }
 ```
+
+---
+
+## 🧪 Testing Standards (Jest)
+
+Backend unit and integration tests MUST always use **Jest** (`ts-jest`):
+- **Test Locations**: Colocated inside `__tests__/` subdirectories next to the source files (e.g., `src/repositories/__tests__/court-repository.test.ts`, `src/services/__tests__/court-service.test.ts`).
+- **File Extension**: Must end with `.test.ts` or `.spec.ts`.
+- **Framework & Tooling**: Jest runner configured via `jest.config.js` with TypeScript support.
+- **Execution**: Run all tests using `npm test`.
+

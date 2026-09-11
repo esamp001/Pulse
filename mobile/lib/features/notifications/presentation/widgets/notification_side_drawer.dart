@@ -3,6 +3,7 @@ import '../../../../core/theme/pulse_colors.dart';
 import '../../../../core/widgets/pulse_back_button.dart';
 import '../../../../core/widgets/pulse_toast.dart';
 import '../../../auth/models/user_model.dart';
+import '../../../auth/services/auth_service.dart';
 import '../../../matches/models/match_model.dart';
 import '../../services/notification_service.dart';
 import 'notification_card_tile.dart';
@@ -234,6 +235,21 @@ class _NotificationSideDrawerState extends State<NotificationSideDrawer> {
     final inviterName = widget.activeMatch?.player1?.name ?? 'Match Host';
     final sport = widget.activeMatch?.sportDisplayName ?? 'Pickleball';
     final venue = widget.activeMatch?.venueName ?? 'Court #1';
+    final currentUserId = widget.user?.id ?? AuthService.currentUser?.id;
+    final isDoubles = widget.activeMatch?.isDoubles ?? false;
+
+    String roleLabel = 'Participant';
+    if (widget.activeMatch?.scorerId == currentUserId) {
+      roleLabel = 'Neutral Scorer';
+    } else if (widget.activeMatch?.team1PartnerId == currentUserId) {
+      roleLabel = 'Team 1 Partner';
+    } else if (widget.activeMatch?.team2PartnerId == currentUserId) {
+      roleLabel = 'Team 2 Partner';
+    } else if (isDoubles && widget.activeMatch?.player2Id == currentUserId) {
+      roleLabel = 'Team 2 (Opponent 1)';
+    } else if (widget.activeMatch?.player2Id == currentUserId) {
+      roleLabel = 'Player 2 (Opponent)';
+    }
 
     return Container(
       padding: const EdgeInsets.all(16.0),
@@ -265,7 +281,7 @@ class _NotificationSideDrawerState extends State<NotificationSideDrawer> {
           ),
           const SizedBox(height: 10),
           Text(
-            '$inviterName invited you to a $sport match at $venue.',
+            '$inviterName invited you to join as $roleLabel in a ${isDoubles ? "Doubles (2v2)" : "Singles"} $sport match at $venue.',
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,

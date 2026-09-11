@@ -31,3 +31,15 @@ export function notifyUserActiveMatchUpdate(userIds?: (string | null | undefined
     ioInstance.emit('active_match_updated', eventPayload);
   }
 }
+
+/**
+ * Notify a specific user that a new notification has been created for them.
+ */
+export function notifyUserNotification(userId: string, notification: any): void {
+  if (!ioInstance) return;
+  ioInstance.to(`user:${userId}`).emit('notification_received', {
+    type: 'NOTIFICATION_RECEIVED',
+    notification,
+    timestamp: new Date().toISOString(),
+  });
+}

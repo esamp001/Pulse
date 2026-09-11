@@ -44,17 +44,28 @@ Players cannot edit scores.
 
 # MVP Match Flow
 
-1. Player A creates a match.
-2. Invite Player B.
-3. Invite a Scorer.
+### Singles Match Flow (1v1)
+1. Player A creates a singles match.
+2. Invite Player B (Opponent).
+3. Invite a Scorer (Referee).
 4. Everyone joins and marks Ready.
 5. Scorer starts the match.
-6. Scorer records score events.
-7. Node.js saves the event to PostgreSQL.
-8. Socket.IO broadcasts the update.
-9. Players see the new score instantly.
-10. Players confirm the result.
-11. Rankings update.
+6. Scorer records live score events.
+7. Node.js saves the score events to PostgreSQL and Socket.IO broadcasts updates.
+8. Players see the live scoreboard instantly.
+9. Match finishes and players confirm the outcome.
+10. ELO rankings update.
+
+### Doubles Match Flow (2v2)
+1. Player A creates a doubles match (Team 1).
+2. Invite Team 1 Partner, Player B (Opponent / Team 2), and Team 2 Partner.
+3. Invite a Scorer (Referee).
+4. All 4 players and the referee accept invitations and room marks Ready.
+5. Scorer starts the match and records live points.
+6. Score events are broadcast live to all 4 participants in real-time.
+7. Match concludes with winner declaration.
+8. ELO updates using team average ratings (+/- rating change applied to winning and losing team members with a 100-rating floor).
+
 
 ---
 

@@ -28,3 +28,7 @@
     console.error('[Service/Feature Name Error]:', err);
   }
   ```
+
+## Backend Testing Standards (Jest)
+- **MANDATORY JEST FOR TESTING**: ALWAYS use Jest (`ts-jest`, `jest.config.js`) for backend unit and integration testing. Test files must be placed in `__tests__/` directories adjacent to the target code with `.test.ts` extensions (e.g., `src/repositories/__tests__/court-repository.test.ts`). Tests must use Jest assertions (`expect`) and mocking utilities (`jest.fn()`, `jest.spyOn()`, `jest.mock()`).
+

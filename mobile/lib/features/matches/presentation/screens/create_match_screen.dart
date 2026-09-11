@@ -46,6 +46,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
   int _totalSets = 3;
   int _pointsToWinSet = 11;
   bool _winByTwo = true;
+  String _matchType = 'singles';
 
   bool _isSubmitting = false;
   bool _isSportsExpanded = false;
@@ -326,6 +327,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
         venueName: _venueNameController.text.trim(),
         location: _locationController.text.trim().isEmpty ? null : _locationController.text.trim(),
         scheduledAt: scheduledDateTime,
+        matchType: _matchType,
         totalSets: _totalSets,
         pointsToWinSet: _pointsToWinSet,
         winByTwo: _winByTwo,
@@ -435,6 +437,84 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
     );
   }
 
+  Widget _buildMatchTypeTabs(bool isDark) {
+    return Container(
+      height: 46,
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: PulseColors.getCard(isDark),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: PulseColors.getBorder(isDark).withValues(alpha: 0.6),
+          width: 1.0,
+        ),
+      ),
+      child: Row(
+        children: [
+          _buildMatchTypeTabItem(
+            label: 'Singles (1v1)',
+            value: 'singles',
+            isDark: isDark,
+          ),
+          const SizedBox(width: 4),
+          _buildMatchTypeTabItem(
+            label: 'Doubles (2v2)',
+            value: 'doubles',
+            isDark: isDark,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMatchTypeTabItem({
+    required String label,
+    required String value,
+    required bool isDark,
+  }) {
+    final isSelected = _matchType == value;
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          if (_matchType != value) {
+            setState(() {
+              _matchType = value;
+            });
+          }
+        },
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          decoration: BoxDecoration(
+            color: isSelected ? PulseColors.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          alignment: Alignment.center,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Text(
+                label,
+                maxLines: 1,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                  color: isSelected
+                      ? Colors.white
+                      : PulseColors.getTextSecondary(isDark),
+                  letterSpacing: 0.2,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildVenueSection() {
     final isDark = _isDarkMode;
     final cardColor = PulseColors.getCard(isDark);
@@ -453,7 +533,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
             children: [
               Expanded(
                 child: Text(
-                  '2. Venue & Location',
+                  '3. Venue & Location',
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 16,
@@ -552,7 +632,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
             children: [
               Expanded(
                 child: Text(
-                  '2. Venue & Location',
+                  '3. Venue & Location',
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 16,
@@ -731,7 +811,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '2. Venue & Location',
+          '3. Venue & Location',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
@@ -1072,13 +1152,27 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Step 1: Select Sport
+              // Step 1: Match Type
+              Text(
+                '1. Match Type',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: PulseColors.getTextPrimary(_isDarkMode),
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildMatchTypeTabs(_isDarkMode),
+
+              const SizedBox(height: 24),
+
+              // Step 2: Select Sport
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
                     child: Text(
-                      '1. Select Sport',
+                      '2. Select Sport',
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 16,
@@ -1141,9 +1235,9 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
 
               const SizedBox(height: 24),
 
-              // Step 3: Match Time (Today Only)
+              // Step 4: Schedule Time (Today Only)
               Text(
-                '3. Schedule Time (Today)',
+                '4. Schedule Time (Today)',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -1254,9 +1348,9 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
 
               const SizedBox(height: 24),
 
-              // Step 4: Custom Scoring Rules
+              // Step 5: Custom Scoring Rules
               Text(
-                '4. Custom Scoring Rules',
+                '5. Custom Scoring Rules',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -1439,7 +1533,7 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
                     ),
                     _buildSummaryRow(
                       'Format',
-                      '${_totalSets == 1 ? "1 Set" : "Best of $_totalSets Sets"} ($_pointsToWinSet pts/set${_winByTwo ? ", win by 2" : ""})',
+                      '${_matchType == "doubles" ? "Doubles (2v2) • " : "Singles (1v1) • "}${_totalSets == 1 ? "1 Set" : "Best of $_totalSets Sets"} ($_pointsToWinSet pts/set${_winByTwo ? ", win by 2" : ""})',
                     ),
                     _buildSummaryRow(
                       'Start Time',
@@ -1456,7 +1550,9 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
                     const SizedBox(height: 6),
                     _buildSummaryRow(
                       'Next Step',
-                      'Invite Player 2 & Assign Scorer',
+                      _matchType == 'doubles'
+                          ? 'Invite Teammate, Opponents & Scorer'
+                          : 'Invite Player 2 & Assign Scorer',
                       isHighlight: true,
                     ),
                   ],

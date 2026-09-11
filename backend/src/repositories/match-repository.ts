@@ -1,5 +1,5 @@
 import db from '../database/db';
-import type { Match, MatchWithDetails, MatchStatus, SportType } from '../types/match';
+import type { Match, MatchWithDetails, MatchStatus, SportType, MatchType } from '../types/match';
 
 export interface CreateMatchParams {
   creator_id: string;
@@ -8,6 +8,7 @@ export interface CreateMatchParams {
   venue_name: string;
   location?: string | null;
   scheduled_at: Date;
+  match_type?: MatchType;
   total_sets?: number;
   points_to_win_set?: number;
   win_by_two?: boolean;
@@ -15,8 +16,12 @@ export interface CreateMatchParams {
 
 export interface UpdateMatchParticipantsParams {
   player1_id?: string | null;
+  team1_partner_id?: string | null;
+  team1_partner_accepted?: boolean;
   player2_id?: string | null;
   player2_accepted?: boolean;
+  team2_partner_id?: string | null;
+  team2_partner_accepted?: boolean;
   scorer_id?: string | null;
   scorer_accepted?: boolean;
   status?: MatchStatus;
@@ -47,6 +52,7 @@ class MatchRepository {
       .insert({
         creator_id: data.creator_id,
         player1_id: data.player1_id,
+        match_type: data.match_type ?? 'singles',
         sport: data.sport,
         venue_name: data.venue_name,
         location: data.location || null,
@@ -105,12 +111,18 @@ class MatchRepository {
     if (!match) return undefined;
 
     const matchSport = match.sport || 'pickleball';
-    const [player1, player2, scorer] = await Promise.all([
+    const [player1, team1Partner, player2, team2Partner, scorer] = await Promise.all([
       match.player1_id
         ? this.getParticipantDetails(match.player1_id, matchSport)
         : Promise.resolve(null),
+      match.team1_partner_id
+        ? this.getParticipantDetails(match.team1_partner_id, matchSport)
+        : Promise.resolve(null),
       match.player2_id
         ? this.getParticipantDetails(match.player2_id, matchSport)
+        : Promise.resolve(null),
+      match.team2_partner_id
+        ? this.getParticipantDetails(match.team2_partner_id, matchSport)
         : Promise.resolve(null),
       match.scorer_id
         ? this.getParticipantDetails(match.scorer_id, matchSport)
@@ -120,7 +132,9 @@ class MatchRepository {
     return {
       ...match,
       player1: player1 || null,
+      team1_partner: team1Partner || null,
       player2: player2 || null,
+      team2_partner: team2Partner || null,
       scorer: scorer || null,
     };
   }
@@ -131,8 +145,12 @@ class MatchRepository {
     };
 
     if (params.player1_id !== undefined) updatePayload.player1_id = params.player1_id;
+    if (params.team1_partner_id !== undefined) updatePayload.team1_partner_id = params.team1_partner_id;
+    if (params.team1_partner_accepted !== undefined) updatePayload.team1_partner_accepted = params.team1_partner_accepted;
     if (params.player2_id !== undefined) updatePayload.player2_id = params.player2_id;
     if (params.player2_accepted !== undefined) updatePayload.player2_accepted = params.player2_accepted;
+    if (params.team2_partner_id !== undefined) updatePayload.team2_partner_id = params.team2_partner_id;
+    if (params.team2_partner_accepted !== undefined) updatePayload.team2_partner_accepted = params.team2_partner_accepted;
     if (params.scorer_id !== undefined) updatePayload.scorer_id = params.scorer_id;
     if (params.scorer_accepted !== undefined) updatePayload.scorer_accepted = params.scorer_accepted;
     if (params.status !== undefined) updatePayload.status = params.status;
@@ -153,17 +171,25 @@ class MatchRepository {
     const matches = await db<Match>('matches')
       .where(function() {
         this.where({ player1_id: userId })
-          .orWhere({ player2_id: userId });
+          .orWhere({ player2_id: userId })
+          .orWhere({ team1_partner_id: userId })
+          .orWhere({ team2_partner_id: userId });
       })
       .orderBy('scheduled_at', 'desc');
 
     return Promise.all(
       matches.map(async (match) => {
         const matchSport = match.sport || 'pickleball';
-        const [player1, player2, scorer] = await Promise.all([
+        const [player1, team1Partner, player2, team2Partner, scorer] = await Promise.all([
           this.getParticipantDetails(match.player1_id, matchSport),
+          match.team1_partner_id
+            ? this.getParticipantDetails(match.team1_partner_id, matchSport)
+            : Promise.resolve(null),
           match.player2_id
             ? this.getParticipantDetails(match.player2_id, matchSport)
+            : Promise.resolve(null),
+          match.team2_partner_id
+            ? this.getParticipantDetails(match.team2_partner_id, matchSport)
             : Promise.resolve(null),
           match.scorer_id
             ? this.getParticipantDetails(match.scorer_id, matchSport)
@@ -172,7 +198,9 @@ class MatchRepository {
         return {
           ...match,
           player1: player1 || undefined,
+          team1_partner: team1Partner || null,
           player2: player2 || null,
+          team2_partner: team2Partner || null,
           scorer: scorer || null,
         };
       })
@@ -185,12 +213,15 @@ class MatchRepository {
         this.where({ creator_id: userId })
           .orWhere({ player1_id: userId })
           .orWhere({ player2_id: userId })
+          .orWhere({ team1_partner_id: userId })
+          .orWhere({ team2_partner_id: userId })
           .orWhere({ scorer_id: userId });
       })
       .whereIn('status', ['WAITING', 'READY', 'LIVE', 'FINISHED'])
       .orderBy('created_at', 'desc')
       .first();
   }
+
 
   async delete(id: string): Promise<void> {
     await db('matches').where({ id }).delete();

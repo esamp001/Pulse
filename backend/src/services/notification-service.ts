@@ -1,5 +1,6 @@
 import notificationRepository, { INotificationRow } from '../repositories/notification-repository';
 import fcmService from './fcm-service';
+import { notifyUserNotification } from '../sockets/socket-emitter';
 
 class NotificationService {
   async getUserNotifications(userId: string, unreadOnly = false): Promise<INotificationRow[]> {
@@ -23,6 +24,9 @@ class NotificationService {
   }): Promise<INotificationRow> {
     const notification = await notificationRepository.createNotification(data);
     
+    // Real-time socket event to user's connected socket room
+    notifyUserNotification(data.userId, notification);
+
     // Asynchronously trigger FCM Push Notification to recipient's device token
     fcmService.sendPushNotification(data.userId, data.title, data.subtitle, {
       category: data.category,

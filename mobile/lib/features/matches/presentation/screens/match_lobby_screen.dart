@@ -179,6 +179,8 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
         return InviteUserModal(
           role: role,
           matchSport: _match.sport,
+          joinedParticipantIds: _match.joinedParticipantIds,
+          pendingParticipantIds: _match.pendingParticipantIds,
           isDarkMode: _isDarkMode,
           onUserSelected: (selectedUser) async {
             Navigator.of(modalContext).pop();
@@ -209,8 +211,14 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
         await _refreshMatchDetails(silent: true);
 
         if (mounted) {
-          final roleLabel = role == 'player2' ? 'Player 2 (Opponent)' : 'Neutral Scorer';
-          PulseToast.show(context, '$roleLabel assigned successfully!');
+          final roleLabel = role == 'player2'
+              ? 'Player 2 (Opponent)'
+              : (role == 'team1_partner'
+                  ? 'Team 1 Partner'
+                  : (role == 'team2_partner'
+                      ? 'Team 2 Partner'
+                      : 'Neutral Scorer'));
+          PulseToast.show(context, 'Invitation sent to $roleLabel!');
         }
       }
     } catch (e) {
@@ -235,7 +243,13 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
   }
 
   Future<void> _handleSwitchRole(String targetRole) async {
-    final roleLabel = targetRole == 'player2' ? 'Player 2' : 'Neutral Scorer';
+    final roleLabel = targetRole == 'player2'
+        ? 'Player 2'
+        : (targetRole == 'team1_partner'
+            ? 'Team 1 Partner'
+            : (targetRole == 'team2_partner'
+                ? 'Team 2 Partner'
+                : 'Neutral Scorer'));
     try {
       final updatedMatch = await _matchService.switchParticipantRole(
         matchId: _match.id,
@@ -258,12 +272,22 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
     final currentUserId = AuthService.currentUser?.id;
     if (currentUserId == null) return;
 
-    final targetLabel = targetRole == 'player2' ? 'Player 2 (Opponent)' : 'Neutral Scorer';
+    final targetLabel = targetRole == 'player2'
+        ? 'Player 2 (Opponent)'
+        : (targetRole == 'team1_partner'
+            ? 'Team 1 Partner'
+            : (targetRole == 'team2_partner'
+                ? 'Team 2 Partner'
+                : 'Neutral Scorer'));
     String currentRoleLabel = 'Participant';
     if (_match.player1Id == currentUserId) {
       currentRoleLabel = 'Player 1 (Host)';
+    } else if (_match.team1PartnerId == currentUserId) {
+      currentRoleLabel = 'Team 1 Partner';
     } else if (_match.player2Id == currentUserId) {
       currentRoleLabel = 'Player 2 (Opponent)';
+    } else if (_match.team2PartnerId == currentUserId) {
+      currentRoleLabel = 'Team 2 Partner';
     } else if (_match.scorerId == currentUserId) {
       currentRoleLabel = 'Neutral Scorer';
     }
@@ -429,7 +453,13 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
   }
 
   void _handleKickParticipant(String role, String participantName) {
-    final roleTitle = role == 'player2' ? 'Player 2 (Opponent)' : 'Neutral Scorer';
+    final roleTitle = role == 'player2'
+        ? 'Player 2 (Opponent)'
+        : (role == 'team1_partner'
+            ? 'Team 1 Partner'
+            : (role == 'team2_partner'
+                ? 'Team 2 Partner'
+                : 'Neutral Scorer'));
 
     showDialog(
       context: context,
@@ -541,16 +571,223 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
     );
   }
 
+  Widget _buildTeamHeader(String title) {
+    return Row(
+      children: [
+        Container(
+          width: 3,
+          height: 12,
+          decoration: BoxDecoration(
+            color: PulseColors.accent,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.8,
+              color: PulseColors.textSecondary,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _handleAcceptInvitation() async {
+    setState(() => _isLoading = true);
+    try {
+      final updated = await _matchService.acceptInvitation(_match.id);
+      if (mounted) {
+        setState(() {
+          _match = updated;
+        });
+        await _refreshMatchDetails(silent: true);
+        if (mounted) {
+          PulseToast.show(context, 'Invitation accepted! You have joined the match lobby.');
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        PulseToast.show(context, e.toString().replaceAll('Exception: ', ''), isError: true);
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _handleDeclineInvitation() async {
+    setState(() => _isLoading = true);
+    try {
+      await _matchService.declineInvitation(_match.id);
+      if (mounted) {
+        PulseToast.show(context, 'Match invitation declined.');
+        Navigator.of(context).pop('cancelled');
+      }
+    } catch (e) {
+      if (mounted) {
+        PulseToast.show(context, e.toString().replaceAll('Exception: ', ''), isError: true);
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Widget _buildPendingInvitationBanner(String roleLabel) {
+    final inviter = _match.player1?.name ?? 'Match Host';
+    final isDark = _isDarkMode;
+    final surfaceColor = PulseColors.getSurface(isDark);
+    final textPrimary = PulseColors.getTextPrimary(isDark);
+    final textSecondary = PulseColors.getTextSecondary(isDark);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: surfaceColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: PulseColors.accent.withValues(alpha: 0.6),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: PulseColors.accent.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.mail_outline_rounded, color: PulseColors.accent, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Match Invitation Pending',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: textPrimary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Invited as $roleLabel',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: PulseColors.accent,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            '$inviter invited you to join this ${_match.isDoubles ? "Doubles (2v2)" : "Singles"} match. Please accept to confirm your slot.',
+            style: TextStyle(
+              fontSize: 13,
+              color: textSecondary,
+              height: 1.3,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _handleDeclineInvitation,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: PulseColors.error.withValues(alpha: 0.12),
+                    foregroundColor: PulseColors.error,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  child: const FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text('Decline', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _handleAcceptInvitation,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: PulseColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  child: const FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text('Accept & Join', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentUserId = AuthService.currentUser?.id;
     final isCurrentUserHost = _match.creatorId == currentUserId || _match.player1Id == currentUserId;
     
+    final bool isCurrentUserPending = currentUserId != null &&
+        ((_match.player2Id == currentUserId && !_match.player2Accepted) ||
+         (_match.team1PartnerId == currentUserId && !_match.team1PartnerAccepted) ||
+         (_match.team2PartnerId == currentUserId && !_match.team2PartnerAccepted) ||
+         (_match.scorerId == currentUserId && !_match.scorerAccepted));
+
+    String currentPendingRoleLabel = 'Participant';
+    if (_match.team1PartnerId == currentUserId) {
+      currentPendingRoleLabel = 'Team 1 Partner';
+    } else if (_match.team2PartnerId == currentUserId) {
+      currentPendingRoleLabel = 'Team 2 Partner';
+    } else if (_match.isDoubles && _match.player2Id == currentUserId) {
+      currentPendingRoleLabel = 'Team 2 (Opponent 1)';
+    } else if (_match.player2Id == currentUserId) {
+      currentPendingRoleLabel = 'Player 2 (Opponent)';
+    } else if (_match.scorerId == currentUserId) {
+      currentPendingRoleLabel = 'Neutral Scorer';
+    }
+    
     final isReady = _match.status == 'READY' ||
-        (_match.player2Id != null &&
-         _match.player2Accepted &&
-         _match.scorerId != null &&
-         _match.scorerAccepted);
+        (_match.isDoubles
+            ? (_match.team1PartnerId != null &&
+               _match.team1PartnerAccepted &&
+               _match.player2Id != null &&
+               _match.player2Accepted &&
+               _match.team2PartnerId != null &&
+               _match.team2PartnerAccepted &&
+               _match.scorerId != null &&
+               _match.scorerAccepted)
+            : (_match.player2Id != null &&
+               _match.player2Accepted &&
+               _match.scorerId != null &&
+               _match.scorerAccepted));
 
     // Soft status colors (Gentle Amber / Teal)
     final statusColor = isReady
@@ -617,6 +854,11 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                 onRetry: () => _refreshMatchDetails(),
               ),
 
+            if (isCurrentUserPending) ...[
+              _buildPendingInvitationBanner(currentPendingRoleLabel),
+              const SizedBox(height: 14),
+            ],
+
             // Status Header Banner (Soft, natural aesthetic)
             Container(
               width: double.infinity,
@@ -663,7 +905,9 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                         Text(
                           isReady
                               ? 'All player and scorer slots are filled. Ready to play!'
-                              : 'Invite Player 2 and assign a neutral Scorer to begin.',
+                              : (_match.isDoubles
+                                  ? 'Fill all 4 player slots and assign a neutral Scorer to begin.'
+                                  : 'Invite Player 2 and assign a neutral Scorer to begin.'),
                           style: TextStyle(
                             fontSize: 12,
                             height: 1.3,
@@ -900,70 +1144,186 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
             ),
             const SizedBox(height: 12),
 
-            // 1. Player 1 Card (Host)
-            _match.player1 != null
-                ? _buildParticipantCard(
-                    title: 'PLAYER 1 (HOST)',
-                    participant: _match.player1,
-                    isHostCard: true,
-                    roleKey: 'player1',
-                    currentUserId: currentUserId,
-                  )
-                : _buildEmptySlotCard(
-                    title: 'PLAYER 1 (HOST)',
-                    subtitle: 'Move to compete as Player 1',
-                    icon: Icons.person_add_alt_1_rounded,
-                    onTapInvite: () => _openInviteModal('player1'),
-                    onMoveHere: (currentUserId != null && currentUserId != _match.player1Id)
-                        ? () => _confirmAndSwitchRole('player1')
-                        : null,
-                  ),
+            if (_match.isDoubles) ...[
+              // === DOUBLES LAYOUT ===
+              _buildTeamHeader('TEAM 1 (HOST & PARTNER)'),
+              const SizedBox(height: 10),
+              _match.player1 != null
+                  ? _buildParticipantCard(
+                      title: 'PLAYER 1 (HOST)',
+                      participant: _match.player1,
+                      isHostCard: true,
+                      roleKey: 'player1',
+                      currentUserId: currentUserId,
+                    )
+                  : _buildEmptySlotCard(
+                      title: 'PLAYER 1 (HOST)',
+                      subtitle: 'Move to compete as Player 1',
+                      icon: Icons.person_add_alt_1_rounded,
+                      onTapInvite: () => _openInviteModal('player1'),
+                      onMoveHere: (currentUserId != null && currentUserId != _match.player1Id)
+                          ? () => _confirmAndSwitchRole('player1')
+                          : null,
+                    ),
 
-            const SizedBox(height: 12),
+              const SizedBox(height: 10),
 
-            // 2. Player 2 Card (Opponent)
-            _match.player2 != null
-                ? _buildParticipantCard(
-                    title: 'PLAYER 2 (OPPONENT)',
-                    participant: _match.player2,
-                    isHostCard: false,
-                    roleKey: 'player2',
-                    canKick: isCurrentUserHost,
-                    onKick: () => _handleKickParticipant('player2', _match.player2?.name ?? 'Player 2'),
-                    currentUserId: currentUserId,
-                  )
-                : _buildEmptySlotCard(
-                    title: 'PLAYER 2 (OPPONENT)',
-                    subtitle: 'Invite Player 2 to join match',
-                    icon: Icons.person_add_alt_1_rounded,
-                    onTapInvite: () => _openInviteModal('player2'),
-                    onMoveHere: (currentUserId != null && currentUserId != _match.player2Id)
-                        ? () => _confirmAndSwitchRole('player2')
-                        : null,
-                  ),
+              _match.team1Partner != null
+                  ? _buildParticipantCard(
+                      title: 'TEAM 1 PARTNER',
+                      participant: _match.team1Partner,
+                      isHostCard: false,
+                      roleKey: 'team1_partner',
+                      canKick: isCurrentUserHost,
+                      onKick: () => _handleKickParticipant('team1_partner', _match.team1Partner?.name ?? 'Partner'),
+                      currentUserId: currentUserId,
+                    )
+                  : _buildEmptySlotCard(
+                      title: 'TEAM 1 PARTNER',
+                      subtitle: 'Invite partner to team up with Host',
+                      icon: Icons.group_add_rounded,
+                      onTapInvite: () => _openInviteModal('team1_partner'),
+                      onMoveHere: (currentUserId != null && currentUserId != _match.team1PartnerId)
+                          ? () => _confirmAndSwitchRole('team1_partner')
+                          : null,
+                    ),
 
-            const SizedBox(height: 12),
+              const SizedBox(height: 20),
+              _buildTeamHeader('TEAM 2 (OPPONENTS)'),
+              const SizedBox(height: 10),
 
-            // 3. Scorer Card (Neutral Referee)
-            _match.scorer != null
-                ? _buildParticipantCard(
-                    title: 'NEUTRAL SCORER',
-                    participant: _match.scorer,
-                    isHostCard: false,
-                    roleKey: 'scorer',
-                    canKick: isCurrentUserHost,
-                    onKick: () => _handleKickParticipant('scorer', _match.scorer?.name ?? 'Scorer'),
-                    currentUserId: currentUserId,
-                  )
-                : _buildEmptySlotCard(
-                    title: 'NEUTRAL SCORER',
-                    subtitle: 'Assign a referee to record live score',
-                    icon: Icons.sports_score_rounded,
-                    onTapInvite: () => _openInviteModal('scorer'),
-                    onMoveHere: (currentUserId != null && currentUserId != _match.scorerId)
-                        ? () => _confirmAndSwitchRole('scorer')
-                        : null,
-                  ),
+              _match.player2 != null
+                  ? _buildParticipantCard(
+                      title: 'PLAYER 2 (OPPONENT 1)',
+                      participant: _match.player2,
+                      isHostCard: false,
+                      roleKey: 'player2',
+                      canKick: isCurrentUserHost,
+                      onKick: () => _handleKickParticipant('player2', _match.player2?.name ?? 'Player 2'),
+                      currentUserId: currentUserId,
+                    )
+                  : _buildEmptySlotCard(
+                      title: 'PLAYER 2 (OPPONENT 1)',
+                      subtitle: 'Invite opponent 1 to join match',
+                      icon: Icons.person_add_alt_1_rounded,
+                      onTapInvite: () => _openInviteModal('player2'),
+                      onMoveHere: (currentUserId != null && currentUserId != _match.player2Id)
+                          ? () => _confirmAndSwitchRole('player2')
+                          : null,
+                    ),
+
+              const SizedBox(height: 10),
+
+              _match.team2Partner != null
+                  ? _buildParticipantCard(
+                      title: 'TEAM 2 PARTNER (OPPONENT 2)',
+                      participant: _match.team2Partner,
+                      isHostCard: false,
+                      roleKey: 'team2_partner',
+                      canKick: isCurrentUserHost,
+                      onKick: () => _handleKickParticipant('team2_partner', _match.team2Partner?.name ?? 'Partner'),
+                      currentUserId: currentUserId,
+                    )
+                  : _buildEmptySlotCard(
+                      title: 'TEAM 2 PARTNER (OPPONENT 2)',
+                      subtitle: 'Invite opponent 2 to Team 2',
+                      icon: Icons.group_add_rounded,
+                      onTapInvite: () => _openInviteModal('team2_partner'),
+                      onMoveHere: (currentUserId != null && currentUserId != _match.team2PartnerId)
+                          ? () => _confirmAndSwitchRole('team2_partner')
+                          : null,
+                    ),
+
+              const SizedBox(height: 20),
+              _buildTeamHeader('MATCH OFFICIAL'),
+              const SizedBox(height: 10),
+
+              _match.scorer != null
+                  ? _buildParticipantCard(
+                      title: 'NEUTRAL SCORER',
+                      participant: _match.scorer,
+                      isHostCard: false,
+                      roleKey: 'scorer',
+                      canKick: isCurrentUserHost,
+                      onKick: () => _handleKickParticipant('scorer', _match.scorer?.name ?? 'Scorer'),
+                      currentUserId: currentUserId,
+                    )
+                  : _buildEmptySlotCard(
+                      title: 'NEUTRAL SCORER',
+                      subtitle: 'Assign a referee to record live score',
+                      icon: Icons.sports_score_rounded,
+                      onTapInvite: () => _openInviteModal('scorer'),
+                      onMoveHere: (currentUserId != null && currentUserId != _match.scorerId)
+                          ? () => _confirmAndSwitchRole('scorer')
+                          : null,
+                    ),
+            ] else ...[
+              // === SINGLES LAYOUT ===
+              // 1. Player 1 Card (Host)
+              _match.player1 != null
+                  ? _buildParticipantCard(
+                      title: 'PLAYER 1 (HOST)',
+                      participant: _match.player1,
+                      isHostCard: true,
+                      roleKey: 'player1',
+                      currentUserId: currentUserId,
+                    )
+                  : _buildEmptySlotCard(
+                      title: 'PLAYER 1 (HOST)',
+                      subtitle: 'Move to compete as Player 1',
+                      icon: Icons.person_add_alt_1_rounded,
+                      onTapInvite: () => _openInviteModal('player1'),
+                      onMoveHere: (currentUserId != null && currentUserId != _match.player1Id)
+                          ? () => _confirmAndSwitchRole('player1')
+                          : null,
+                    ),
+
+              const SizedBox(height: 12),
+
+              // 2. Player 2 Card (Opponent)
+              _match.player2 != null
+                  ? _buildParticipantCard(
+                      title: 'PLAYER 2 (OPPONENT)',
+                      participant: _match.player2,
+                      isHostCard: false,
+                      roleKey: 'player2',
+                      canKick: isCurrentUserHost,
+                      onKick: () => _handleKickParticipant('player2', _match.player2?.name ?? 'Player 2'),
+                      currentUserId: currentUserId,
+                    )
+                  : _buildEmptySlotCard(
+                      title: 'PLAYER 2 (OPPONENT)',
+                      subtitle: 'Invite Player 2 to join match',
+                      icon: Icons.person_add_alt_1_rounded,
+                      onTapInvite: () => _openInviteModal('player2'),
+                      onMoveHere: (currentUserId != null && currentUserId != _match.player2Id)
+                          ? () => _confirmAndSwitchRole('player2')
+                          : null,
+                    ),
+
+              const SizedBox(height: 12),
+
+              // 3. Scorer Card (Neutral Referee)
+              _match.scorer != null
+                  ? _buildParticipantCard(
+                      title: 'NEUTRAL SCORER',
+                      participant: _match.scorer,
+                      isHostCard: false,
+                      roleKey: 'scorer',
+                      canKick: isCurrentUserHost,
+                      onKick: () => _handleKickParticipant('scorer', _match.scorer?.name ?? 'Scorer'),
+                      currentUserId: currentUserId,
+                    )
+                  : _buildEmptySlotCard(
+                      title: 'NEUTRAL SCORER',
+                      subtitle: 'Assign a referee to record live score',
+                      icon: Icons.sports_score_rounded,
+                      onTapInvite: () => _openInviteModal('scorer'),
+                      onMoveHere: (currentUserId != null && currentUserId != _match.scorerId)
+                          ? () => _confirmAndSwitchRole('scorer')
+                          : null,
+                    ),
+            ],
 
             const SizedBox(height: 36),
 
@@ -972,7 +1332,7 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
               width: double.infinity,
               height: 52,
               child: ElevatedButton(
-                onPressed: isReady || _match.status == 'LIVE'
+                onPressed: (!isCurrentUserPending && (isReady || _match.status == 'LIVE'))
                     ? () {
                         Navigator.of(context).push(
                           MaterialPageRoute(
@@ -991,24 +1351,26 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                     side: BorderSide(
-                      color: isReady || _match.status == 'LIVE'
+                      color: (!isCurrentUserPending && (isReady || _match.status == 'LIVE'))
                           ? PulseColors.primary
                           : PulseColors.getBorder(_isDarkMode),
                     ),
                   ),
                 ),
                 child: Text(
-                  currentUserId == _match.scorerId
-                      ? (_match.status == 'LIVE'
-                          ? 'Open Scorer Controls'
-                          : isReady
-                              ? 'Start Match (Scorer)'
-                              : 'Waiting for Participants...')
-                      : (_match.status == 'LIVE'
-                          ? 'View Live Scoreboard'
-                          : isReady
+                  isCurrentUserPending
+                      ? 'Please Accept Invitation Above'
+                      : (currentUserId == _match.scorerId
+                          ? (_match.status == 'LIVE'
+                              ? 'Open Scorer Controls'
+                              : isReady
+                                  ? 'Start Match (Scorer)'
+                                  : 'Waiting for Participants...')
+                          : (_match.status == 'LIVE'
                               ? 'View Live Scoreboard'
-                              : 'Waiting for Participants...'),
+                              : isReady
+                                  ? 'View Live Scoreboard'
+                                  : 'Waiting for Participants...')),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -1039,13 +1401,19 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
     final bool isCurrentUser = currentUserId != null && participant?.id == currentUserId;
 
     final bool isAccepted = isHostCard ||
-        (roleKey == 'player2' ? _match.player2Accepted : _match.scorerAccepted);
+        (roleKey == 'player2'
+            ? _match.player2Accepted
+            : (roleKey == 'team1_partner'
+                ? _match.team1PartnerAccepted
+                : (roleKey == 'team2_partner'
+                    ? _match.team2PartnerAccepted
+                    : _match.scorerAccepted)));
     final statusColor = isAccepted ? const Color(0xFF4CAF50) : PulseColors.warning;
-    final statusText = isAccepted ? 'Joined' : 'Pending';
+    final statusText = isAccepted ? 'Joined' : 'Invited';
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
       decoration: BoxDecoration(
         color: isCurrentUser
             ? PulseColors.accent.withValues(alpha: _isDarkMode ? 0.08 : 0.04)
@@ -1053,14 +1421,14 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: isCurrentUser ? PulseColors.accent : PulseColors.getBorder(_isDarkMode),
-          width: isCurrentUser ? 2.2 : 1.5,
+          width: isCurrentUser ? 2.0 : 1.5,
         ),
       ),
       child: Row(
         children: [
           // Avatar representation (Network image or initials avatar)
           CircleAvatar(
-            radius: 26,
+            radius: 22,
             backgroundColor: isHostCard
                 ? PulseColors.accent.withValues(alpha: 0.2)
                 : PulseColors.primary.withValues(alpha: 0.2),
@@ -1071,17 +1439,19 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                     style: TextStyle(
                       color: isHostCard ? PulseColors.accent : PulseColors.primary,
                       fontWeight: FontWeight.bold,
-                      fontSize: 19,
+                      fontSize: 16,
                     ),
                   )
                 : null,
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 8),
 
           // User details (Title, Name, ELO Rating at bottom)
           Expanded(
+            flex: 3,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 FittedBox(
                   fit: BoxFit.scaleDown,
@@ -1134,27 +1504,32 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                 Text(
                   displayName,
                   style: TextStyle(
-                    fontSize: 15,
+                    fontSize: 14,
                     fontWeight: FontWeight.bold,
                     color: PulseColors.getTextPrimary(_isDarkMode),
                   ),
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 // ELO Rating moved to the bottom under user name
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: PulseColors.accent.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: PulseColors.accent.withValues(alpha: 0.3)),
-                  ),
-                  child: Text(
-                    ratingText,
-                    style: const TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: PulseColors.accent,
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: PulseColors.accent.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: PulseColors.accent.withValues(alpha: 0.3)),
+                    ),
+                    child: Text(
+                      ratingText,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: PulseColors.accent,
+                      ),
                     ),
                   ),
                 ),
@@ -1162,38 +1537,47 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
             ),
           ),
 
+          const SizedBox(width: 6),
+
           // Status & Kick action
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: statusColor,
-                  shape: BoxShape.circle,
-                ),
+          Flexible(
+            flex: 2,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: statusColor,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    statusText,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: statusColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (canKick && onKick != null) ...[
+                    const SizedBox(width: 4),
+                    IconButton(
+                      icon: const Icon(Icons.person_remove_rounded, size: 20, color: PulseColors.error),
+                      tooltip: 'Kick participant',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                      onPressed: onKick,
+                    ),
+                  ],
+                ],
               ),
-              const SizedBox(width: 4),
-              Text(
-                statusText,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: statusColor,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              if (canKick && onKick != null) ...[
-                const SizedBox(width: 6),
-                IconButton(
-                  icon: const Icon(Icons.person_remove_rounded, size: 20, color: PulseColors.error),
-                  tooltip: 'Kick participant',
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                  onPressed: onKick,
-                ),
-              ],
-            ],
+            ),
           ),
         ],
       ),

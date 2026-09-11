@@ -48,22 +48,20 @@ class _PostMatchScreenState extends State<PostMatchScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final String winnerId = _match.winnerId ?? '';
-    final bool isWinnerP1 = winnerId.isNotEmpty
-        ? (winnerId == _match.player1Id || winnerId == _match.creatorId)
-        : (_match.player1SetsWon > _match.player2SetsWon);
-    final bool isWinnerP2 = winnerId.isNotEmpty
-        ? (winnerId == _match.player2Id)
-        : (_match.player2SetsWon > _match.player1SetsWon);
+    final bool isWinnerP1 = _match.isUserWinner(_match.player1Id) ||
+        (winnerId.isNotEmpty
+            ? (winnerId == _match.player1Id || winnerId == _match.team1PartnerId || winnerId == _match.creatorId)
+            : (_match.player1SetsWon > _match.player2SetsWon));
+    final bool isWinnerP2 = _match.isUserWinner(_match.player2Id ?? '') ||
+        (winnerId.isNotEmpty
+            ? (winnerId == _match.player2Id || winnerId == _match.team2PartnerId)
+            : (_match.player2SetsWon > _match.player1SetsWon));
 
     final String winnerName;
     if (isWinnerP1) {
-      winnerName = _match.player1?.name ?? 'Player 1';
+      winnerName = _match.team1ShortDisplayName;
     } else if (isWinnerP2) {
-      winnerName = _match.player2?.name ?? 'Player 2';
-    } else if (_match.player1SetsWon > _match.player2SetsWon) {
-      winnerName = _match.player1?.name ?? 'Player 1';
-    } else if (_match.player2SetsWon > _match.player1SetsWon) {
-      winnerName = _match.player2?.name ?? 'Player 2';
+      winnerName = _match.team2ShortDisplayName;
     } else {
       winnerName = 'Match Finished';
     }
@@ -237,84 +235,219 @@ class _PostMatchScreenState extends State<PostMatchScreen> {
 
                     const SizedBox(height: 20),
 
-                    // Players Versus Section
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            children: [
-                              CircleAvatar(
-                                radius: 24,
-                                backgroundColor: isWinnerP1
-                                    ? PulseColors.accent
-                                    : PulseColors.getSurface(isDark),
-                                child: Text(
-                                  _match.player1?.initials ?? 'P1',
-                                  style: TextStyle(
-                                    color: isWinnerP1
-                                        ? Colors.white
-                                        : PulseColors.getTextPrimary(isDark),
-                                    fontWeight: FontWeight.bold,
+                    // Players / Teams Versus Section
+                    if (_match.isDoubles)
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              children: [
+                                FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      CircleAvatar(
+                                        radius: 20,
+                                        backgroundColor: isWinnerP1
+                                            ? PulseColors.accent
+                                            : PulseColors.getSurface(isDark),
+                                        child: Text(
+                                          _match.player1?.initials ?? 'P1',
+                                          style: TextStyle(
+                                            color: isWinnerP1
+                                                ? Colors.white
+                                                : PulseColors.getTextPrimary(isDark),
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      CircleAvatar(
+                                        radius: 20,
+                                        backgroundColor: isWinnerP1
+                                            ? PulseColors.accent
+                                            : PulseColors.getSurface(isDark),
+                                        child: Text(
+                                          _match.team1Partner?.initials ?? 'T1',
+                                          style: TextStyle(
+                                            color: isWinnerP1
+                                                ? Colors.white
+                                                : PulseColors.getTextPrimary(isDark),
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                _match.player1?.name ?? 'Player 1',
-                                style: TextStyle(
-                                  color: PulseColors.getTextPrimary(isDark),
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 13,
+                                const SizedBox(height: 6),
+                                Text(
+                                  _match.team1ShortDisplayName,
+                                  style: TextStyle(
+                                    color: PulseColors.getTextPrimary(isDark),
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 12,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                          child: Text(
-                            'VS',
-                            style: TextStyle(
-                              color: PulseColors.getTextSecondary(isDark),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
+                              ],
                             ),
                           ),
-                        ),
-                        Expanded(
-                          child: Column(
-                            children: [
-                              CircleAvatar(
-                                radius: 24,
-                                backgroundColor: isWinnerP2
-                                    ? PulseColors.accent
-                                    : PulseColors.getSurface(isDark),
-                                child: Text(
-                                  _match.player2?.initials ?? 'P2',
-                                  style: TextStyle(
-                                    color: isWinnerP2
-                                        ? Colors.white
-                                        : PulseColors.getTextPrimary(isDark),
-                                    fontWeight: FontWeight.bold,
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 6.0),
+                            child: Text(
+                              'VS',
+                              style: TextStyle(
+                                color: PulseColors.getTextSecondary(isDark),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Column(
+                              children: [
+                                FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      CircleAvatar(
+                                        radius: 20,
+                                        backgroundColor: isWinnerP2
+                                            ? PulseColors.accent
+                                            : PulseColors.getSurface(isDark),
+                                        child: Text(
+                                          _match.player2?.initials ?? 'P2',
+                                          style: TextStyle(
+                                            color: isWinnerP2
+                                                ? Colors.white
+                                                : PulseColors.getTextPrimary(isDark),
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      CircleAvatar(
+                                        radius: 20,
+                                        backgroundColor: isWinnerP2
+                                            ? PulseColors.accent
+                                            : PulseColors.getSurface(isDark),
+                                        child: Text(
+                                          _match.team2Partner?.initials ?? 'T2',
+                                          style: TextStyle(
+                                            color: isWinnerP2
+                                                ? Colors.white
+                                                : PulseColors.getTextPrimary(isDark),
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                _match.player2?.name ?? 'Player 2',
-                                style: TextStyle(
-                                  color: PulseColors.getTextPrimary(isDark),
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 13,
+                                const SizedBox(height: 6),
+                                Text(
+                                  _match.team2ShortDisplayName,
+                                  style: TextStyle(
+                                    color: PulseColors.getTextPrimary(isDark),
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 12,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
+                        ],
+                      )
+                    else
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              children: [
+                                CircleAvatar(
+                                  radius: 24,
+                                  backgroundColor: isWinnerP1
+                                      ? PulseColors.accent
+                                      : PulseColors.getSurface(isDark),
+                                  child: Text(
+                                    _match.player1?.initials ?? 'P1',
+                                    style: TextStyle(
+                                      color: isWinnerP1
+                                          ? Colors.white
+                                          : PulseColors.getTextPrimary(isDark),
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  _match.player1?.name ?? 'Player 1',
+                                  style: TextStyle(
+                                    color: PulseColors.getTextPrimary(isDark),
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                            child: Text(
+                              'VS',
+                              style: TextStyle(
+                                color: PulseColors.getTextSecondary(isDark),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Column(
+                              children: [
+                                CircleAvatar(
+                                  radius: 24,
+                                  backgroundColor: isWinnerP2
+                                      ? PulseColors.accent
+                                      : PulseColors.getSurface(isDark),
+                                  child: Text(
+                                    _match.player2?.initials ?? 'P2',
+                                    style: TextStyle(
+                                      color: isWinnerP2
+                                          ? Colors.white
+                                          : PulseColors.getTextPrimary(isDark),
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  _match.player2?.name ?? 'Player 2',
+                                  style: TextStyle(
+                                    color: PulseColors.getTextPrimary(isDark),
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                   ],
                 ),
               ),
