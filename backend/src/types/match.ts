@@ -58,5 +58,6 @@ export interface MatchWithDetails extends Match {
   player2?: MatchParticipant | null;
   team2_partner?: MatchParticipant | null;
   scorer?: MatchParticipant | null;
+  court_image_url?: string | null;
 }
 

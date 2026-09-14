@@ -132,9 +132,11 @@ class CourtRepository {
         );
       }
 
-      query = query
-        .whereBetween('latitude', [minLat, maxLat])
-        .whereBetween('longitude', [minLng, maxLng]);
+      if (!search || search.trim().length === 0) {
+        query = query
+          .whereBetween('latitude', [minLat, maxLat])
+          .whereBetween('longitude', [minLng, maxLng]);
+      }
 
       if (sport && sport.toLowerCase() !== 'all') {
         const normalizedSport = sport.toLowerCase().trim();

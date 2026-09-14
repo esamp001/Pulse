@@ -29,6 +29,7 @@ import 'package:pulse_app/features/courts/presentation/widgets/pulse_map_center_
 import 'package:pulse_app/features/courts/presentation/screens/court_finder_screen.dart';
 import 'package:pulse_app/features/courts/presentation/widgets/court_card.dart';
 import 'package:pulse_app/features/courts/presentation/widgets/court_picker_modal.dart';
+import 'package:pulse_app/features/matches/presentation/widgets/match_invitation_snackbar.dart';
 
 /// Helper to configure test surface viewport size to small 280x520 resolution
 void setSmallestScreen280x520(WidgetTester tester) {
@@ -800,6 +801,60 @@ void main() {
                   isDarkMode: true,
                   initialSport: 'Pickleball',
                   onCourtSelected: (_) {},
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+          resetViewport(tester);
+        },
+      );
+
+      testWidgets(
+        'MatchInvitationSnackbar does not overflow at 280x520 in dark and light modes',
+        (tester) async {
+          setSmallestScreen280x520(tester);
+
+          final testMatchWithLongNames = MatchModel(
+            id: 'match-long-info',
+            creatorId: 'user-creator',
+            player1Id: 'user-p1',
+            player1: MatchParticipantModel(
+              id: 'user-p1',
+              name: 'SUB ACCOUNT01 SHOPPE EXTRA LONG NAME',
+              email: 'shopper@test.com',
+              rating: 1450,
+              avatarUrl: null,
+            ),
+            matchType: 'singles',
+            sport: 'pickleball',
+            venueName: 'Gulod Court Ultra Long Sports Complex Facility 3',
+            scheduledAt: DateTime.now().add(const Duration(hours: 2)),
+            status: 'WAITING',
+          );
+
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      MatchInvitationSnackbar(
+                        match: testMatchWithLongNames,
+                        currentUserRoleLabel: 'Player 2 (Opponent)',
+                        isDarkMode: true,
+                        onAccept: () {},
+                        onDecline: () {},
+                      ),
+                      MatchInvitationSnackbar(
+                        match: testMatchWithLongNames,
+                        currentUserRoleLabel: 'Neutral Scorer',
+                        isDarkMode: false,
+                        onAccept: () {},
+                        onDecline: () {},
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
