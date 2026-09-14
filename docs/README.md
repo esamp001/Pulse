@@ -12,6 +12,7 @@ This directory contains the complete specification-driven documentation for the 
 
 ### 🖥️ Frontend Specifications (Flutter)
 - [**Theme System**](../mobile/lib/core/theme/pulse_colors.dart) - Color tokens (`PulseColors`: `#0b1213`, `#f2f7f8`, `#2a525a`, `#88c2cd`, `#3a92a1`).
+- [**Image-First Modern Design Standards**](./frontend/image-based-design-standards.md) - Split-hero cards, gradient scrim overlays, 3-tier athletic vector fallbacks, and avatar standards.
 - [**Auth Screens**](../mobile/lib/features/auth/presentation/screens/) - Login & Registration UI flows (`LoginScreen`, `RegisterScreen`).
 - [**Reusable Widgets**](../mobile/lib/core/widgets/) - Shared branding widgets (`PulseLogo`).
 

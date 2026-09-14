@@ -246,15 +246,29 @@ void main() {
           await tester.pumpWidget(const MaterialApp(home: CreateMatchScreen()));
           await tester.pump();
 
-          // Verify Match Type tabs interaction
-          expect(find.text('1. Match Type'), findsOneWidget);
-          expect(find.text('Doubles (2v2)'), findsWidgets);
-          await tester.tap(find.text('Doubles (2v2)').first);
+          // Verify Step 1: Select a sport and Choose game mode
+          expect(find.text('Select a sport'), findsOneWidget);
+          expect(find.text('Choose game mode'), findsOneWidget);
+          expect(find.text('Doubles'), findsWidgets);
+          await tester.ensureVisible(find.text('Doubles').first);
+          await tester.tap(find.text('Doubles').first);
           await tester.pumpAndSettle();
 
-          expect(find.text('Singles (1v1)'), findsWidgets);
-          await tester.tap(find.text('Singles (1v1)').first);
+          expect(find.text('Singles'), findsWidgets);
+          await tester.ensureVisible(find.text('Singles').first);
+          await tester.tap(find.text('Singles').first);
           await tester.pumpAndSettle();
+
+          // Advance to Step 2
+          expect(find.text('Continue'), findsOneWidget);
+          await tester.ensureVisible(find.text('Continue').first);
+          await tester.tap(find.text('Continue').first);
+          await tester.pumpAndSettle();
+
+          // Verify Step 2 rendered without overflow
+          expect(find.text('How it works'), findsOneWidget);
+          expect(find.text('Venue & Location'), findsOneWidget);
+          expect(find.text('Create Singles Match'), findsOneWidget);
 
           resetViewport(tester);
         },
@@ -280,6 +294,21 @@ void main() {
             ),
           );
           await tester.pump();
+
+          // Select Doubles and continue to Step 2 with court banner
+          await tester.ensureVisible(find.text('Doubles').first);
+          await tester.tap(find.text('Doubles').first);
+          await tester.pumpAndSettle();
+
+          await tester.ensureVisible(find.text('Continue').first);
+          await tester.tap(find.text('Continue').first);
+          await tester.pumpAndSettle();
+
+          expect(find.text('How it works'), findsOneWidget);
+          expect(find.text('4 steps'), findsOneWidget);
+          expect(find.text('Gulod Court - Metro Sports Arena'), findsWidgets);
+          expect(find.text('Create Doubles Match'), findsOneWidget);
+
           resetViewport(tester);
         },
       );

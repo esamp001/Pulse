@@ -4,11 +4,11 @@ import 'pulse_colors.dart';
 
 /// Pulse Application ThemeData Configuration
 abstract class PulseTheme {
-  static TextTheme _buildSourceCodeProTextTheme(bool isDark) {
+  static TextTheme _buildLexendTextTheme(bool isDark) {
     final textPrimary = PulseColors.getTextPrimary(isDark);
     final textSecondary = PulseColors.getTextSecondary(isDark);
 
-    return GoogleFonts.sourceCodeProTextTheme(
+    return GoogleFonts.lexendTextTheme(
       TextTheme(
         // h1: 67.36px (4.210rem), 700 bold
         displayLarge: TextStyle(fontSize: 67.36, fontWeight: FontWeight.w700, color: textPrimary),
@@ -35,8 +35,8 @@ abstract class PulseTheme {
       useMaterial3: true,
       brightness: Brightness.light,
       scaffoldBackgroundColor: PulseColors.background,
-      fontFamily: GoogleFonts.sourceCodePro().fontFamily,
-      textTheme: _buildSourceCodeProTextTheme(false),
+      fontFamily: GoogleFonts.lexend().fontFamily,
+      textTheme: _buildLexendTextTheme(false),
 
       colorScheme: const ColorScheme.light(
         primary: PulseColors.primary,
@@ -123,8 +123,8 @@ abstract class PulseTheme {
       useMaterial3: true,
       brightness: Brightness.dark,
       scaffoldBackgroundColor: PulseColors.darkBackground,
-      fontFamily: GoogleFonts.sourceCodePro().fontFamily,
-      textTheme: _buildSourceCodeProTextTheme(true),
+      fontFamily: GoogleFonts.lexend().fontFamily,
+      textTheme: _buildLexendTextTheme(true),
 
       colorScheme: const ColorScheme.dark(
         primary: PulseColors.secondary,
