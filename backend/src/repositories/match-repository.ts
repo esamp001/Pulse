@@ -129,8 +129,25 @@ class MatchRepository {
         : Promise.resolve(null),
     ]);
 
+    let courtImageUrl: string | null = null;
+
+    if (match.venue_name) {
+      try {
+        const matchedCourt = await db('courts')
+          .whereILike('name', match.venue_name.trim())
+          .whereNotNull('image_url')
+          .first();
+        if (matchedCourt && matchedCourt.image_url) {
+          courtImageUrl = matchedCourt.image_url;
+        }
+      } catch (courtErr) {
+        console.error('[MatchRepository court lookup Error]:', courtErr);
+      }
+    }
+
     return {
       ...match,
+      court_image_url: courtImageUrl,
       player1: player1 || null,
       team1_partner: team1Partner || null,
       player2: player2 || null,

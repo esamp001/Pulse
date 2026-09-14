@@ -559,6 +559,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   child: MatchInvitationSnackbar(
                     match: _activeMatch!,
                     currentUserRoleLabel: _invitedUserRoleLabel,
+                    courtImageUrl: _activeMatch!.courtImageUrl,
                     isDarkMode: isDark,
                     onAccept: _acceptMatchInvitation,
                     onDecline: _declineMatchInvitation,

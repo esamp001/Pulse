@@ -232,7 +232,12 @@ class _NotificationSideDrawerState extends State<NotificationSideDrawer> {
   }
 
   Widget _buildInviteCard(BuildContext context) {
-    final inviterName = widget.activeMatch?.player1?.name ?? 'Match Host';
+    final inviter = widget.activeMatch?.player1;
+    final inviterName = (inviter != null && inviter.name.trim().isNotEmpty)
+        ? inviter.name.trim()
+        : 'Match Host';
+    final inviterAvatar = inviter?.avatarUrl;
+    final inviterInitial = inviterName.isNotEmpty ? inviterName[0].toUpperCase() : 'H';
     final sport = widget.activeMatch?.sportDisplayName ?? 'Pickleball';
     final venue = widget.activeMatch?.venueName ?? 'Court #1';
     final currentUserId = widget.user?.id ?? AuthService.currentUser?.id;
@@ -256,10 +261,6 @@ class _NotificationSideDrawerState extends State<NotificationSideDrawer> {
       decoration: BoxDecoration(
         color: PulseColors.getSurface(widget.isDarkMode),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: PulseColors.accent.withValues(alpha: 0.6),
-          width: 1.5,
-        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -279,12 +280,63 @@ class _NotificationSideDrawerState extends State<NotificationSideDrawer> {
               const Icon(Icons.flash_on_rounded, color: PulseColors.accent, size: 18),
             ],
           ),
+          const SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              CircleAvatar(
+                radius: 20,
+                backgroundColor: PulseColors.primary.withValues(alpha: 0.12),
+                backgroundImage: (inviterAvatar != null && inviterAvatar.trim().isNotEmpty)
+                    ? NetworkImage(inviterAvatar.trim())
+                    : null,
+                child: (inviterAvatar == null || inviterAvatar.trim().isEmpty)
+                    ? Text(
+                        inviterInitial,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: PulseColors.primary,
+                        ),
+                      )
+                    : null,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      inviterName,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: PulseColors.getTextPrimary(widget.isDarkMode),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${isDoubles ? "Doubles (2v2)" : "Singles"} $sport • $venue',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: PulseColors.getTextSecondary(widget.isDarkMode),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 10),
           Text(
-            '$inviterName invited you to join as $roleLabel in a ${isDoubles ? "Doubles (2v2)" : "Singles"} $sport match at $venue.',
+            'Invited you to join as $roleLabel.',
             style: TextStyle(
               fontSize: 13,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w500,
               color: PulseColors.getTextPrimary(widget.isDarkMode),
             ),
           ),
@@ -298,9 +350,9 @@ class _NotificationSideDrawerState extends State<NotificationSideDrawer> {
                     widget.onDeclineMatchInvitation();
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: PulseColors.error.withValues(alpha: 0.12),
+                    backgroundColor: PulseColors.error.withValues(alpha: 0.09),
                     foregroundColor: PulseColors.error,
-                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    padding: const EdgeInsets.symmetric(vertical: 11),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -321,13 +373,14 @@ class _NotificationSideDrawerState extends State<NotificationSideDrawer> {
                     widget.onAcceptMatchInvitation();
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: PulseColors.accent,
+                    backgroundColor: PulseColors.primary,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    padding: const EdgeInsets.symmetric(vertical: 11),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
                     elevation: 0,
+                    shadowColor: Colors.transparent,
                   ),
                   child: const FittedBox(
                     fit: BoxFit.scaleDown,

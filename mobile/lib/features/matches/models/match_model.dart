@@ -100,6 +100,7 @@ class MatchModel {
   final int player2SetsWon;
   final String? setScores;
   final String? pinCode;
+  final String? courtImageUrl;
 
   final MatchParticipantModel? player1;
   final MatchParticipantModel? team1Partner;
@@ -133,6 +134,7 @@ class MatchModel {
     this.player2SetsWon = 0,
     this.setScores,
     this.pinCode,
+    this.courtImageUrl,
     this.createdAt,
     this.updatedAt,
     this.player1,
@@ -308,6 +310,7 @@ class MatchModel {
       player2SetsWon: json['player2_sets_won'] is int ? json['player2_sets_won'] as int : int.tryParse('${json['player2_sets_won']}') ?? 0,
       setScores: json['set_scores'] as String?,
       pinCode: json['pin_code'] as String? ?? json['pinCode'] as String?,
+      courtImageUrl: json['court_image_url'] as String? ?? json['courtImageUrl'] as String?,
       createdAt: json['created_at'] != null ? DateTime.tryParse('${json['created_at']}') : null,
       updatedAt: json['updated_at'] != null ? DateTime.tryParse('${json['updated_at']}') : null,
       player1: json['player1'] != null && json['player1'] is Map<String, dynamic>
@@ -354,6 +357,7 @@ class MatchModel {
     int? player2SetsWon,
     String? setScores,
     String? pinCode,
+    String? courtImageUrl,
     DateTime? createdAt,
     DateTime? updatedAt,
     MatchParticipantModel? player1,
@@ -388,6 +392,7 @@ class MatchModel {
       player2SetsWon: player2SetsWon ?? this.player2SetsWon,
       setScores: setScores ?? this.setScores,
       pinCode: pinCode ?? this.pinCode,
+      courtImageUrl: courtImageUrl ?? this.courtImageUrl,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       player1: player1 ?? this.player1,
@@ -425,6 +430,7 @@ class MatchModel {
       'player2_sets_won': player2SetsWon,
       'set_scores': setScores,
       'pin_code': pinCode,
+      if (courtImageUrl != null) 'court_image_url': courtImageUrl,
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
       if (player1 != null) 'player1': player1!.toJson(),
