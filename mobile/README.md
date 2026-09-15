@@ -15,3 +15,20 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
+
+## Build Instructions
+
+### Android Release APK
+To build the standalone release APK for testing or direct distribution:
+
+```bash
+flutter build apk --release
+```
+
+Output path: `build/app/outputs/flutter-apk/app-release.apk`
+
+### Android App Bundle (Google Play Store)
+```bash
+flutter build aab --release
+```
+

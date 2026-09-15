@@ -329,3 +329,18 @@ src/
 ├── app.ts
 └── server.ts
 ```
+
+---
+
+## Build Instructions
+
+### Mobile (Android)
+```bash
+# Build Android Release APK
+cd mobile
+flutter build apk --release
+
+# Build Android App Bundle (Play Store)
+flutter build aab --release
+```
+

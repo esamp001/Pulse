@@ -70,6 +70,9 @@ Use this skill to track Android release readiness, audit required Google Play St
 cd mobile
 flutter test test/responsive_280x520_overflow_test.dart
 
-# 2. Build Android App Bundle (.aab) for Google Play
+# 2. Build Android Release APK
+flutter build apk --release
+
+# 3. Build Android App Bundle (.aab) for Google Play
 flutter build aab --release --build-number=1 --build-name=1.0.0
 ```
