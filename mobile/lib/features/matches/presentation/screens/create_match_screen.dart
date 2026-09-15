@@ -572,142 +572,30 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
         const SizedBox(height: 12),
 
         // Singles Card
-        InkWell(
-          onTap: () => setState(() => _matchType = 'singles'),
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: cardBg,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: !isDoubles
-                    ? _accentColor
-                    : PulseColors.getBorder(_isDarkMode).withValues(alpha: 0.35),
-                width: !isDoubles ? 1.8 : 1.0,
-              ),
-            ),
-            child: Row(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    width: 72,
-                    height: 58,
-                    color: _isDarkMode ? PulseColors.darkSurface : PulseColors.background,
-                    child: Image.asset(
-                      'assets/images/SINGLE-ASSET.png',
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Icon(Icons.person, color: _accentColor),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Singles',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          color: textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '1 vs 1. Test your skills.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: !isDoubles ? _accentColor : textSecondary,
-                  size: 22,
-                ),
-              ],
-            ),
-          ),
+        _buildGameModeCardItem(
+          modeKey: 'singles',
+          isSelected: !isDoubles,
+          cardBg: cardBg,
+          textPrimary: textPrimary,
+          textSecondary: textSecondary,
         ),
 
         const SizedBox(height: 12),
 
         // Doubles Card
-        InkWell(
-          onTap: () => setState(() => _matchType = 'doubles'),
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: cardBg,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isDoubles
-                    ? _accentColor
-                    : PulseColors.getBorder(_isDarkMode).withValues(alpha: 0.35),
-                width: isDoubles ? 1.8 : 1.0,
-              ),
-            ),
-            child: Row(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    width: 72,
-                    height: 58,
-                    color: _isDarkMode ? PulseColors.darkSurface : PulseColors.background,
-                    child: Image.asset(
-                      'assets/images/DOUBLES-ASSET.png',
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Icon(Icons.group, color: _accentColor),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Doubles',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          color: textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '2 vs 2. Play with a friend.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: isDoubles ? _accentColor : textSecondary,
-                  size: 22,
-                ),
-              ],
-            ),
-          ),
-        ),
-            ],
-          ),
+        _buildGameModeCardItem(
+          modeKey: 'doubles',
+          isSelected: isDoubles,
+          cardBg: cardBg,
+          textPrimary: textPrimary,
+          textSecondary: textSecondary,
         ),
       ],
-    );
-  }
+    ),
+  ),
+],
+);
+}
 
   Widget _buildSportCardItem({
     required SportOption sport,
@@ -787,6 +675,126 @@ class _CreateMatchScreenState extends State<CreateMatchScreen> {
                 ),
               ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGameModeCardItem({
+    required String modeKey,
+    required bool isSelected,
+    required Color cardBg,
+    required Color textPrimary,
+    required Color textSecondary,
+  }) {
+    final isDoubles = modeKey == 'doubles';
+    final assetPath = isDoubles
+        ? 'assets/images/DOUBLES-ASSET.png'
+        : 'assets/images/SINGLE-ASSET.png';
+
+    return InkWell(
+      onTap: () => setState(() => _matchType = modeKey),
+      borderRadius: BorderRadius.circular(16),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        height: 100,
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: cardBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected
+                ? _accentColor
+                : PulseColors.getBorder(_isDarkMode).withValues(alpha: 0.35),
+            width: isSelected ? 2.0 : 1.0,
+          ),
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final maxW = constraints.maxWidth;
+            final assetWidth = (maxW * 0.40).clamp(96.0, 148.0);
+            const slantWidth = 20.0;
+
+            return Row(
+              children: [
+                // Left: Slanted Asset Illustration with padding inside container
+                Padding(
+                  padding: const EdgeInsets.all(6.0),
+                  child: ClipPath(
+                    clipper: const _SlantedAssetClipper(
+                      slant: slantWidth,
+                      cornerRadius: 6,
+                      leftRadius: 10,
+                    ),
+                    child: Container(
+                      width: assetWidth,
+                      height: double.infinity,
+                      color: _isDarkMode ? PulseColors.darkSurface : PulseColors.background,
+                      child: Image.asset(
+                        assetPath,
+                        fit: BoxFit.cover,
+                        alignment: isDoubles ? Alignment.center : Alignment.centerLeft,
+                        errorBuilder: (context, error, stackTrace) => Center(
+                          child: Icon(
+                            isDoubles ? Icons.group : Icons.person,
+                            color: _accentColor,
+                            size: 32,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(width: 10),
+
+                // Center: Mode Title & Subtitle
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          isDoubles ? 'Doubles' : 'Singles',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            color: textPrimary,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        isDoubles ? '2 vs 2. Play with a friend.' : '1 vs 1. Test your skills.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                          color: textSecondary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Right: Chevron
+                Padding(
+                  padding: const EdgeInsets.only(right: 16.0, left: 8.0),
+                  child: Icon(
+                    Icons.chevron_right_rounded,
+                    color: textSecondary.withValues(alpha: 0.8),
+                    size: 24,
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -2156,3 +2164,57 @@ class _CourtGridLinePainter extends CustomPainter {
   bool shouldRepaint(covariant _CourtGridLinePainter oldDelegate) =>
       oldDelegate.lineColor != lineColor;
 }
+
+class _SlantedAssetClipper extends CustomClipper<Path> {
+  final double slant;
+  final double cornerRadius;
+  final double leftRadius;
+
+  const _SlantedAssetClipper({
+    this.slant = 20.0,
+    this.cornerRadius = 6.0,
+    this.leftRadius = 10.0,
+  });
+
+  @override
+  Path getClip(Size size) {
+    final path = Path();
+    path.moveTo(leftRadius, 0);
+
+    final topSlantX = size.width - slant;
+    path.lineTo(topSlantX - cornerRadius, 0);
+    path.quadraticBezierTo(
+      topSlantX,
+      0,
+      topSlantX + (slant * (cornerRadius / size.height)),
+      cornerRadius,
+    );
+
+    path.lineTo(
+      size.width - (slant * (cornerRadius / size.height)),
+      size.height - cornerRadius,
+    );
+    path.quadraticBezierTo(
+      size.width,
+      size.height,
+      size.width - cornerRadius,
+      size.height,
+    );
+
+    path.lineTo(leftRadius, size.height);
+    path.quadraticBezierTo(0, size.height, 0, size.height - leftRadius);
+
+    path.lineTo(0, leftRadius);
+    path.quadraticBezierTo(0, 0, leftRadius, 0);
+
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(covariant _SlantedAssetClipper oldClipper) =>
+      oldClipper.slant != slant ||
+      oldClipper.cornerRadius != cornerRadius ||
+      oldClipper.leftRadius != leftRadius;
+}
+
