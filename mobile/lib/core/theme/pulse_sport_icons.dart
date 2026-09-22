@@ -7,10 +7,10 @@ class PulseSportIcons {
   PulseSportIcons._();
 
   // Standardized PNG Image Asset Paths
-  static const String pickleballAsset = 'assets/images/pickle-ball.png';
-  static const String tennisAsset = 'assets/images/tennis.png';
-  static const String tableTennisAsset = 'assets/images/table-tennis.png';
-  static const String badmintonAsset = 'assets/images/badminton.png';
+  static const String pickleballAsset = 'assets/images/PICKLE-BALL-ASSET.png';
+  static const String tennisAsset = 'assets/images/TENNIS-ASSET.png';
+  static const String tableTennisAsset = 'assets/images/TABLE-TENNIS-ASSET.png';
+  static const String badmintonAsset = 'assets/images/BADMINTON-ASSET.png';
 
   /// Returns the standardized PNG asset path for a given sport key string.
   static String getAssetPath(String sportKey) {

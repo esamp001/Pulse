@@ -2158,31 +2158,25 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                               decoration: BoxDecoration(
                                 color: isConfigured
                                     ? PulseColors.getCard(_isDarkMode)
-                                    : PulseColors.getSurface(_isDarkMode),
+                                    : PulseColors.getSurface(_isDarkMode).withValues(alpha: 0.6),
                                 borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: isConfigured
-                                      ? PulseColors.accent.withValues(alpha: 0.5)
-                                      : PulseColors.getBorder(_isDarkMode),
-                                  width: 1.2,
-                                ),
                               ),
                               child: Row(
                                 children: [
                                   Container(
-                                    width: 48,
-                                    height: 48,
-                                    padding: const EdgeInsets.all(6),
+                                    width: 56,
+                                    height: 56,
+                                    padding: const EdgeInsets.all(4),
                                     decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(12),
+                                      borderRadius: BorderRadius.circular(14),
                                       gradient: LinearGradient(
                                         colors: isConfigured
                                             ? [
-                                                PulseColors.accent.withValues(alpha: 0.25),
-                                                PulseColors.primary.withValues(alpha: 0.15),
+                                                PulseColors.accent.withValues(alpha: 0.22),
+                                                PulseColors.primary.withValues(alpha: 0.12),
                                               ]
                                             : [
-                                                PulseColors.secondary.withValues(alpha: 0.2),
+                                                PulseColors.secondary.withValues(alpha: 0.15),
                                                 PulseColors.getBackground(_isDarkMode),
                                               ],
                                         begin: Alignment.topLeft,
@@ -2190,65 +2184,90 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                                       ),
                                     ),
                                     child: Center(
-                                      child: PulseSportIcons.buildWidget(key, size: 32),
+                                      child: PulseSportIcons.buildWidget(
+                                        key,
+                                        size: 44,
+                                        fit: BoxFit.contain,
+                                      ),
                                     ),
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            Flexible(
-                                              child: Text(
-                                                name,
-                                                style: TextStyle(
-                                                  fontSize: 15,
-                                                  fontWeight: FontWeight.w700,
-                                                  color: PulseColors.getTextPrimary(_isDarkMode),
-                                                ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                            if (isPrimary) ...[
-                                              const SizedBox(width: 6),
-                                              FittedBox(
-                                                fit: BoxFit.scaleDown,
-                                                child: Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                                  decoration: BoxDecoration(
-                                                    color: PulseColors.primary.withValues(alpha: 0.15),
-                                                    borderRadius: BorderRadius.circular(6),
+                                    child: InkWell(
+                                      onTap: isConfigured
+                                          ? () => showRatingPickerForSport(key, name)
+                                          : null,
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Flexible(
+                                                child: Text(
+                                                  name,
+                                                  style: TextStyle(
+                                                    fontSize: 15,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: PulseColors.getTextPrimary(_isDarkMode),
                                                   ),
-                                                  child: const Text(
-                                                    'PRIMARY',
-                                                    style: TextStyle(
-                                                      fontSize: 9,
-                                                      fontWeight: FontWeight.w800,
-                                                      color: PulseColors.primary,
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                              if (isPrimary) ...[
+                                                const SizedBox(width: 6),
+                                                FittedBox(
+                                                  fit: BoxFit.scaleDown,
+                                                  child: Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                    decoration: BoxDecoration(
+                                                      color: PulseColors.primary.withValues(alpha: 0.15),
+                                                      borderRadius: BorderRadius.circular(6),
+                                                    ),
+                                                    child: const Text(
+                                                      'PRIMARY',
+                                                      style: TextStyle(
+                                                        fontSize: 9,
+                                                        fontWeight: FontWeight.w800,
+                                                        color: PulseColors.primary,
+                                                      ),
                                                     ),
                                                   ),
                                                 ),
-                                              ),
+                                              ],
                                             ],
-                                          ],
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          isConfigured ? '$formattedElo ELO' : 'Not configured',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w600,
-                                            color: isConfigured
-                                                ? PulseColors.accent
-                                                : PulseColors.getTextSecondary(_isDarkMode),
                                           ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ],
+                                          const SizedBox(height: 2),
+                                          Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Flexible(
+                                                child: Text(
+                                                  isConfigured ? '$formattedElo ELO' : 'Not configured',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: isConfigured
+                                                        ? PulseColors.accent
+                                                        : PulseColors.getTextSecondary(_isDarkMode),
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                              if (isConfigured) ...[
+                                                const SizedBox(width: 4),
+                                                Icon(
+                                                  Icons.edit_rounded,
+                                                  size: 11,
+                                                  color: PulseColors.getTextSecondary(_isDarkMode).withValues(alpha: 0.6),
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                   const SizedBox(width: 6),

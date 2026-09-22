@@ -36,10 +36,30 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   int _selectedRating = 1200; // Default Intermediate
 
   final List<Map<String, dynamic>> _sports = [
-    {'name': 'Pickleball', 'icon': PulseSportIcons.pickleball},
-    {'name': 'Tennis', 'icon': PulseSportIcons.tennis},
-    {'name': 'Table Tennis', 'icon': PulseSportIcons.tableTennis},
-    {'name': 'Badminton', 'icon': PulseSportIcons.badminton},
+    {
+      'name': 'Pickleball',
+      'key': 'pickleball',
+      'icon': PulseSportIcons.pickleball,
+      'asset': PulseSportIcons.pickleballAsset,
+    },
+    {
+      'name': 'Tennis',
+      'key': 'tennis',
+      'icon': PulseSportIcons.tennis,
+      'asset': PulseSportIcons.tennisAsset,
+    },
+    {
+      'name': 'Table Tennis',
+      'key': 'table_tennis',
+      'icon': PulseSportIcons.tableTennis,
+      'asset': PulseSportIcons.tableTennisAsset,
+    },
+    {
+      'name': 'Badminton',
+      'key': 'badminton',
+      'icon': PulseSportIcons.badminton,
+      'asset': PulseSportIcons.badmintonAsset,
+    },
   ];
 
   final List<Map<String, dynamic>> _ratings = [
@@ -462,7 +482,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              childAspectRatio: 2.2,
+              childAspectRatio: 1.15,
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
             ),
@@ -472,57 +492,95 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               final isSelected = _selectedSport == sport['name'];
               return InkWell(
                 onTap: () => setState(() => _selectedSport = sport['name'] as String),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? PulseColors.accent.withValues(alpha: 0.15)
+                        ? (isDark
+                            ? PulseColors.primary.withValues(alpha: 0.28)
+                            : PulseColors.accent.withValues(alpha: 0.15))
                         : PulseColors.getSurface(isDark),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: isSelected ? PulseColors.accent : (isDark ? PulseColors.darkBorder : PulseColors.border),
-                      width: isSelected ? 2 : 1,
-                    ),
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                  child: Row(
+                  child: Stack(
                     children: [
-                      Container(
-                        width: 36,
-                        height: 36,
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          gradient: LinearGradient(
-                            colors: isSelected
-                                ? [PulseColors.accent, PulseColors.primary]
-                                : [
-                                    PulseColors.secondary.withValues(alpha: 0.3),
-                                    PulseColors.background,
-                                  ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                        ),
-                        child: Center(
-                          child: PulseSportIcons.buildWidget(
-                            sport['name'] as String,
-                            size: 26,
-                          ),
+                      Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              width: 52,
+                              height: 52,
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(14),
+                                gradient: LinearGradient(
+                                  colors: isSelected
+                                      ? [
+                                          PulseColors.accent.withValues(alpha: 0.35),
+                                          PulseColors.primary.withValues(alpha: 0.25),
+                                        ]
+                                      : [
+                                          PulseColors.secondary.withValues(alpha: 0.15),
+                                          PulseColors.getBackground(isDark),
+                                        ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                              ),
+                              child: Center(
+                                child: Image.asset(
+                                  sport['asset'] as String,
+                                  width: 44,
+                                  height: 44,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (_, _, _) => Icon(
+                                    sport['icon'] as IconData,
+                                    size: 28,
+                                    color: isSelected
+                                        ? Colors.white
+                                        : PulseColors.getTextPrimary(isDark),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                sport['name'] as String,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                  color: isSelected ? PulseColors.accent : textPrimary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          sport['name'] as String,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                            color: isSelected ? PulseColors.accent : textPrimary,
+                      if (isSelected)
+                        Positioned(
+                          top: 0,
+                          right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: PulseColors.accent,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.check,
+                              size: 10,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
-                      ),
                     ],
                   ),
                 ),
@@ -712,7 +770,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             child: _buildMinimalBadge(
                               label: 'PRIMARY SPORT',
                               value: _selectedSport,
-                              customIcon: PulseSportIcons.buildWidget(_selectedSport, size: 16),
+                              customIcon: PulseSportIcons.buildWidget(_selectedSport, size: 22),
                               isDark: isDark,
                             ),
                           ),
