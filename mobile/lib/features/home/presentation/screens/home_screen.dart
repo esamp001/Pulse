@@ -641,7 +641,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
 
     final winRateText = sportMatches > 0 ? '${((sportWins / sportMatches) * 100).toStringAsFixed(0)}%' : '0%';
-    final recordText = '${sportWins}W · ${sportLosses}L';
+    final recordText = '${sportWins}W • ${sportLosses}L';
     final rawRating = _user?.getRatingForSport(activeSportKey) ?? 1200;
     final ratingNumber = rawRating.toString().replaceAllMapped(
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
@@ -823,7 +823,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           ),
           const SizedBox(height: 20),
 
-          // 2. Athlete Hero Rating Display (Clean Typography Focus)
+          // 2. Athlete Hero Rating Display (Matching Mockup with 3D Sport Art & Dividers)
           _buildHeroRatingCard(
             ratingNumber: ratingNumber,
             recordText: recordText,
@@ -831,9 +831,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             streakText: streakText,
             lastMatchText: lastMatchText,
             sportText: sportText,
+            sportKey: activeSportKey,
             onSportTap: _showSportSelectionModal,
           ),
-          const SizedBox(height: 20),          // 3. Dynamic Featured Hero Action Card ("COMPETE NOW" vs "RETURN TO ROOM" vs "MATCH INVITATION")
+          const SizedBox(height: 20),
+          // 3. Dynamic Featured Hero Action Card ("COMPETE NOW" vs "RETURN TO ROOM" vs "MATCH INVITATION")
           PulseWidgetCard(
             title: _activeMatch == null
                 ? 'Compete Now'
@@ -1695,17 +1697,20 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     required String streakText,
     required String lastMatchText,
     required String sportText,
+    required String sportKey,
     required VoidCallback onSportTap,
   }) {
     final gradientColors = _isDarkMode
-        ? const [Color(0xFF1E393F), Color(0xFF122327)]
-        : const [Color(0xFF2A525A), Color(0xFF1E3B41)];
+        ? const [Color(0xFF133E46), Color(0xFF0F3238)]
+        : const [Color(0xFF184E57), Color(0xFF133E46)];
     const primaryTextColor = Colors.white;
-    const secondaryTextColor = Color(0xFF9DD4DE);
+    const secondaryTextColor = Color(0xFF67B7C4);
+
+    final sportAsset = PulseSportIcons.getAssetPath(sportKey);
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -1714,110 +1719,181 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         ),
         borderRadius: BorderRadius.circular(24),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          // Top Row: Micro Header & Sport Capsule Dropdown
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const Flexible(
-                child: Text(
-                  'ELO RATING',
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.2,
-                    color: secondaryTextColor,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 6),
-              InkWell(
-                onTap: onSportTap,
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      width: 1.0,
+          // 1. Right-side Background Sport Illustration (Duotone athletic artwork with soft edge transition)
+          Positioned(
+            right: -6,
+            top: 2,
+            bottom: -4,
+            width: 190,
+            child: IgnorePointer(
+              child: ShaderMask(
+                shaderCallback: (Rect bounds) {
+                  return const LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [
+                      Colors.transparent,
+                      Colors.white,
+                    ],
+                    stops: [0.0, 0.35],
+                  ).createShader(bounds);
+                },
+                blendMode: BlendMode.dstIn,
+                child: Opacity(
+                  opacity: 0.85,
+                  child: ColorFiltered(
+                    colorFilter: const ColorFilter.mode(
+                      Color(0xFF1A505A),
+                      BlendMode.color,
+                    ),
+                    child: Transform.flip(
+                      flipX: true,
+                      child: Image.asset(
+                        sportAsset,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                      ),
                     ),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        sportText.toUpperCase(),
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.5,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(width: 2),
-                      const Icon(
-                        Icons.arrow_drop_down_rounded,
-                        size: 18,
-                        color: secondaryTextColor,
-                      ),
-                    ],
-                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-
-          // Prominent Hero Rating Number
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              ratingNumber,
-              style: const TextStyle(
-                fontSize: 42,
-                fontWeight: FontWeight.w900,
-                height: 1.0,
-                letterSpacing: -1.5,
-                color: primaryTextColor,
               ),
             ),
           ),
 
-          const SizedBox(height: 18),
+          // 2. Foreground Content
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Top Row: Micro Header & Sport Capsule Dropdown
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const Flexible(
+                      child: Text(
+                        'ELO RATING',
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.4,
+                          color: secondaryTextColor,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    InkWell(
+                      onTap: onSportTap,
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            width: 1.0,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              sportText.toUpperCase(),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.6,
+                                color: primaryTextColor,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(
+                              Icons.arrow_drop_down_rounded,
+                              size: 20,
+                              color: primaryTextColor,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
 
-          // Bottom Sub-Stats Row (No icons, clean typography hierarchy)
-          Row(
-            children: [
-              Expanded(child: _buildHeroStatColumn('RECORD', recordText, primaryTextColor, secondaryTextColor)),
-              Expanded(child: _buildHeroStatColumn('WIN RATE', winRateText, primaryTextColor, secondaryTextColor)),
-              Expanded(child: _buildHeroStatColumn('STREAK', streakText, primaryTextColor, secondaryTextColor)),
-              Expanded(child: _buildHeroStatColumn('LAST MATCH', lastMatchText, primaryTextColor, secondaryTextColor)),
-            ],
+                // Prominent Hero Rating Number
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    ratingNumber,
+                    style: const TextStyle(
+                      fontSize: 48,
+                      fontWeight: FontWeight.w900,
+                      height: 1.05,
+                      letterSpacing: -1.2,
+                      color: primaryTextColor,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // Bottom Sub-Stats Row (with vertical dividers matching design)
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildHeroStatColumn('RECORD', recordText, primaryTextColor, secondaryTextColor),
+                    ),
+                    _buildHeroDivider(),
+                    Expanded(
+                      child: _buildHeroStatColumn('WIN RATE', winRateText, primaryTextColor, secondaryTextColor),
+                    ),
+                    _buildHeroDivider(),
+                    Expanded(
+                      child: _buildHeroStatColumn('STREAK', streakText, primaryTextColor, secondaryTextColor),
+                    ),
+                    _buildHeroDivider(),
+                    Expanded(
+                      child: _buildHeroStatColumn('LAST MATCH', lastMatchText, primaryTextColor, secondaryTextColor),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
+  Widget _buildHeroDivider() {
+    return Container(
+      width: 1,
+      height: 24,
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+      color: Colors.white.withValues(alpha: 0.15),
+    );
+  }
+
   Widget _buildHeroStatColumn(String label, String value, Color primaryColor, Color secondaryColor) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           label,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
-            fontSize: 9,
+            fontSize: 9.5,
             fontWeight: FontWeight.w700,
-            letterSpacing: 0.8,
+            letterSpacing: 0.6,
             color: secondaryColor,
           ),
         ),
@@ -1830,7 +1906,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 12.5,
               fontWeight: FontWeight.w800,
               color: primaryColor,
             ),
@@ -1885,8 +1961,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 ),
                 const SizedBox(height: 12),
                 ...configuredSports.map((sportName) {
-                  final key = sportName.toLowerCase();
-                  final isSelected = key == _selectedSport.toLowerCase();
+                  final key = sportName.toLowerCase().replaceAll(' ', '_');
+                  final isSelected = key == _selectedSport.toLowerCase().replaceAll(' ', '_');
                   final ratingVal = _user?.getRatingForSport(key) ?? 1200;
                   final formattedRating = ratingVal.toString().replaceAllMapped(
                         RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
@@ -1895,6 +1971,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
                   return ListTile(
                     contentPadding: EdgeInsets.zero,
+                    leading: Container(
+                      width: 38,
+                      height: 38,
+                      padding: const EdgeInsets.all(3),
+                      decoration: BoxDecoration(
+                        color: PulseColors.getCard(_isDarkMode),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Center(
+                        child: PulseSportIcons.buildWidget(key, size: 28),
+                      ),
+                    ),
                     title: Row(
                       children: [
                         Text(
@@ -1911,10 +1999,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           decoration: BoxDecoration(
                             color: PulseColors.getBackground(_isDarkMode),
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: PulseColors.getBorder(_isDarkMode),
-                              width: 1.0,
-                            ),
                           ),
                           child: Text(
                             '$formattedRating ELO',
@@ -1951,10 +2035,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     decoration: BoxDecoration(
                       color: PulseColors.getCard(_isDarkMode),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: PulseColors.getBorder(_isDarkMode),
-                        width: 1.2,
-                      ),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
