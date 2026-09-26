@@ -28,6 +28,7 @@ export interface Match {
   player2_sets_won?: number;
   set_scores?: string | null;
   pin_code?: string | null;
+  court_id?: string | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -36,11 +37,25 @@ export interface CreateMatchDTO {
   sport: SportType;
   venue_name: string;
   location?: string;
+  court_id?: string | null;
   scheduled_at: string; // ISO string from client
   match_type?: MatchType;
   total_sets?: number;
   points_to_win_set?: number;
   win_by_two?: boolean;
+}
+
+export interface CourtSummary {
+  id: string;
+  name: string;
+  address?: string | null;
+  city?: string | null;
+  latitude: number;
+  longitude: number;
+  sports: string[] | string;
+  surface?: string | null;
+  image_url?: string | null;
+  distance_km?: number;
 }
 
 export interface MatchParticipant {
@@ -59,5 +74,6 @@ export interface MatchWithDetails extends Match {
   team2_partner?: MatchParticipant | null;
   scorer?: MatchParticipant | null;
   court_image_url?: string | null;
+  court?: CourtSummary | null;
 }
 
