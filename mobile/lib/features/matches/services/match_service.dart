@@ -9,6 +9,7 @@ class MatchService {
     required String sport,
     required String venueName,
     String? location,
+    String? courtId,
     required DateTime scheduledAt,
     String matchType = 'singles',
     int totalSets = 3,
@@ -19,6 +20,7 @@ class MatchService {
       'sport': sport,
       'venue_name': venueName,
       if (location != null && location.isNotEmpty) 'location': location,
+      if (courtId != null && courtId.isNotEmpty) 'court_id': courtId,
       'scheduled_at': scheduledAt.toIso8601String(),
       'match_type': matchType,
       'total_sets': totalSets,
@@ -153,6 +155,50 @@ class MatchService {
     final data = await _apiClient.patch('/matches/$matchId/switch-role', body: {
       'target_role': targetRole,
     });
+    return MatchModel.fromJson(data);
+  }
+
+  /// Fetch open waiting matches for Match Radar
+  Future<List<MatchModel>> fetchOpenMatches({
+    String? sport,
+    double? latitude,
+    double? longitude,
+    double? radiusKm,
+  }) async {
+    final queryParams = <String, String>{};
+    if (sport != null && sport.isNotEmpty && sport.toLowerCase() != 'all') {
+      queryParams['sport'] = sport;
+    }
+    if (latitude != null) {
+      queryParams['latitude'] = latitude.toString();
+    }
+    if (longitude != null) {
+      queryParams['longitude'] = longitude.toString();
+    }
+    if (radiusKm != null) {
+      queryParams['radiusKm'] = radiusKm.toString();
+    }
+
+    final queryString = queryParams.isNotEmpty
+        ? '?${queryParams.entries.map((e) => '${e.key}=${Uri.encodeComponent(e.value)}').join('&')}'
+        : '';
+
+    final data = await _apiClient.get('/matches/open$queryString');
+    if (data is Map<String, dynamic> && data['matches'] is List) {
+      final list = data['matches'] as List;
+      return list.map((item) => MatchModel.fromJson(item as Map<String, dynamic>)).toList();
+    } else if (data is List) {
+      return data.map((item) => MatchModel.fromJson(item as Map<String, dynamic>)).toList();
+    }
+    return [];
+  }
+
+  /// Instant join an open match via Match Radar
+  Future<MatchModel> joinOpenMatch(String matchId) async {
+    final data = await _apiClient.post('/matches/$matchId/join-open');
+    if (data is Map<String, dynamic> && data['match'] != null) {
+      return MatchModel.fromJson(data['match'] as Map<String, dynamic>);
+    }
     return MatchModel.fromJson(data);
   }
 }

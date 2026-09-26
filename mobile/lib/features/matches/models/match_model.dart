@@ -1,3 +1,5 @@
+import '../../courts/models/court_model.dart';
+
 /// Participant summary inside a match (Player 1, Player 2, or Scorer)
 class MatchParticipantModel {
   final String id;
@@ -101,6 +103,8 @@ class MatchModel {
   final String? setScores;
   final String? pinCode;
   final String? courtImageUrl;
+  final String? courtId;
+  final CourtModel? court;
 
   final MatchParticipantModel? player1;
   final MatchParticipantModel? team1Partner;
@@ -135,6 +139,8 @@ class MatchModel {
     this.setScores,
     this.pinCode,
     this.courtImageUrl,
+    this.courtId,
+    this.court,
     this.createdAt,
     this.updatedAt,
     this.player1,
@@ -311,6 +317,10 @@ class MatchModel {
       setScores: json['set_scores'] as String?,
       pinCode: json['pin_code'] as String? ?? json['pinCode'] as String?,
       courtImageUrl: json['court_image_url'] as String? ?? json['courtImageUrl'] as String?,
+      courtId: json['court_id'] as String? ?? json['courtId'] as String?,
+      court: json['court'] != null && json['court'] is Map<String, dynamic>
+          ? CourtModel.fromJson(json['court'] as Map<String, dynamic>)
+          : null,
       createdAt: json['created_at'] != null ? DateTime.tryParse('${json['created_at']}') : null,
       updatedAt: json['updated_at'] != null ? DateTime.tryParse('${json['updated_at']}') : null,
       player1: json['player1'] != null && json['player1'] is Map<String, dynamic>
@@ -358,6 +368,8 @@ class MatchModel {
     String? setScores,
     String? pinCode,
     String? courtImageUrl,
+    String? courtId,
+    CourtModel? court,
     DateTime? createdAt,
     DateTime? updatedAt,
     MatchParticipantModel? player1,
@@ -393,6 +405,8 @@ class MatchModel {
       setScores: setScores ?? this.setScores,
       pinCode: pinCode ?? this.pinCode,
       courtImageUrl: courtImageUrl ?? this.courtImageUrl,
+      courtId: courtId ?? this.courtId,
+      court: court ?? this.court,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       player1: player1 ?? this.player1,
@@ -431,6 +445,8 @@ class MatchModel {
       'set_scores': setScores,
       'pin_code': pinCode,
       if (courtImageUrl != null) 'court_image_url': courtImageUrl,
+      if (courtId != null) 'court_id': courtId,
+      if (court != null) 'court': court!.toJson(),
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
       if (player1 != null) 'player1': player1!.toJson(),
