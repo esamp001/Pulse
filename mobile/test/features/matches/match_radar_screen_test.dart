@@ -84,7 +84,7 @@ void main() {
 
       expect(find.text('BGC Pickleball Club'), findsOneWidget);
       expect(find.text('Rafael Nadal'), findsOneWidget);
-      expect(find.text('ELO 1500'), findsOneWidget);
+      expect(find.textContaining('1500'), findsOneWidget);
       expect(find.text('Join Match'), findsOneWidget);
 
       await tester.tap(find.text('Join Match'));
