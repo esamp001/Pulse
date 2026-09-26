@@ -8,6 +8,7 @@ import '../../../../core/widgets/pulse_toast.dart';
 import '../../../../core/services/socket_service.dart';
 import '../../../../main.dart';
 import '../../../auth/services/auth_service.dart';
+import '../../../courts/presentation/screens/court_route_screen.dart';
 import '../../models/match_model.dart';
 import '../../services/match_service.dart';
 import '../widgets/invite_user_modal.dart';
@@ -1126,6 +1127,45 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                       ),
                     ],
                   ),
+                  if (_match.court != null) ...[
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 38,
+                      child: ElevatedButton.icon(
+                        key: const Key('navigate_to_court_button'),
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => CourtRouteScreen(
+                                court: _match.court!,
+                              ),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.directions_outlined, size: 16),
+                        label: const FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            'Navigate to Court',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: PulseColors.primary,
+                          foregroundColor: Colors.black,
+                          elevation: 0,
+                          shadowColor: Colors.transparent,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
