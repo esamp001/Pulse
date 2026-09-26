@@ -1156,7 +1156,7 @@ class _MatchLobbyScreenState extends State<MatchLobbyScreen> {
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: PulseColors.primary,
-                          foregroundColor: Colors.black,
+                          foregroundColor: Colors.white,
                           elevation: 0,
                           shadowColor: Colors.transparent,
                           shape: RoundedRectangleBorder(
