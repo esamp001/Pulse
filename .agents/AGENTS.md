@@ -33,3 +33,9 @@
 ## Backend Testing Standards (Jest)
 - **MANDATORY JEST FOR TESTING**: ALWAYS use Jest (`ts-jest`, `jest.config.js`) for backend unit and integration testing. Test files must be placed in `__tests__/` directories adjacent to the target code with `.test.ts` extensions (e.g., `src/repositories/__tests__/court-repository.test.ts`). Tests must use Jest assertions (`expect`) and mocking utilities (`jest.fn()`, `jest.spyOn()`, `jest.mock()`).
 
+## Plan Execution & Implementation Standards
+- **INLINE EXECUTION ONLY (NO SUBAGENTS)**: Do NOT spawn subagents or background workers for feature implementation plans. Execute all tasks directly inline in the active session to maintain full context and user alignment.
+- **ATOMIC COMMITS PER TASK**: Always execute verification/tests after implementing a plan item and commit it immediately before moving to the next.
+- **DEV REVIEW BEFORE MERGE**: Pause at designated checkpoints to allow the developer to review diffs and test results before merging into the main branch.
+
+
