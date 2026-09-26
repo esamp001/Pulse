@@ -10,6 +10,7 @@ const createMatchSchema = z.object({
   }),
   venue_name: z.string().min(1, 'Venue name is required'),
   location: z.string().optional(),
+  court_id: z.string().uuid().optional().nullable(),
   scheduled_at: z.string().min(1, 'Scheduled date/time is required'),
   match_type: z.enum(['singles', 'doubles']).optional(),
   total_sets: z.number().int().optional(),
@@ -375,7 +376,54 @@ class MatchController {
         data: match,
       });
     } catch (error: any) {
+      console.error('[MatchController finalizeMatch Error]:', error);
       res.status(400).json({ error: error.message || 'Failed to finalize match' });
+    }
+  };
+
+  getOpenMatches = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+      const { sport, latitude, longitude, radiusKm, limit } = req.query;
+      const matches = await this.matchService.getOpenMatches({
+        sport: typeof sport === 'string' ? sport : undefined,
+        latitude: latitude !== undefined ? parseFloat(latitude as string) : undefined,
+        longitude: longitude !== undefined ? parseFloat(longitude as string) : undefined,
+        radiusKm: radiusKm !== undefined ? parseFloat(radiusKm as string) : undefined,
+        limit: limit !== undefined ? parseInt(limit as string, 10) : undefined,
+      });
+      res.status(200).json({ matches });
+    } catch (err: any) {
+      console.error('[MatchController getOpenMatches Error]:', err);
+      res.status(500).json({ error: err.message || 'Failed to fetch open matches' });
+    }
+  };
+
+  joinOpenMatch = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) {
+        res.status(401).json({ error: 'Unauthorized user' });
+        return;
+      }
+      const { id } = req.params;
+      const match = await this.matchService.joinOpenMatch(id, userId);
+
+      notifyUserActiveMatchUpdate(this.getMatchNotificationUserIds(userId, match));
+
+      res.status(200).json({
+        message: 'Joined match successfully',
+        match,
+      });
+    } catch (err: any) {
+      console.error('[MatchController joinOpenMatch Error]:', err);
+      const statusCode =
+        err.message?.includes('not found') ||
+        err.message?.includes('full') ||
+        err.message?.includes('own match') ||
+        err.message?.includes('already have an active match')
+          ? 400
+          : 500;
+      res.status(statusCode).json({ error: err.message || 'Failed to join match' });
     }
   };
 }

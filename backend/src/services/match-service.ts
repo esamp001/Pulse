@@ -54,6 +54,7 @@ class MatchService {
       sport: data.sport,
       venue_name: data.venue_name.trim(),
       location: data.location ? data.location.trim() : null,
+      court_id: data.court_id || null,
       scheduled_at: scheduledDate,
       total_sets: totalSets,
       points_to_win_set: pointsToWinSet,
@@ -1032,6 +1033,54 @@ class MatchService {
 
     const updatedWithDetails = await this.matchRepository.findByIdWithDetails(matchId);
     return updatedWithDetails!;
+  }
+
+  async getOpenMatches(params: {
+    sport?: string;
+    latitude?: number;
+    longitude?: number;
+    radiusKm?: number;
+    limit?: number;
+  }): Promise<MatchWithDetails[]> {
+    try {
+      return await this.matchRepository.findOpenMatches(params);
+    } catch (err) {
+      console.error('[MatchService getOpenMatches Error]:', err);
+      throw err;
+    }
+  }
+
+  async joinOpenMatch(matchId: string, userId: string): Promise<MatchWithDetails> {
+    try {
+      const user = await this.userRepository.findById(userId);
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      const activeMatch = await this.matchRepository.findActiveByUserId(userId);
+      if (activeMatch && activeMatch.id !== matchId) {
+        throw new Error('You already have an active match lobby. Please exit or complete it first.');
+      }
+
+      const updatedMatch = await this.matchRepository.joinOpenMatch(matchId, userId);
+
+      try {
+        await notificationService.createNotification({
+          userId: updatedMatch.player1_id,
+          category: 'INVITE',
+          title: 'Opponent Joined via Radar!',
+          subtitle: `${user.name} joined your match at ${updatedMatch.venue_name}.`,
+          payload: { match_id: matchId, opponent_id: userId },
+        });
+      } catch (notifErr) {
+        console.error('[MatchService joinOpenMatch Notification Error]:', notifErr);
+      }
+
+      return updatedMatch;
+    } catch (err) {
+      console.error('[MatchService joinOpenMatch Error]:', err);
+      throw err;
+    }
   }
 }
 

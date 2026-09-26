@@ -1,5 +1,5 @@
 import db from '../database/db';
-import type { Match, MatchWithDetails, MatchStatus, SportType, MatchType } from '../types/match';
+import type { Match, MatchWithDetails, MatchStatus, SportType, MatchType, CourtSummary } from '../types/match';
 
 export interface CreateMatchParams {
   creator_id: string;
@@ -7,11 +7,20 @@ export interface CreateMatchParams {
   sport: SportType;
   venue_name: string;
   location?: string | null;
+  court_id?: string | null;
   scheduled_at: Date;
   match_type?: MatchType;
   total_sets?: number;
   points_to_win_set?: number;
   win_by_two?: boolean;
+}
+
+export interface FindOpenMatchesParams {
+  sport?: string;
+  latitude?: number;
+  longitude?: number;
+  radiusKm?: number;
+  limit?: number;
 }
 
 export interface UpdateMatchParticipantsParams {
@@ -56,6 +65,7 @@ class MatchRepository {
         sport: data.sport,
         venue_name: data.venue_name,
         location: data.location || null,
+        court_id: data.court_id || null,
         scheduled_at: data.scheduled_at,
         total_sets: data.total_sets ?? 3,
         points_to_win_set: data.points_to_win_set ?? 11,
@@ -130,15 +140,50 @@ class MatchRepository {
     ]);
 
     let courtImageUrl: string | null = null;
+    let courtSummary: CourtSummary | null = null;
 
-    if (match.venue_name) {
+    if (match.court_id) {
+      try {
+        const matchedCourt = await db('courts').where({ id: match.court_id }).first();
+        if (matchedCourt) {
+          courtSummary = {
+            id: matchedCourt.id,
+            name: matchedCourt.name,
+            address: matchedCourt.address,
+            city: matchedCourt.city,
+            latitude: Number(matchedCourt.latitude),
+            longitude: Number(matchedCourt.longitude),
+            sports: matchedCourt.sports,
+            surface: matchedCourt.surface,
+            image_url: matchedCourt.image_url,
+          };
+          if (matchedCourt.image_url) {
+            courtImageUrl = matchedCourt.image_url;
+          }
+        }
+      } catch (courtErr) {
+        console.error('[MatchRepository court_id lookup Error]:', courtErr);
+      }
+    } else if (match.venue_name) {
       try {
         const matchedCourt = await db('courts')
           .whereILike('name', match.venue_name.trim())
-          .whereNotNull('image_url')
           .first();
-        if (matchedCourt && matchedCourt.image_url) {
-          courtImageUrl = matchedCourt.image_url;
+        if (matchedCourt) {
+          courtSummary = {
+            id: matchedCourt.id,
+            name: matchedCourt.name,
+            address: matchedCourt.address,
+            city: matchedCourt.city,
+            latitude: Number(matchedCourt.latitude),
+            longitude: Number(matchedCourt.longitude),
+            sports: matchedCourt.sports,
+            surface: matchedCourt.surface,
+            image_url: matchedCourt.image_url,
+          };
+          if (matchedCourt.image_url) {
+            courtImageUrl = matchedCourt.image_url;
+          }
         }
       } catch (courtErr) {
         console.error('[MatchRepository court lookup Error]:', courtErr);
@@ -148,6 +193,7 @@ class MatchRepository {
     return {
       ...match,
       court_image_url: courtImageUrl,
+      court: courtSummary,
       player1: player1 || null,
       team1_partner: team1Partner || null,
       player2: player2 || null,
@@ -242,6 +288,128 @@ class MatchRepository {
 
   async delete(id: string): Promise<void> {
     await db('matches').where({ id }).delete();
+  }
+
+  private calculateHaversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371; // Earth's radius in km
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
+
+  async findOpenMatches(params: FindOpenMatchesParams = {}): Promise<MatchWithDetails[]> {
+    try {
+      const { sport, latitude, longitude, radiusKm = 50, limit = 50 } = params;
+
+      let query = db<Match>('matches')
+        .where('matches.status', 'WAITING')
+        .whereNull('matches.player2_id')
+        .where('matches.scheduled_at', '>=', new Date(Date.now() - 2 * 60 * 60 * 1000));
+
+      if (sport && sport.toLowerCase() !== 'all') {
+        query = query.whereRaw('LOWER(matches.sport) = ?', [sport.toLowerCase()]);
+      }
+
+      query = query.orderBy('matches.scheduled_at', 'asc').limit(limit);
+
+      const matches = await query;
+      const detailsList = await Promise.all(
+        matches.map(async (m) => {
+          return await this.findByIdWithDetails(m.id);
+        })
+      );
+
+      let filtered = detailsList.filter((m): m is MatchWithDetails => Boolean(m));
+
+      if (latitude !== undefined && longitude !== undefined) {
+        filtered = filtered.map((m) => {
+          if (m.court && m.court.latitude && m.court.longitude) {
+            const distance = this.calculateHaversineDistance(
+              latitude,
+              longitude,
+              m.court.latitude,
+              m.court.longitude
+            );
+            return {
+              ...m,
+              court: {
+                ...m.court,
+                distance_km: Math.round(distance * 10) / 10,
+              },
+            };
+          }
+          return m;
+        });
+
+        if (radiusKm > 0) {
+          filtered = filtered.filter(
+            (m) => m.court?.distance_km === undefined || m.court.distance_km <= radiusKm
+          );
+        }
+
+        filtered.sort((a, b) => {
+          const distA = a.court?.distance_km ?? 999999;
+          const distB = b.court?.distance_km ?? 999999;
+          return distA - distB;
+        });
+      }
+
+      return filtered;
+    } catch (err) {
+      console.error('[MatchRepository findOpenMatches Error]:', err);
+      throw err;
+    }
+  }
+
+  async joinOpenMatch(matchId: string, userId: string): Promise<MatchWithDetails> {
+    try {
+      const match = await db<Match>('matches').where({ id: matchId }).first();
+      if (!match) {
+        throw new Error('Match not found');
+      }
+
+      if (match.player1_id === userId) {
+        throw new Error('You cannot join your own match as an opponent');
+      }
+
+      if (match.status !== 'WAITING') {
+        throw new Error(`Match is not waiting for players (status: ${match.status})`);
+      }
+
+      if (match.player2_id) {
+        throw new Error('Match is already full');
+      }
+
+      const updatedCount = await db<Match>('matches')
+        .where({ id: matchId, status: 'WAITING' })
+        .whereNull('player2_id')
+        .update({
+          player2_id: userId,
+          player2_accepted: true,
+          status: 'READY',
+          updated_at: new Date(),
+        });
+
+      if (updatedCount === 0) {
+        throw new Error('Failed to join match: already taken or status changed');
+      }
+
+      const updated = await this.findByIdWithDetails(matchId);
+      if (!updated) {
+        throw new Error('Failed to retrieve updated match details');
+      }
+      return updated;
+    } catch (err) {
+      console.error('[MatchRepository joinOpenMatch Error]:', err);
+      throw err;
+    }
   }
 }
 
