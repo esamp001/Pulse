@@ -263,7 +263,7 @@ class _MatchRadarScreenState extends State<MatchRadarScreen> {
                         onPressed: () => Navigator.of(sheetContext).pop(true),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: PulseColors.primary,
-                          foregroundColor: Colors.black,
+                          foregroundColor: Colors.white,
                           elevation: 0,
                           shadowColor: Colors.transparent,
                           padding: const EdgeInsets.symmetric(vertical: 12),
@@ -326,7 +326,7 @@ class _MatchRadarScreenState extends State<MatchRadarScreen> {
             height: 32,
             child: Container(
               decoration: const BoxDecoration(
-                color: Colors.blueAccent,
+                color: PulseColors.primary,
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -361,6 +361,80 @@ class _MatchRadarScreenState extends State<MatchRadarScreen> {
 
         return Scaffold(
           backgroundColor: PulseColors.getBackground(isDark),
+          appBar: PreferredSize(
+            preferredSize: const Size.fromHeight(60),
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Row(
+                  children: [
+                    PulseBackButton(
+                      isDarkMode: isDark,
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Match Players',
+                            style: TextStyle(
+                              color: PulseColors.getTextPrimary(isDark),
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.3,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            'Discover & join nearby open matches',
+                            style: TextStyle(
+                              color: PulseColors.getTextSecondary(isDark),
+                              fontSize: 12,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: PulseColors.getCard(isDark),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: IconButton(
+                        onPressed: _isLocatingGps ? null : _detectLocation,
+                        icon: _isLocatingGps
+                            ? SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    isDark ? Colors.white : PulseColors.primary,
+                                  ),
+                                ),
+                              )
+                            : Icon(
+                                Icons.my_location_rounded,
+                                size: 20,
+                                color: isDark ? Colors.white : PulseColors.primary,
+                              ),
+                        color: isDark ? Colors.white : PulseColors.primary,
+                        tooltip: 'Center on my location',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
           body: Stack(
             children: [
               // Interactive FlutterMap
@@ -385,118 +459,49 @@ class _MatchRadarScreenState extends State<MatchRadarScreen> {
                 ],
               ),
 
-              // Top Floating App Bar & Sports Filter Pills
-              SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Top Row
-                      Row(
-                        children: [
-                          PulseBackButton(isDarkMode: isDark),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: PulseColors.getCard(isDark).withValues(alpha: 0.92),
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 8,
-                                    height: 8,
-                                    decoration: const BoxDecoration(
-                                      color: PulseColors.primary,
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      'Match Radar',
-                                      style: TextStyle(
-                                        color: PulseColors.getTextPrimary(isDark),
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w800,
-                                        letterSpacing: -0.2,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  if (_isLocatingGps)
-                                    const SizedBox(
-                                      width: 12,
-                                      height: 12,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(PulseColors.primary),
-                                      ),
-                                    )
-                                  else
-                                    GestureDetector(
-                                      onTap: _detectLocation,
-                                      child: const Icon(
-                                        Icons.gps_fixed_rounded,
-                                        size: 16,
-                                        color: PulseColors.primary,
-                                      ),
-                                    ),
-                                ],
+              // Sports Filter Pills Bar Floating Over Map
+              Positioned(
+                top: 12,
+                left: 16,
+                right: 16,
+                child: SizedBox(
+                  height: 34,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _sportFilters.length,
+                    separatorBuilder: (_, _) => const SizedBox(width: 8),
+                    itemBuilder: (context, index) {
+                      final sport = _sportFilters[index];
+                      final isSelected = _selectedSport.toLowerCase() == sport.toLowerCase();
+                      return GestureDetector(
+                        onTap: () => _onSportFilterSelected(sport),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? PulseColors.primary
+                                : PulseColors.getCard(isDark).withValues(alpha: 0.92),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Center(
+                            child: Text(
+                              sport,
+                              style: TextStyle(
+                                color: isSelected ? Colors.white : PulseColors.getTextPrimary(isDark),
+                                fontSize: 12,
+                                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
                               ),
                             ),
                           ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      // Sports Filter Pills Bar
-                      SizedBox(
-                        height: 34,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: _sportFilters.length,
-                          separatorBuilder: (_, _) => const SizedBox(width: 8),
-                          itemBuilder: (context, index) {
-                            final sport = _sportFilters[index];
-                            final isSelected = _selectedSport.toLowerCase() == sport.toLowerCase();
-                            return GestureDetector(
-                              onTap: () => _onSportFilterSelected(sport),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? PulseColors.primary
-                                      : PulseColors.getCard(isDark).withValues(alpha: 0.92),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    sport,
-                                    style: TextStyle(
-                                      color: isSelected ? Colors.black : PulseColors.getTextPrimary(isDark),
-                                      fontSize: 12,
-                                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
                         ),
-                      ),
-                    ],
+                      );
+                    },
                   ),
                 ),
               ),
 
-              // Bottom Carousel or Empty State
+              // Bottom Carousel or Empty / Loading State Card
               Positioned(
                 bottom: 16,
                 left: 0,
@@ -504,118 +509,157 @@ class _MatchRadarScreenState extends State<MatchRadarScreen> {
                 child: SafeArea(
                   top: false,
                   child: _isLoading
-                      ? Center(
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: PulseColors.getCard(isDark),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.5,
-                                valueColor: AlwaysStoppedAnimation<Color>(PulseColors.primary),
-                              ),
-                            ),
-                          ),
-                        )
+                      ? _buildLoadingCard(isDark)
                       : _openMatches.isEmpty
-                          ? Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 20),
-                              child: Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: PulseColors.getCard(isDark).withValues(alpha: 0.96),
-                                  borderRadius: BorderRadius.circular(18),
-                                ),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.radar_rounded,
-                                      size: 32,
-                                      color: PulseColors.getTextSecondary(isDark),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      'No open matches nearby',
-                                      style: TextStyle(
-                                        color: PulseColors.getTextPrimary(isDark),
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Create an open match and wait for players to join!',
-                                      style: TextStyle(
-                                        color: PulseColors.getTextSecondary(isDark),
-                                        fontSize: 12,
-                                      ),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                    const SizedBox(height: 12),
-                                    SizedBox(
-                                      width: double.infinity,
-                                      height: 38,
-                                      child: ElevatedButton(
-                                        onPressed: () {
-                                          Navigator.of(context).push(
-                                            MaterialPageRoute(
-                                              builder: (_) => CreateMatchScreen(
-                                                initialSport: _selectedSport == 'All' ? null : _selectedSport,
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: PulseColors.primary,
-                                          foregroundColor: Colors.black,
-                                          elevation: 0,
-                                          shadowColor: Colors.transparent,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(12),
-                                          ),
-                                        ),
-                                        child: const Text(
-                                          'Create Match',
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w800,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            )
-                          : SizedBox(
-                              height: 140,
-                              child: PageView.builder(
-                                controller: _pageController,
-                                itemCount: _openMatches.length,
-                                onPageChanged: _onCardChanged,
-                                itemBuilder: (context, index) {
-                                  final match = _openMatches[index];
-                                  return OpenMatchCard(
-                                    match: match,
-                                    isDarkMode: isDark,
-                                    isJoining: _joiningMatchId == match.id,
-                                    onJoin: () => _handleJoinMatch(match),
-                                    onTap: () => _onPinTapped(index),
-                                  );
-                                },
-                              ),
-                            ),
+                          ? _buildEmptyStateCard(isDark)
+                          : _buildMatchesCarousel(isDark),
                 ),
               ),
             ],
           ),
         );
       },
+    );
+  }
+
+  Widget _buildLoadingCard(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        decoration: BoxDecoration(
+          color: PulseColors.getCard(isDark).withValues(alpha: 0.96),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 26,
+              height: 26,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  isDark ? Colors.white : PulseColors.primary,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Scanning for nearby matches...',
+              style: TextStyle(
+                color: PulseColors.getTextPrimary(isDark),
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Locating open games in your area',
+              style: TextStyle(
+                color: PulseColors.getTextSecondary(isDark),
+                fontSize: 12,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyStateCard(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: PulseColors.getCard(isDark).withValues(alpha: 0.96),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.radar_rounded,
+              size: 32,
+              color: PulseColors.getTextSecondary(isDark),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'No open matches nearby',
+              style: TextStyle(
+                color: PulseColors.getTextPrimary(isDark),
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Create an open match and wait for players to join!',
+              style: TextStyle(
+                color: PulseColors.getTextSecondary(isDark),
+                fontSize: 12,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              height: 38,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => CreateMatchScreen(
+                        initialSport: _selectedSport == 'All' ? null : _selectedSport,
+                      ),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: PulseColors.primary,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shadowColor: Colors.transparent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Create Match',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMatchesCarousel(bool isDark) {
+    return SizedBox(
+      height: 140,
+      child: PageView.builder(
+        controller: _pageController,
+        itemCount: _openMatches.length,
+        onPageChanged: _onCardChanged,
+        itemBuilder: (context, index) {
+          final match = _openMatches[index];
+          return OpenMatchCard(
+            match: match,
+            isDarkMode: isDark,
+            isJoining: _joiningMatchId == match.id,
+            onJoin: () => _handleJoinMatch(match),
+            onTap: () => _onPinTapped(index),
+          );
+        },
+      ),
     );
   }
 }

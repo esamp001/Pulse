@@ -5,6 +5,7 @@ import 'package:pulse_app/features/courts/models/court_model.dart';
 import 'package:pulse_app/features/matches/models/match_model.dart';
 import 'package:pulse_app/features/matches/presentation/widgets/match_radar_pin.dart';
 import 'package:pulse_app/features/matches/presentation/widgets/open_match_card.dart';
+import 'package:pulse_app/features/matches/presentation/screens/match_radar_screen.dart';
 
 void main() {
   setUp(() {
@@ -90,6 +91,26 @@ void main() {
       await tester.tap(find.text('Join Match'));
       await tester.pump();
       expect(joinPressed, isTrue);
+    });
+
+    testWidgets('MatchRadarScreen renders standardized header and persistent loading card', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: MatchRadarScreen(
+            initialSport: 'Pickleball',
+          ),
+        ),
+      );
+
+      // Initial frame is in loading state
+      expect(find.text('Match Players'), findsOneWidget);
+      expect(find.text('Discover & join nearby open matches'), findsOneWidget);
+      expect(find.byIcon(Icons.my_location_rounded), findsWidgets);
+
+      // Verify persistent loading card layout
+      expect(find.text('Scanning for nearby matches...'), findsOneWidget);
+      expect(find.text('Locating open games in your area'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsWidgets);
     });
   });
 }
