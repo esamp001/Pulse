@@ -202,34 +202,32 @@ class OpenMatchCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 2),
-                        Row(
-                          children: [
-                            Text(
-                              'ELO ${host?.rating ?? 1200}',
-                              style: const TextStyle(
-                                color: PulseColors.primary,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
+                        Text.rich(
+                          TextSpan(
+                            children: [
+                              TextSpan(
+                                text: 'ELO ${host?.rating ?? 1200}',
+                                style: const TextStyle(
+                                  color: PulseColors.primary,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 6),
-                            Flexible(
-                              child: Text(
-                                '• ${_formatTime(match.scheduledAt)}',
+                              TextSpan(
+                                text: ' • ${_formatTime(match.scheduledAt)}',
                                 style: TextStyle(
                                   color: PulseColors.getTextSecondary(isDarkMode),
-                                  fontSize: 11,
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
+                          style: const TextStyle(fontSize: 11),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 6),
 
                   // Join Match Action Button
                   SizedBox(
@@ -241,7 +239,7 @@ class OpenMatchCard extends StatelessWidget {
                         foregroundColor: Colors.black,
                         elevation: 0,
                         shadowColor: Colors.transparent,
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
