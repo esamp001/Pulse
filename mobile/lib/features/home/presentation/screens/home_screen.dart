@@ -15,6 +15,7 @@ import '../../../auth/services/auth_service.dart';
 import '../../../matches/models/match_model.dart';
 import '../../../matches/presentation/screens/create_match_screen.dart';
 import '../../../matches/presentation/screens/match_lobby_screen.dart';
+import '../../../matches/presentation/screens/match_radar_screen.dart';
 import '../../../matches/presentation/widgets/match_invitation_snackbar.dart';
 import '../../../matches/presentation/screens/post_match_screen.dart';
 import '../../../notifications/presentation/widgets/notification_side_drawer.dart';
@@ -950,16 +951,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 isDarkMode: _isDarkMode,
                 onTap: () => _showJoinMatchByPinModal(context),
               ),
-              // 2. Match Players (Card 2) - Coming Soon
+              // 2. Match Players (Card 2) - Active Feature (Match Radar)
               PulseWidgetCard(
                 imagePath: 'assets/images/officiate.png',
                 title: 'Match Players',
                 subtitle: 'Nearby Opponents',
                 pillText: 'RADAR',
                 isDarkMode: _isDarkMode,
-                isComingSoon: true,
                 onTap: () {
-                  PulseToast.show(context, 'Match Players Radar is coming soon in v1.1!');
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => MatchRadarScreen(
+                        initialSport: _selectedSport,
+                      ),
+                    ),
+                  );
                 },
               ),
               // 3. Find Court (Card 3) - Active Feature

@@ -30,6 +30,9 @@ import 'package:pulse_app/features/courts/presentation/screens/court_finder_scre
 import 'package:pulse_app/features/courts/presentation/widgets/court_card.dart';
 import 'package:pulse_app/features/courts/presentation/widgets/court_picker_modal.dart';
 import 'package:pulse_app/features/matches/presentation/widgets/match_invitation_snackbar.dart';
+import 'package:pulse_app/features/matches/presentation/screens/match_radar_screen.dart';
+import 'package:pulse_app/features/matches/presentation/widgets/open_match_card.dart';
+import 'package:pulse_app/features/matches/presentation/widgets/match_radar_pin.dart';
 
 /// Helper to configure test surface viewport size to small 280x520 resolution
 void setSmallestScreen280x520(WidgetTester tester) {
@@ -885,6 +888,94 @@ void main() {
                     ],
                   ),
                 ),
+              ),
+            ),
+          );
+          await tester.pump();
+          resetViewport(tester);
+        },
+      );
+
+      testWidgets(
+        'OpenMatchCard and MatchRadarPin do not overflow at 280x520 in dark and light modes',
+        (tester) async {
+          setSmallestScreen280x520(tester);
+
+          final testRadarCourt = CourtModel(
+            id: 'c-radar-1',
+            name: 'Ayala Malls Manila Bay Pickleball Center Ultra Long Name Facility',
+            address: 'Diosdado Macapagal Blvd Corner Aseana Ave',
+            latitude: 14.5218,
+            longitude: 120.9912,
+            sports: ['pickleball'],
+            distanceKm: 4.8,
+          );
+
+          final testRadarMatch = MatchModel(
+            id: 'm-radar-overflow',
+            creatorId: 'u-radar-1',
+            player1Id: 'u-radar-1',
+            player1: MatchParticipantModel(
+              id: 'u-radar-1',
+              name: 'Alexander Zverev Super Long Name Championship Player',
+              email: 'zverev@rally.com',
+              rating: 1650,
+            ),
+            matchType: 'singles',
+            sport: 'pickleball',
+            venueName: 'Ayala Malls Manila Bay Pickleball Center Ultra Long Name Facility',
+            scheduledAt: DateTime.now().add(const Duration(hours: 3)),
+            status: 'WAITING',
+            court: testRadarCourt,
+            courtId: 'c-radar-1',
+          );
+
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      MatchRadarPin(
+                        match: testRadarMatch,
+                        isSelected: true,
+                        isDarkMode: true,
+                      ),
+                      MatchRadarPin(
+                        match: testRadarMatch,
+                        isSelected: false,
+                        isDarkMode: false,
+                      ),
+                      OpenMatchCard(
+                        match: testRadarMatch,
+                        isDarkMode: true,
+                        onJoin: () {},
+                      ),
+                      OpenMatchCard(
+                        match: testRadarMatch,
+                        isDarkMode: false,
+                        onJoin: () {},
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+          resetViewport(tester);
+        },
+      );
+
+      testWidgets(
+        'MatchRadarScreen initializes without overflow at 280x520',
+        (tester) async {
+          setSmallestScreen280x520(tester);
+
+          await tester.pumpWidget(
+            const MaterialApp(
+              home: MatchRadarScreen(
+                initialSport: 'Pickleball',
               ),
             ),
           );
