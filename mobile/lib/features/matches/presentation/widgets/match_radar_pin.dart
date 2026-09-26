@@ -69,7 +69,7 @@ class MatchRadarPin extends StatelessWidget {
                       child: Icon(
                         PulseSportIcons.getIcon(match.sport),
                         size: 9,
-                        color: Colors.black,
+                        color: Colors.white,
                       ),
                     ),
                   ),

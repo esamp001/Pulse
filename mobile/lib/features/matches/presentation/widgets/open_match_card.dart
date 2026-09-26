@@ -94,14 +94,14 @@ class OpenMatchCard extends StatelessWidget {
                                 Icon(
                                   PulseSportIcons.getIcon(match.sport),
                                   size: 11,
-                                  color: Colors.black,
+                                  color: Colors.white,
                                 ),
                                 const SizedBox(width: 4),
                                 Flexible(
                                   child: Text(
                                     match.sportDisplayName.toUpperCase(),
                                     style: const TextStyle(
-                                      color: Colors.black,
+                                      color: Colors.white,
                                       fontSize: 10,
                                       fontWeight: FontWeight.w800,
                                       letterSpacing: 0.5,
@@ -236,7 +236,7 @@ class OpenMatchCard extends StatelessWidget {
                       onPressed: isJoining ? null : onJoin,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: PulseColors.primary,
-                        foregroundColor: Colors.black,
+                        foregroundColor: Colors.white,
                         elevation: 0,
                         shadowColor: Colors.transparent,
                         padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -250,7 +250,7 @@ class OpenMatchCard extends StatelessWidget {
                               height: 14,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                               ),
                             )
                           : const FittedBox(
